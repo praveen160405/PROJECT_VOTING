@@ -17,6 +17,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
+import { initialUsers } from "@/lib/data";
+import type { User as UserType } from "@/lib/types";
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -48,20 +50,32 @@ export default function LoginPage() {
       return;
     }
 
-
     setIsSubmitting(true);
     toast({
       title: "Signing In...",
       description: "Please wait.",
     });
 
-    // Simulate network delay
+    // Simulate network delay and check credentials
     setTimeout(() => {
-      toast({
-        title: "Login Successful",
-        description: "Redirecting to your dashboard...",
-      });
-      router.push("/dashboard");
+      const storedUsersJSON = localStorage.getItem("verityvote_users");
+      const users: UserType[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : initialUsers;
+      const userExists = users.some(user => user.voterId.toLowerCase() === voterId.toLowerCase());
+
+      if (userExists) {
+        toast({
+          title: "Login Successful",
+          description: "Redirecting to your dashboard...",
+        });
+        router.push("/dashboard");
+      } else {
+        setIsSubmitting(false);
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: "Voter ID not found. Please register first.",
+        });
+      }
     }, 1500);
   };
 
