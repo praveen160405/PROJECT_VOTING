@@ -15,32 +15,32 @@ const findImage = (id: string) => {
 export const candidates: Candidate[] = [
   {
     id: "c1",
-    name: "DMK",
-    party: "Dravida Munnetra Kazhagam",
+    name: "M.K. Stalin",
+    party: "Dravida Munnetra Kazhagam (DMK)",
     ...findImage("candidate-1"),
   },
   {
     id: "c2",
-    name: "ADMK",
-    party: "All India Anna Dravida Munnetra Kazhagam",
+    name: "Edappadi K. Palaniswami",
+    party: "All India Anna Dravida Munnetra Kazhagam (ADMK)",
     ...findImage("candidate-2"),
   },
   {
     id: "c3",
-    name: "TVK",
-    party: "Tamizhaga Vetri Kazhagam",
+    name: "Vijay",
+    party: "Tamizhaga Vetri Kazhagam (TVK)",
     ...findImage("candidate-3"),
   },
   {
     id: "c4",
-    name: "NTK",
-    party: "Naam Tamilar Katchi",
+    name: "Seeman",
+    party: "Naam Tamilar Katchi (NTK)",
     ...findImage("candidate-4"),
   },
   {
     id: "c5",
-    name: "BJP",
-    party: "Bharatiya Janata Party",
+    name: "K. Annamalai",
+    party: "Bharatiya Janata Party (BJP)",
     ...findImage("candidate-5"),
   },
 ];
@@ -54,11 +54,11 @@ export const voters: Voter[] = [
 ];
 
 export const voteResults: VoteResult[] = [
-    { name: "DMK", votes: 4850 },
-    { name: "ADMK", votes: 3920 },
-    { name: "TVK", votes: 6100 },
-    { name: "NTK", votes: 2500 },
-    { name: "BJP", votes: 3200 },
+    { name: "M.K. Stalin", votes: 4850 },
+    { name: "Edappadi K. Palaniswami", votes: 3920 },
+    { name: "Vijay", votes: 6100 },
+    { name: "Seeman", votes: 2500 },
+    { name: "K. Annamalai", votes: 3200 },
 ];
 
 export const partyVotes: PartyVote[] = [

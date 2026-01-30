@@ -1,9 +1,9 @@
 "use client"
 import { useState } from "react";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sunrise, Leaf, Star, Tractor } from 'lucide-react';
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { candidates } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
@@ -20,72 +20,38 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Candidate } from "@/lib/types";
 
-const PartySymbol = ({ partyName }: { partyName: string }) => {
-  const symbolProps = { className: "h-16 w-16 text-muted-foreground group-hover/card:text-primary transition-colors" };
-  switch (partyName) {
-    case 'DMK':
-      return <Sunrise {...symbolProps} />;
-    case 'ADMK':
-      return (
-        <div className="flex items-center justify-center h-16 w-16">
-            <div className="flex -space-x-7">
-                <Leaf {...symbolProps} className="h-12 w-12" style={{transform: 'rotate(-25deg)'}} />
-                <Leaf {...symbolProps} className="h-12 w-12" style={{transform: 'rotate(25deg) scaleX(-1)'}}/>
-            </div>
-        </div>
-      );
-    case 'TVK':
-      return <Star {...symbolProps} />;
-    case 'NTK':
-      return <Tractor {...symbolProps} />;
-    case 'BJP':
-      return (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          {...symbolProps}
-        >
-          <path d="M8.8 20.9a2.5 2.5 0 1 0 6.4 0" />
-          <path d="M12 18a4.9 4.9 0 0 0 4.9-4.9c0-2.1-1.7-4.4-4.9-7.1-3.2 2.7-4.9 5-4.9 7.1A4.9 4.9 0 0 0 12 18Z" />
-          <path d="M22 13.1c-1-3.4-4.2-6.1-10-6.1-5.8 0-9 2.7-10 6.1" />
-          <path d="M16.4 13.2c.4-.8.6-1.7.6-2.6 0-3.1-3.1-5.6-7-5.6s-7 2.5-7 5.6c0 .9.2 1.8.6 2.6" />
-          <path d="M5.6 12.6c-.4.8-.6 1.7-.6 2.6 0 .5.1 1 .2 1.5" />
-          <path d="M18.4 12.6c.4.8.6 1.7.6 2.6 0 .5-.1 1-.2 1.5" />
-        </svg>
-      );
-    default:
-      return null;
-  }
-};
-
 function CandidateCard({ candidate, onVote, isVoted }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean }) {
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild disabled={isVoted}>
         <Card className="group/card flex flex-col overflow-hidden transition-all h-full cursor-pointer data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60 hover:shadow-lg hover:border-primary">
-          <div className="flex flex-col flex-grow items-center justify-between">
-            <CardContent className="p-6 flex-grow flex flex-col items-center justify-center gap-4">
-              <PartySymbol partyName={candidate.name} />
-              <CardTitle className="text-2xl font-bold tracking-widest">{candidate.name}</CardTitle>
-            </CardContent>
-            <CardFooter className="w-full p-4 pt-0">
-                <Button className="w-full pointer-events-none" variant={isVoted ? "secondary" : "default"}>
-                  {isVoted ? "Vote Cast" : "Vote"}
-                </Button>
-            </CardFooter>
-          </div>
+            <div className="relative w-full aspect-[3/4]">
+                <Image
+                    src={candidate.imageUrl}
+                    alt={`Photo of ${candidate.name}`}
+                    fill
+                    className="object-cover transition-transform group-hover/card:scale-105"
+                    data-ai-hint={candidate.imageHint}
+                />
+            </div>
+            <div className="flex flex-col flex-grow">
+                <CardHeader className="p-4 flex-grow">
+                    <CardTitle className="text-lg">{candidate.name}</CardTitle>
+                    <CardDescription className="text-xs">{candidate.party}</CardDescription>
+                </CardHeader>
+                <CardFooter className="p-4 pt-0">
+                    <Button className="w-full" variant={isVoted ? "secondary" : "default"} disabled={isVoted}>
+                      {isVoted ? "Vote Cast" : "Vote"}
+                    </Button>
+                </CardFooter>
+            </div>
         </Card>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Your Vote</AlertDialogTitle>
           <AlertDialogDescription>
-            You are about to cast your vote for <strong>{candidate.name}</strong>. This action is irreversible.
+            You are about to cast your vote for <strong>{candidate.name}</strong> from the party <strong>{candidate.party}</strong>. This action is irreversible.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
