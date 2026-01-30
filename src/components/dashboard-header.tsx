@@ -1,3 +1,5 @@
+"use client";
+
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "./theme-toggle";
 import { ConnectWalletButton } from "./connect-wallet-button";
