@@ -338,17 +338,16 @@ export default function RegisterPage() {
             <div className="relative">
                 <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
                 <canvas ref={canvasRef} className="hidden" />
-                {hasCameraPermission === false && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
-                        <Alert variant="destructive" className="m-4">
-                            <AlertTitle>Camera Access Required</AlertTitle>
-                            <AlertDescription>
-                                Please grant camera access in your browser settings to use this feature.
-                            </AlertDescription>
-                        </Alert>
-                    </div>
-                )}
             </div>
+            {hasCameraPermission === false && (
+                <Alert variant="destructive">
+                    <Camera className="h-4 w-4" />
+                    <AlertTitle>Camera Access Denied</AlertTitle>
+                    <AlertDescription>
+                        Please grant camera permissions in your browser settings to use this feature.
+                    </AlertDescription>
+                </Alert>
+            )}
             <DialogFooter>
                 <Button variant="ghost" onClick={() => setIsCameraDialogOpen(false)}>Cancel</Button>
                 <Button onClick={handleCaptureImage} disabled={!hasCameraPermission}>Capture</Button>
