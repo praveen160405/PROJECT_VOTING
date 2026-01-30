@@ -24,6 +24,27 @@
         }
       },
       "required": ["fullName", "voterId", "createdAt", "isVerified"]
+    },
+    "Vote": {
+      "title": "Vote",
+      "description": "Represents a single vote cast by a user for a candidate.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who cast the vote."
+        },
+        "candidateId": {
+          "type": "string",
+          "description": "The ID of the candidate who received the vote."
+        },
+        "votedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the vote was cast."
+        }
+      },
+      "required": ["userId", "candidateId", "votedAt"]
     }
   },
   "auth": {
@@ -35,6 +56,12 @@
         "$ref": "#/entities/UserProfile"
       },
       "description": "Stores user profile information, keyed by their Firebase Auth UID."
+    },
+    "/votes/{voteId}": {
+      "schema": {
+        "$ref": "#/entities/Vote"
+      },
+      "description": "Stores individual vote records, keyed by a unique vote ID."
     }
   }
 }

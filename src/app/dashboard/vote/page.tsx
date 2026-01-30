@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import type { Candidate } from "@/lib/types";
+import type { Candidate, Vote } from "@/lib/types";
 
 const partySymbols: { [key: string]: React.FC<React.SVGProps<SVGSVGElement>> } = {
   DMK: (props) => (
@@ -109,10 +109,22 @@ export default function VotePage() {
   const router = useRouter();
 
   const handleVote = (candidate: Candidate) => {
+    const voteTimestamp = new Date();
+    const newVote: Vote = {
+      id: `vote_${Date.now()}`,
+      // In a real app, this would be the logged-in user's ID
+      userId: 'user_mock_123', 
+      candidateId: candidate.id,
+      votedAt: voteTimestamp.toISOString(),
+    };
+
+    // Simulate sending to blockchain
+    console.log("Vote Details Sent to Blockchain:", newVote);
+
     setVotedCandidate(candidate);
     toast({
-      title: "Vote Submitted!",
-      description: `Your vote for ${candidate.name} has been securely recorded on the blockchain.`,
+      title: "Vote Submitted to Blockchain!",
+      description: `Vote for ${candidate.name} recorded at ${voteTimestamp.toLocaleString()}.`,
       duration: 5000,
     });
   };

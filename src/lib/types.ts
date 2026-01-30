@@ -14,6 +14,13 @@ export type User = {
   isVerified: boolean;
 };
 
+export type Vote = {
+  id: string;
+  userId: string;
+  candidateId: string;
+  votedAt: string;
+};
+
 export type VoteResult = {
   name: string;
   votes: number;
