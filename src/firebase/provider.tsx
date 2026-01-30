@@ -6,12 +6,13 @@ import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAA7tZTnalUv4OCAsU_wMe6WGlsMdSMiEU",
-  authDomain: "studio-8728271286-596e7.firebaseapp.com",
-  projectId: "studio-8728271286-596e7",
-  storageBucket: "studio-8728271286-596e7.appspot.com",
-  messagingSenderId: "881712555776",
-  appId: "1:881712555776:web:3fe086790944534dbfb5e5",
+  apiKey: "AIzaSyDF18uonLy32TMh3-s6qPS26TOL7k3aHDo",
+  authDomain: "verity-vote-e-voting.firebaseapp.com",
+  projectId: "verity-vote-e-voting",
+  storageBucket: "verity-vote-e-voting.appspot.com",
+  messagingSenderId: "574880499259",
+  appId: "1:574880499259:web:9643a6bed713833d7b878f",
+  measurementId: "G-9XG5YE7L04"
 };
 
 interface FirebaseContextValue {
