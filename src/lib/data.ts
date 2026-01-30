@@ -15,27 +15,33 @@ const findImage = (id: string) => {
 export const candidates: Candidate[] = [
   {
     id: "c1",
-    name: "Evelyn Reed",
-    party: "Innovate Party",
+    name: "DMK",
+    party: "Dravida Munnetra Kazhagam",
     ...findImage("candidate-1"),
   },
   {
     id: "c2",
-    name: "Samuel Hayes",
-    party: "Future Forward",
+    name: "ADMK",
+    party: "All India Anna Dravida Munnetra Kazhagam",
     ...findImage("candidate-2"),
   },
   {
     id: "c3",
-    name: "Isabella Cortez",
-    party: "Progress Alliance",
+    name: "TVK",
+    party: "Tamizhaga Vetri Kazhagam",
     ...findImage("candidate-3"),
   },
   {
     id: "c4",
-    name: "Benjamin Carter",
-    party: "Unity Coalition",
+    name: "NTK",
+    party: "Naam Tamilar Katchi",
     ...findImage("candidate-4"),
+  },
+  {
+    id: "c5",
+    name: "BJP",
+    party: "Bharatiya Janata Party",
+    ...findImage("candidate-5"),
   },
 ];
 
@@ -48,15 +54,17 @@ export const voters: Voter[] = [
 ];
 
 export const voteResults: VoteResult[] = [
-    { name: "Evelyn Reed", votes: 4850 },
-    { name: "Samuel Hayes", votes: 3920 },
-    { name: "Isabella Cortez", votes: 6100 },
-    { name: "Benjamin Carter", votes: 2500 },
+    { name: "DMK", votes: 4850 },
+    { name: "ADMK", votes: 3920 },
+    { name: "TVK", votes: 6100 },
+    { name: "NTK", votes: 2500 },
+    { name: "BJP", votes: 3200 },
 ];
 
 export const partyVotes: PartyVote[] = [
-    { party: 'Innovate Party', votes: 4850 },
-    { party: 'Future Forward', votes: 3920 },
-    { party: 'Progress Alliance', votes: 6100 },
-    { party: 'Unity Coalition', votes: 2500 },
+    { party: 'DMK', votes: 4850 },
+    { party: 'ADMK', votes: 3920 },
+    { party: 'TVK', votes: 6100 },
+    { party: 'NTK', votes: 2500 },
+    { party: 'BJP', votes: 3200 },
 ];

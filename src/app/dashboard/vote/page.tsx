@@ -23,20 +23,9 @@ import type { Candidate } from "@/lib/types";
 function CandidateCard({ candidate, onVote, isVoted }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean }) {
   return (
     <AlertDialog>
-      <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg">
-        <CardHeader className="p-0">
-          <Image
-            src={candidate.imageUrl}
-            alt={`Photo of ${candidate.name}`}
-            width={400}
-            height={400}
-            className="aspect-square object-cover"
-            data-ai-hint={candidate.imageHint}
-          />
-        </CardHeader>
-        <CardContent className="p-4 flex-grow">
-          <CardTitle className="text-xl">{candidate.name}</CardTitle>
-          <CardDescription>{candidate.party}</CardDescription>
+      <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg h-full">
+        <CardContent className="p-6 flex-grow flex items-center justify-center">
+          <CardTitle className="text-3xl font-bold">{candidate.name}</CardTitle>
         </CardContent>
         <CardFooter className="p-4 pt-0">
           <AlertDialogTrigger asChild>
@@ -50,7 +39,7 @@ function CandidateCard({ candidate, onVote, isVoted }: { candidate: Candidate, o
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Your Vote</AlertDialogTitle>
           <AlertDialogDescription>
-            You are about to cast your vote for <strong>{candidate.name}</strong> of the <strong>{candidate.party}</strong>. This action is irreversible.
+            You are about to cast your vote for <strong>{candidate.name}</strong>. This action is irreversible.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
