@@ -13,6 +13,7 @@ import {
   KeyRound,
   Eye,
   EyeOff,
+  WalletCards,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ const formSchema = z.object({
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loginMethod, setLoginMethod] = useState<"form" | "aadhar" | null>(null);
+  const [loginMethod, setLoginMethod] = useState<"form" | "aadhar" | "metamask" | null>(null);
   const [aadharLoginState, setAadharLoginState] = useState<'none' | 'enterNumber' | 'enterOtp'>('none');
   const router = useRouter();
   const { toast } = useToast();
@@ -104,6 +105,53 @@ export default function LoginPage() {
       // No need to reset state as we are redirecting.
     }, 2000);
   }
+
+  async function handleMetamaskLogin() {
+    setIsSubmitting(true);
+    setLoginMethod("metamask");
+
+    if (typeof window.ethereum === 'undefined') {
+        toast({
+            variant: "destructive",
+            title: "MetaMask Not Found",
+            description: "Please install the MetaMask browser extension to use this feature.",
+        });
+        setIsSubmitting(false);
+        setLoginMethod(null);
+        return;
+    }
+
+    try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        if (accounts && accounts.length > 0) {
+            toast({
+                title: "MetaMask Connected",
+                description: `Connected with address: ${accounts[0].substring(0, 6)}...${accounts[0].substring(accounts[0].length - 4)}`,
+            });
+            // Redirect after a short delay
+            setTimeout(() => {
+                router.push("/dashboard/vote");
+            }, 1500);
+        }
+    } catch (error: any) {
+        if (error.code === 4001) {
+            toast({
+                variant: "destructive",
+                title: "Connection Rejected",
+                description: "You rejected the connection request in MetaMask.",
+            });
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Connection Failed",
+                description: "An error occurred while connecting to MetaMask.",
+            });
+        }
+        setIsSubmitting(false);
+        setLoginMethod(null);
+    }
+  }
+
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center p-4">
@@ -201,6 +249,21 @@ export default function LoginPage() {
                 </Form>
                 <Separator className="my-6" />
                 <div className="space-y-4">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleMetamaskLogin}
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting && loginMethod === "metamask" ? (
+                        "Connecting..."
+                    ) : (
+                        <>
+                            <WalletCards className="mr-2 h-4 w-4" />
+                            Login with MetaMask
+                        </>
+                    )}
+                  </Button>
                   <Button
                     variant="outline"
                     className="w-full"
