@@ -1,7 +1,7 @@
 "use client"
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sunrise, Leaf, Star, Tractor, Lotus } from 'lucide-react';
+import { Sunrise, Leaf, Star, Tractor } from 'lucide-react';
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,25 @@ const PartySymbol = ({ partyName }: { partyName: string }) => {
     case 'NTK':
       return <Tractor {...symbolProps} />;
     case 'BJP':
-      return <Lotus {...symbolProps} />;
+      return (
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          {...symbolProps}
+        >
+          <path d="M8.8 20.9a2.5 2.5 0 1 0 6.4 0" />
+          <path d="M12 18a4.9 4.9 0 0 0 4.9-4.9c0-2.1-1.7-4.4-4.9-7.1-3.2 2.7-4.9 5-4.9 7.1A4.9 4.9 0 0 0 12 18Z" />
+          <path d="M22 13.1c-1-3.4-4.2-6.1-10-6.1-5.8 0-9 2.7-10 6.1" />
+          <path d="M16.4 13.2c.4-.8.6-1.7.6-2.6 0-3.1-3.1-5.6-7-5.6s-7 2.5-7 5.6c0 .9.2 1.8.6 2.6" />
+          <path d="M5.6 12.6c-.4.8-.6 1.7-.6 2.6 0 .5.1 1 .2 1.5" />
+          <path d="M18.4 12.6c.4.8.6 1.7.6 2.6 0 .5-.1 1-.2 1.5" />
+        </svg>
+      );
     default:
       return null;
   }
