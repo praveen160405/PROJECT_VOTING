@@ -39,7 +39,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { useAuth, useFirestore } from "@/firebase/provider";
+import { auth, firestore } from "@/firebase/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
@@ -67,9 +67,6 @@ export default function RegisterPage() {
 
   const router = useRouter();
   const { toast } = useToast();
-
-  const auth = useAuth();
-  const firestore = useFirestore();
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -154,16 +151,6 @@ export default function RegisterPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-
-    if (!auth || !firestore) {
-      toast({
-        variant: "destructive",
-        title: "Registration Failed",
-        description: "Firebase services are not available. Please try again later.",
-      });
-      setIsSubmitting(false);
-      return;
-    }
 
     try {
       // 1. Create user in Firebase Auth

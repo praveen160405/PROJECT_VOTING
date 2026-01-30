@@ -31,7 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { useAuth } from "@/firebase/provider";
+import { auth } from "@/firebase/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 const formSchema = z.object({
@@ -46,7 +46,6 @@ export default function LoginPage() {
   const [aadharLoginState, setAadharLoginState] = useState<'none' | 'enterNumber' | 'enterOtp'>('none');
   const router = useRouter();
   const { toast } = useToast();
-  const auth = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,17 +59,6 @@ export default function LoginPage() {
     setIsSubmitting(true);
     setLoginMethod("form");
     
-    if (!auth) {
-        toast({
-            variant: "destructive",
-            title: "Initialization Error",
-            description: "Authentication service is not ready. Please wait a moment and try again.",
-        });
-        setIsSubmitting(false);
-        setLoginMethod(null);
-        return;
-    }
-
     try {
       await signInWithEmailAndPassword(auth, values.voterId, values.password);
       toast({
@@ -260,12 +248,10 @@ export default function LoginPage() {
                     <Button
                       type="submit"
                       className="w-full"
-                      disabled={isSubmitting || !auth}
+                      disabled={isSubmitting}
                     >
                       {isSubmitting && loginMethod === "form"
                         ? "Signing In..."
-                        : !auth
-                        ? "Initializing..."
                         : "Sign In"}
                     </Button>
                   </form>
@@ -276,7 +262,7 @@ export default function LoginPage() {
                     variant="outline"
                     className="w-full"
                     onClick={handleMetamaskLogin}
-                    disabled={isSubmitting || !auth}
+                    disabled={isSubmitting}
                   >
                     {isSubmitting && loginMethod === "metamask" ? (
                         "Connecting..."
@@ -291,7 +277,7 @@ export default function LoginPage() {
                     variant="outline"
                     className="w-full"
                     onClick={handleAadharLoginClick}
-                    disabled={isSubmitting || !auth}
+                    disabled={isSubmitting}
                   >
                     <Fingerprint className="mr-2 h-4 w-4" />
                     Login with Aadhar

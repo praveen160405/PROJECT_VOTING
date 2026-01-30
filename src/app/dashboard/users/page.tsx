@@ -18,18 +18,15 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useFirestore } from "@/firebase/provider";
+import { firestore } from "@/firebase/firebase";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection } from "firebase/firestore";
 import type { User } from "@/lib/types";
 
 export default function UsersPage() {
-  const firestore = useFirestore();
-  
   const usersCollection = useMemo(() => {
-    if (!firestore) return null;
     return collection(firestore, 'users');
-  }, [firestore]);
+  }, []);
   
   const { data: users, loading, error } = useCollection<User>(usersCollection);
 

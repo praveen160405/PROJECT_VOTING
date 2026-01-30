@@ -31,7 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth, useFirestore } from "@/firebase/provider";
+import { auth, firestore } from "@/firebase/firebase";
 import { useUser } from "@/firebase/auth/use-user";
 import { useDoc } from "@/firebase/firestore/use-doc";
 import { signOut } from "firebase/auth";
@@ -43,21 +43,18 @@ export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const auth = useAuth();
-  const firestore = useFirestore();
   const { user: authUser, loading: authLoading } = useUser();
   
   const userDocRef = useMemo(() => {
-    if (!authUser || !firestore) return null;
+    if (!authUser) return null;
     return doc(firestore, "users", authUser.uid);
-  }, [authUser, firestore]);
+  }, [authUser]);
   
   const { data: userProfile, loading: profileLoading } = useDoc<User>(userDocRef);
 
   const loading = authLoading || profileLoading;
 
   const handleLogout = async () => {
-    if (!auth) return;
     await signOut(auth);
     router.push('/');
   };
