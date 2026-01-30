@@ -3,15 +3,7 @@
 import { FirebaseApp, initializeApp, getApps, getApp } from 'firebase/app';
 import { Auth, getAuth } from 'firebase/auth';
 import { Firestore, getFirestore } from 'firebase/firestore';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyAA7tZTnalUv4OCAsU_wMe6WGlsMdSMiEU",
-  authDomain: "studio-8728271286-596e7.firebaseapp.com",
-  projectId: "studio-8728271286-596e7",
-  storageBucket: "studio-8728271286-596e7.appspot.com",
-  messagingSenderId: "881712555776",
-  appId: "1:881712555776:web:3fe086790944534dbfb5e5",
-};
+import { firebaseConfig } from './config';
 
 export type FirebaseServices = {
     app: FirebaseApp;
@@ -21,10 +13,6 @@ export type FirebaseServices = {
 
 // This is the robust, idempotent way to initialize Firebase in a Next.js app.
 export const initializeFirebase = (): FirebaseServices => {
-    if (typeof window === 'undefined') {
-        throw new Error("Firebase can only be initialized on the client.");
-    }
-    
     const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const firestore = getFirestore(app);
