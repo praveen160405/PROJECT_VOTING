@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
 import { getFirestore, type Firestore } from 'firebase/firestore';
@@ -21,18 +21,15 @@ interface FirebaseContextValue {
     app: FirebaseApp;
 }
 
-const FirebaseContext = createContext<FirebaseContextValue | null>(null);
+// Initialize Firebase globally, once.
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const firestore = getFirestore(app);
+const services: FirebaseContextValue = { auth, firestore, app };
+
+const FirebaseContext = createContext<FirebaseContextValue | null>(services);
 
 export function FirebaseProvider({ children }: { children: ReactNode }) {
-    const [services, setServices] = useState<FirebaseContextValue | null>(null);
-
-    useEffect(() => {
-        const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-        const auth = getAuth(app);
-        const firestore = getFirestore(app);
-        setServices({ auth, firestore, app });
-    }, []);
-
     return (
         <FirebaseContext.Provider value={services}>
             {children}
@@ -42,7 +39,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 
 export const useFirebase = () => {
     const context = useContext(FirebaseContext);
-    if (context === undefined) {
+    if (context === undefined || context === null) {
         throw new Error('useFirebase must be used within a FirebaseProvider');
     }
     return context;
