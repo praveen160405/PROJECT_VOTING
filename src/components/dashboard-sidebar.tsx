@@ -16,7 +16,7 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Vote,
-  BarChart3,
+  Users,
   Shield,
   LogOut,
   ChevronUp,
@@ -39,6 +39,7 @@ export function DashboardSidebar() {
 
   const menuItems = [
     { href: "/dashboard/vote", label: "Vote", icon: Vote },
+    { href: "/dashboard/users", label: "Users", icon: Users },
     { href: "/dashboard/admin", label: "Admin Panel", icon: Shield },
   ];
 
@@ -53,7 +54,7 @@ export function DashboardSidebar() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
                 <SidebarMenuButton
-                  isActive={pathname === item.href}
+                  isActive={pathname.startsWith(item.href)}
                   tooltip={{ children: item.label }}
                 >
                   <item.icon />

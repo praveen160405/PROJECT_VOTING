@@ -1,4 +1,4 @@
-import type { Candidate, Voter, VoteResult, PartyVote } from "@/lib/types";
+import type { Candidate, User, VoteResult, PartyVote } from "@/lib/types";
 
 export const candidates: Candidate[] = [
   {
@@ -28,7 +28,7 @@ export const candidates: Candidate[] = [
   },
 ];
 
-export const voters: Voter[] = [
+export const voters: User[] = [
     { id: 'v1', name: 'Alice Johnson', voterId: 'VOTER001', registeredAt: '2023-10-01', isVerified: true },
     { id: 'v2', name: 'Bob Williams', voterId: 'VOTER002', registeredAt: '2023-10-02', isVerified: false },
     { id: 'v3', name: 'Charlie Brown', voterId: 'VOTER003', registeredAt: '2023-10-03', isVerified: true },

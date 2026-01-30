@@ -6,7 +6,7 @@ export type Candidate = {
   imageHint?: string;
 };
 
-export type Voter = {
+export type User = {
   id: string;
   name: string;
   voterId: string;

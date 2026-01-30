@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Candidate, Voter } from "@/lib/types";
+import type { Candidate, User } from "@/lib/types";
 import {
   Tabs,
   TabsContent,
@@ -55,7 +55,7 @@ import { cn } from "@/lib/utils";
 export default function AdminPage() {
   const { toast } = useToast();
   const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
-  const [voters, setVoters] = useState<Voter[]>(initialVoters);
+  const [voters, setVoters] = useState<User[]>(initialVoters);
   const [electionStatus, setElectionStatus] = useState<"Not Started" | "Live" | "Ended">("Not Started");
 
   const [newCandidateName, setNewCandidateName] = useState("");
