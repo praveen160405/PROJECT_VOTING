@@ -18,15 +18,19 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { firestore } from "@/firebase/firebase";
+import { useFirebase } from "@/firebase/provider";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection } from "firebase/firestore";
 import type { User } from "@/lib/types";
 
 export default function UsersPage() {
+  const firebase = useFirebase();
+  const firestore = firebase?.firestore;
+  
   const usersCollection = useMemo(() => {
+    if (!firestore) return null;
     return collection(firestore, 'users');
-  }, []);
+  }, [firestore]);
   
   const { data: users, loading, error } = useCollection<User>(usersCollection);
 
@@ -63,6 +67,7 @@ export default function UsersPage() {
                   </TableCell>
                 </TableRow>
               )}
+               {!loading && !users && <TableRow><TableCell colSpan={4} className="text-center">Initializing...</TableCell></TableRow>}
               {error && (
                 <TableRow>
                   <TableCell colSpan={4} className="text-center text-destructive">

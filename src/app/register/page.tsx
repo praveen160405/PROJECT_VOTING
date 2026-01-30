@@ -39,7 +39,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { auth, firestore } from "@/firebase/firebase";
+import { useFirebase } from "@/firebase/provider";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
@@ -67,6 +67,9 @@ export default function RegisterPage() {
 
   const router = useRouter();
   const { toast } = useToast();
+  const firebase = useFirebase();
+  const auth = firebase?.auth;
+  const firestore = firebase?.firestore;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -150,6 +153,14 @@ export default function RegisterPage() {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth || !firestore) {
+      toast({
+        variant: "destructive",
+        title: "Initialization Error",
+        description: "Firebase service is not ready. Please wait a moment and try again.",
+      });
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -184,7 +195,9 @@ export default function RegisterPage() {
       toast({
         variant: "destructive",
         title: "Registration Failed",
-        description: error.message || "An unexpected error occurred. Please try again.",
+        description: error.code === 'auth/email-already-in-use'
+          ? "This Voter ID is already registered."
+          : error.message || "An unexpected error occurred. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -338,8 +351,8 @@ export default function RegisterPage() {
                     </Button>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? "Registering..." : "Register"}
+                <Button type="submit" className="w-full" disabled={isSubmitting || !auth}>
+                  {isSubmitting ? "Registering..." : !auth ? "Initializing..." : "Register"}
                 </Button>
               </form>
             </Form>

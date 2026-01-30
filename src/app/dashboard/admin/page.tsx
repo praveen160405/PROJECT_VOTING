@@ -50,18 +50,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { firestore } from "@/firebase/firebase";
+import { useFirebase } from "@/firebase/provider";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, doc, updateDoc, deleteDoc } from "firebase/firestore";
 
 export default function AdminPage() {
   const { toast } = useToast();
+  const firebase = useFirebase();
+  const firestore = firebase?.firestore;
   const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
   const [electionStatus, setElectionStatus] = useState<"Not Started" | "Live" | "Ended">("Not Started");
 
   const votersCollection = useMemo(() => {
+      if (!firestore) return null;
       return collection(firestore, 'users');
-  }, []);
+  }, [firestore]);
   const { data: voters, loading, error } = useCollection<User>(votersCollection);
 
   const [newCandidateName, setNewCandidateName] = useState("");
@@ -136,6 +139,7 @@ export default function AdminPage() {
   };
 
   const handleVerifyVoter = async (voterId: string) => {
+    if (!firestore) return;
     const voterRef = doc(firestore, 'users', voterId);
     try {
       await updateDoc(voterRef, { isVerified: true });
@@ -157,6 +161,7 @@ export default function AdminPage() {
   };
 
   const handleRejectVoter = async (voterId: string) => {
+    if (!firestore) return;
     const voter = voters?.find(v => v.id === voterId);
     const voterRef = doc(firestore, 'users', voterId);
     try {
@@ -233,6 +238,7 @@ export default function AdminPage() {
                   <TableBody>
                     {loading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
                     {error && <TableRow><TableCell colSpan={5} className="text-center text-destructive">Error loading voters.</TableCell></TableRow>}
+                    {!loading && !voters && <TableRow><TableCell colSpan={5} className="text-center">Initializing...</TableCell></TableRow>}
                     {voters && voters.map((voter) => (
                       <TableRow key={voter.id}>
                         <TableCell className="font-medium">{voter.fullName}</TableCell>

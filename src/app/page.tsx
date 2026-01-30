@@ -31,7 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { auth } from "@/firebase/firebase";
+import { useFirebase } from "@/firebase/provider";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 const formSchema = z.object({
@@ -46,6 +46,8 @@ export default function LoginPage() {
   const [aadharLoginState, setAadharLoginState] = useState<'none' | 'enterNumber' | 'enterOtp'>('none');
   const router = useRouter();
   const { toast } = useToast();
+  const firebase = useFirebase();
+  const auth = firebase?.auth;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -56,6 +58,15 @@ export default function LoginPage() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth) {
+      toast({
+        variant: "destructive",
+        title: "Initialization Error",
+        description: "Authentication service is not ready. Please wait a moment and try again.",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     setLoginMethod("form");
     
@@ -72,7 +83,9 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: error.message || "An unexpected error occurred.",
+        description: error.code === 'auth/invalid-credential' 
+          ? "Invalid Voter ID or password."
+          : error.message || "An unexpected error occurred.",
       });
     } finally {
       setIsSubmitting(false);
@@ -249,10 +262,12 @@ export default function LoginPage() {
                     <Button
                       type="submit"
                       className="w-full"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !auth}
                     >
                       {isSubmitting && loginMethod === "form"
                         ? "Signing In..."
+                        : !auth
+                        ? "Initializing..."
                         : "Sign In"}
                     </Button>
                   </form>

@@ -31,7 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { auth, firestore } from "@/firebase/firebase";
+import { useFirebase } from "@/firebase/provider";
 import { useUser } from "@/firebase/auth/use-user";
 import { useDoc } from "@/firebase/firestore/use-doc";
 import { signOut } from "firebase/auth";
@@ -42,19 +42,23 @@ import type { User } from "@/lib/types";
 export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const firebase = useFirebase();
+  const auth = firebase?.auth;
+  const firestore = firebase?.firestore;
 
   const { user: authUser, loading: authLoading } = useUser();
   
   const userDocRef = useMemo(() => {
-    if (!authUser) return null;
+    if (!authUser || !firestore) return null;
     return doc(firestore, "users", authUser.uid);
-  }, [authUser]);
+  }, [authUser, firestore]);
   
   const { data: userProfile, loading: profileLoading } = useDoc<User>(userDocRef);
 
   const loading = authLoading || profileLoading;
 
   const handleLogout = async () => {
+    if (!auth) return;
     await signOut(auth);
     router.push('/');
   };
@@ -131,7 +135,7 @@ export function DashboardSidebar() {
             <DropdownMenuItem disabled>Profile</DropdownMenuItem>
             <DropdownMenuItem disabled>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={!auth}>
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>
