@@ -1,7 +1,7 @@
 "use client"
-import Image from "next/image";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Sunrise, Leaf, Star, Tractor, Lotus } from 'lucide-react';
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,21 +20,49 @@ import {
 } from "@/components/ui/alert-dialog";
 import type { Candidate } from "@/lib/types";
 
+const PartySymbol = ({ partyName }: { partyName: string }) => {
+  const symbolProps = { className: "h-16 w-16 text-muted-foreground group-hover/card:text-primary transition-colors" };
+  switch (partyName) {
+    case 'DMK':
+      return <Sunrise {...symbolProps} />;
+    case 'ADMK':
+      return (
+        <div className="flex items-center justify-center h-16 w-16">
+            <div className="flex -space-x-7">
+                <Leaf {...symbolProps} className="h-12 w-12" style={{transform: 'rotate(-25deg)'}} />
+                <Leaf {...symbolProps} className="h-12 w-12" style={{transform: 'rotate(25deg) scaleX(-1)'}}/>
+            </div>
+        </div>
+      );
+    case 'TVK':
+      return <Star {...symbolProps} />;
+    case 'NTK':
+      return <Tractor {...symbolProps} />;
+    case 'BJP':
+      return <Lotus {...symbolProps} />;
+    default:
+      return null;
+  }
+};
+
 function CandidateCard({ candidate, onVote, isVoted }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean }) {
   return (
     <AlertDialog>
-      <Card className="flex flex-col overflow-hidden transition-all hover:shadow-lg h-full">
-        <CardContent className="p-6 flex-grow flex items-center justify-center">
-          <CardTitle className="text-3xl font-bold">{candidate.name}</CardTitle>
-        </CardContent>
-        <CardFooter className="p-4 pt-0">
-          <AlertDialogTrigger asChild>
-            <Button className="w-full" variant={isVoted ? "secondary" : "default"} disabled={isVoted}>
-              {isVoted ? "Vote Cast" : "Vote"}
-            </Button>
-          </AlertDialogTrigger>
-        </CardFooter>
-      </Card>
+      <AlertDialogTrigger asChild disabled={isVoted}>
+        <Card className="group/card flex flex-col overflow-hidden transition-all h-full cursor-pointer data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60 hover:shadow-lg hover:border-primary">
+          <div className="flex flex-col flex-grow items-center justify-between">
+            <CardContent className="p-6 flex-grow flex flex-col items-center justify-center gap-4">
+              <PartySymbol partyName={candidate.name} />
+              <CardTitle className="text-2xl font-bold tracking-widest">{candidate.name}</CardTitle>
+            </CardContent>
+            <CardFooter className="w-full p-4 pt-0">
+                <Button className="w-full pointer-events-none" variant={isVoted ? "secondary" : "default"}>
+                  {isVoted ? "Vote Cast" : "Vote"}
+                </Button>
+            </CardFooter>
+          </div>
+        </Card>
+      </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Your Vote</AlertDialogTitle>
@@ -94,13 +122,14 @@ export default function VotePage() {
         )}
       </AnimatePresence>
       
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {candidates.map((candidate) => (
           <motion.div
             key={candidate.id}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
+            className="h-full"
           >
             <CandidateCard
               candidate={candidate}
