@@ -1,14 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { voteResults, partyVotes } from "@/lib/data";
+import { voteResults, partyVotes, candidates } from "@/lib/data";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import type { Vote } from "@/lib/types";
 
 const chartConfig = {
   votes: {
@@ -111,6 +114,20 @@ function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
 
 export default function ResultsPage() {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [ledgerVotes, setLedgerVotes] = useState<Vote[]>([]);
+
+  useEffect(() => {
+    const storedVotesJSON = localStorage.getItem("verityvote_votes");
+    if (storedVotesJSON) {
+      setLedgerVotes(JSON.parse(storedVotesJSON));
+    }
+  }, []);
+
+  const getCandidateNameById = (id: string) => {
+    const candidate = candidates.find(c => c.id === id);
+    return candidate ? candidate.name : "Unknown Candidate";
+  };
+
 
   if (!isAdminAuthenticated) {
     return <AdminLogin onLoginSuccess={() => setIsAdminAuthenticated(true)} />;
@@ -206,6 +223,57 @@ export default function ResultsPage() {
             </div>
           </CardContent>
         </Card>
+        <Card className="col-span-1 md:col-span-2">
+            <CardHeader>
+              <CardTitle>Vote Ledger</CardTitle>
+              <CardDescription>
+                A transparent, immutable record of all votes cast. Hashes are
+                simulated for demonstration.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[300px] w-full">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Vote Hash (Simulated)</TableHead>
+                      <TableHead>Candidate</TableHead>
+                      <TableHead className="text-right">Timestamp</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {ledgerVotes.length > 0 ? (
+                      ledgerVotes
+                        .slice()
+                        .reverse()
+                        .map((vote) => (
+                          <TableRow key={vote.id}>
+                            <TableCell className="font-mono text-xs">
+                              {`0x...${vote.id.slice(-12)}`}
+                            </TableCell>
+                            <TableCell>
+                              {getCandidateNameById(vote.candidateId)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {new Date(vote.votedAt).toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={3}
+                          className="h-24 text-center text-muted-foreground"
+                        >
+                          No votes have been cast yet.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
+            </CardContent>
+          </Card>
       </div>
     </div>
   );

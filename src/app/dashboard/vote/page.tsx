@@ -111,12 +111,18 @@ export default function VotePage() {
   const handleVote = (candidate: Candidate) => {
     const voteTimestamp = new Date();
     const newVote: Vote = {
-      id: `vote_${Date.now()}`,
+      id: `vote_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
       // In a real app, this would be the logged-in user's ID
       userId: 'user_mock_123', 
       candidateId: candidate.id,
       votedAt: voteTimestamp.toISOString(),
     };
+
+    // Save vote to local storage to be displayed in the ledger
+    const storedVotesJSON = localStorage.getItem("verityvote_votes");
+    const votes: Vote[] = storedVotesJSON ? JSON.parse(storedVotesJSON) : [];
+    localStorage.setItem("verityvote_votes", JSON.stringify([...votes, newVote]));
+
 
     // Simulate sending to blockchain
     console.log("Vote Details Sent to Blockchain:", newVote);
