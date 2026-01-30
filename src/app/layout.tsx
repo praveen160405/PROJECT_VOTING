@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import { ThemeProvider } from '@/components/theme-provider';
+import { AppProviders } from './providers';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
@@ -24,12 +24,12 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        <ThemeProvider>
+        <AppProviders>
             <div className="auth-background min-h-screen">
               {children}
             </div>
             <Toaster />
-        </ThemeProvider>
+        </AppProviders>
       </body>
     </html>
   );

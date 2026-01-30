@@ -1,5 +1,6 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeToggle } from "./theme-toggle";
+import { ConnectWalletButton } from "./connect-wallet-button";
 
 export function DashboardHeader() {
   return (
@@ -8,6 +9,7 @@ export function DashboardHeader() {
       <div className="flex-1">
         {/* Can add breadcrumbs or page title here */}
       </div>
+      <ConnectWalletButton />
       <ThemeToggle />
     </header>
   );

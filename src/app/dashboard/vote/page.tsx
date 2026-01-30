@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Star, ArrowRight } from 'lucide-react';
+import { Contract, ethers } from "ethers";
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import type { Candidate, Vote } from "@/lib/types";
+import type { Candidate } from "@/lib/types";
+import { useWeb3 } from "@/app/providers";
+import { votingContractAddress, votingContractABI } from "@/lib/contract";
 
 const partySymbols: { [key: string]: React.FC<React.SVGProps<SVGSVGElement>> } = {
   DMK: (props) => (
@@ -69,12 +72,12 @@ const partySymbols: { [key: string]: React.FC<React.SVGProps<SVGSVGElement>> } =
   ),
 };
 
-function CandidateCard({ candidate, onVote, isVoted }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean }) {
+function CandidateCard({ candidate, onVote, isVoted, isWalletConnected }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean, isWalletConnected: boolean }) {
   const Symbol = partySymbols[candidate.name] || (() => null);
   
   return (
     <AlertDialog>
-      <AlertDialogTrigger asChild disabled={isVoted}>
+      <AlertDialogTrigger asChild disabled={isVoted || !isWalletConnected}>
         <Card className="group/card relative flex h-full cursor-pointer flex-col items-center justify-center overflow-hidden p-6 text-center transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60">
           <Symbol className="h-28 w-28 text-muted-foreground transition-colors group-hover/card:text-primary" />
           <CardTitle className="mt-4 text-2xl font-bold">{candidate.name}</CardTitle>
@@ -88,7 +91,7 @@ function CandidateCard({ candidate, onVote, isVoted }: { candidate: Candidate, o
         <AlertDialogHeader>
           <AlertDialogTitle>Confirm Your Vote</AlertDialogTitle>
           <AlertDialogDescription>
-            You are about to cast your vote for <strong>{candidate.name}</strong> from the party <strong>{candidate.party}</strong>. This action is irreversible.
+            You are about to cast your vote for <strong>{candidate.name}</strong> from the party <strong>{candidate.party}</strong>. This action is irreversible and will be recorded on the blockchain.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -107,32 +110,47 @@ export default function VotePage() {
   const [votedCandidate, setVotedCandidate] = useState<Candidate | null>(null);
   const { toast } = useToast();
   const router = useRouter();
+  const { signer, address } = useWeb3();
 
-  const handleVote = (candidate: Candidate) => {
-    const voteTimestamp = new Date();
-    const newVote: Vote = {
-      id: `vote_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
-      // In a real app, this would be the logged-in user's ID
-      userId: 'user_mock_123', 
-      candidateId: candidate.id,
-      votedAt: voteTimestamp.toISOString(),
-    };
+  const handleVote = async (candidate: Candidate) => {
+    if (!signer || !address) {
+      toast({
+        variant: "destructive",
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet to vote.",
+      });
+      return;
+    }
 
-    // Save vote to local storage to be displayed in the ledger
-    const storedVotesJSON = localStorage.getItem("verityvote_votes");
-    const votes: Vote[] = storedVotesJSON ? JSON.parse(storedVotesJSON) : [];
-    localStorage.setItem("verityvote_votes", JSON.stringify([...votes, newVote]));
+    try {
+      const contract = new Contract(votingContractAddress, votingContractABI, signer);
+      
+      // Convert candidate ID 'c1' to a number 1
+      const candidateIdNumber = parseInt(candidate.id.replace('c', ''), 10);
+      
+      toast({
+        title: "Submitting Your Vote...",
+        description: "Please confirm the transaction in your wallet.",
+      });
 
+      const tx = await contract.vote(candidateIdNumber);
+      await tx.wait(); // Wait for the transaction to be mined
 
-    // Simulate sending to blockchain
-    console.log("Vote Details Sent to Blockchain:", newVote);
+      setVotedCandidate(candidate);
+      toast({
+        title: "Vote Submitted to Blockchain!",
+        description: `Your vote for ${candidate.name} has been recorded.`,
+        duration: 5000,
+      });
 
-    setVotedCandidate(candidate);
-    toast({
-      title: "Vote Submitted to Blockchain!",
-      description: `Vote for ${candidate.name} recorded at ${voteTimestamp.toLocaleString()}.`,
-      duration: 5000,
-    });
+    } catch (error: any) {
+      console.error("Voting failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Transaction Failed",
+        description: error.reason || "An error occurred while casting your vote.",
+      });
+    }
   };
 
   useEffect(() => {
@@ -158,7 +176,7 @@ export default function VotePage() {
             <CardHeader>
               <CardTitle className="text-3xl font-bold tracking-tight">Thank You for Voting!</CardTitle>
               <CardDescription>
-                Your vote for <strong>{votedCandidate.name}</strong> has been successfully recorded.
+                Your vote for <strong>{votedCandidate.name}</strong> has been successfully recorded on the blockchain.
                 <br/>
                 You will be redirected to the home page shortly.
               </CardDescription>
@@ -181,7 +199,9 @@ export default function VotePage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Voting Booth</h1>
-        <p className="text-muted-foreground">Select a candidate to cast your vote. You can only vote once.</p>
+        <p className="text-muted-foreground">
+          {address ? "Select a candidate to cast your vote. You can only vote once." : "Please connect your wallet to vote."}
+        </p>
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
@@ -197,6 +217,7 @@ export default function VotePage() {
               candidate={candidate}
               onVote={handleVote}
               isVoted={!!votedCandidate}
+              isWalletConnected={!!address}
             />
           </motion.div>
         ))}
