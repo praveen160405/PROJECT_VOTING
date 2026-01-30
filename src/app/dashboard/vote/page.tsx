@@ -142,9 +142,9 @@ export default function VotePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link href="/dashboard/results">
+              <Link href="/dashboard">
                 <Button>
-                  View Live Results
+                  Back to Dashboard
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Vote, BarChart3, Shield, ArrowRight } from "lucide-react";
+import { Vote, Shield, ArrowRight } from "lucide-react";
 
 export default function DashboardPage() {
   const features = [
@@ -11,13 +11,6 @@ export default function DashboardPage() {
       link: "/dashboard/vote",
       icon: Vote,
       cta: "Go to Voting Booth",
-    },
-    {
-      title: "View Live Results",
-      description: "Track the election results in real-time with full transparency.",
-      link: "/dashboard/results",
-      icon: BarChart3,
-      cta: "See Results",
     },
     {
       title: "Admin Panel",

@@ -39,7 +39,6 @@ export function DashboardSidebar() {
 
   const menuItems = [
     { href: "/dashboard/vote", label: "Vote", icon: Vote },
-    { href: "/dashboard/results", label: "Results", icon: BarChart3 },
     { href: "/dashboard/admin", label: "Admin Panel", icon: Shield },
   ];
 
