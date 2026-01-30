@@ -9,7 +9,6 @@ import * as z from "zod";
 import { motion } from "framer-motion";
 import {
   Fingerprint,
-  ShieldCheck,
   Mail,
   KeyRound,
   Eye,
@@ -27,7 +26,6 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
@@ -35,12 +33,12 @@ import { Logo } from "@/components/logo";
 const formSchema = z.object({
   voterId: z.string().min(1, { message: "Voter ID is required." }),
   password: z.string().min(1, { message: "Password is required." }),
-  otp: z.string().optional(),
 });
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginMethod, setLoginMethod] = useState<"form" | "aadhar" | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -49,12 +47,12 @@ export default function LoginPage() {
     defaultValues: {
       voterId: "",
       password: "",
-      otp: "",
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
+    setLoginMethod("form");
     console.log(values);
 
     // Simulate API call
@@ -65,7 +63,28 @@ export default function LoginPage() {
       });
       router.push("/dashboard");
       setIsSubmitting(false);
+      setLoginMethod(null);
     }, 1500);
+  }
+
+  function handleAadharLogin() {
+    setIsSubmitting(true);
+    setLoginMethod("aadhar");
+    toast({
+      title: "Aadhar Login",
+      description: "Please wait while we verify your Aadhar details...",
+    });
+
+    // Simulate Aadhar API call
+    setTimeout(() => {
+      toast({
+        title: "Aadhar Login Successful",
+        description: "Redirecting to your dashboard...",
+      });
+      router.push("/dashboard");
+      setIsSubmitting(false);
+      setLoginMethod(null);
+    }, 2000);
   }
 
   return (
@@ -139,15 +158,15 @@ export default function LoginPage() {
                   )}
                 />
                 <Button type="submit" className="w-full" disabled={isSubmitting}>
-                  {isSubmitting ? "Signing In..." : "Sign In"}
+                  {isSubmitting && loginMethod === "form" ? "Signing In..." : "Sign In"}
                 </Button>
               </form>
             </Form>
             <Separator className="my-6" />
             <div className="space-y-4">
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleAadharLogin} disabled={isSubmitting}>
                 <Fingerprint className="mr-2 h-4 w-4" />
-                Login with Aadhar
+                {isSubmitting && loginMethod === "aadhar" ? "Verifying Aadhar..." : "Login with Aadhar"}
               </Button>
             </div>
             <p className="mt-6 text-center text-sm text-muted-foreground">
