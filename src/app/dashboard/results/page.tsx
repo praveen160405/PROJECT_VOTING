@@ -8,12 +8,6 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { Vote, VoteResult, PartyVote, User } from "@/lib/types";
-import { useWeb3 } from "@/app/providers";
-import { Contract, getDefaultProvider } from "ethers";
-import { votingContractAddress, votingContractABI } from "@/lib/contract";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { TriangleAlert } from "lucide-react";
 
 const chartConfig = {
   votes: {
@@ -39,72 +33,25 @@ export default function ResultsPage() {
   const [totalVotes, setTotalVotes] = useState(0);
   const [registeredVoters, setRegisteredVoters] = useState(0);
 
-  const { provider } = useWeb3();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // This effect fetches live vote counts from the blockchain
-  useEffect(() => {
-    const fetchVoteCounts = async () => {
-      setIsLoading(true);
-      setError(null);
-      
-      const setMockData = () => {
-        const mockResults: VoteResult[] = [
-          { name: 'DMK', votes: 150 },
-          { name: 'ADMK', votes: 120 },
-          { name: 'TVK', votes: 90 },
-          { name: 'NTK', votes: 75 },
-          { name: 'BJP', votes: 50 },
-        ];
-        const total = mockResults.reduce((sum, current) => sum + current.votes, 0);
-        setVoteResults(mockResults);
-        setPartyVotes(mockResults.map(r => ({ party: r.name, votes: r.votes })));
-        setTotalVotes(total);
-      };
-      
-      if (votingContractAddress === "0x0000000000000000000000000000000000000000") {
-          setError("The smart contract has not been deployed yet. Please deploy the contract and update the address in `src/lib/contract.ts`. Displaying mock data for now.");
-          setMockData();
-          setIsLoading(false);
-          return;
-      }
-      
-      try {
-        // Use the connected provider or a default read-only one
-        const readProvider = provider || getDefaultProvider();
-        const contract = new Contract(votingContractAddress, votingContractABI, readProvider);
-
-        const resultsPromises = candidates.map(async (candidate) => {
-          const id = parseInt(candidate.id.replace('c', ''), 10);
-          const count = await contract.getVotes(id);
-          return { name: candidate.name, votes: Number(count) };
-        });
-
-        const results = await Promise.all(resultsPromises);
-        const total = results.reduce((sum, current) => sum + current.votes, 0);
-
-        setVoteResults(results);
-        setPartyVotes(results.map(r => ({ party: r.name, votes: r.votes })));
-        setTotalVotes(total);
-        
-      } catch (err: any) {
-        console.error("Failed to fetch vote counts from blockchain:", err);
-        setError("Could not fetch live results. Please ensure you are on the correct network and the contract address is correct. Displaying mock data for now.");
-        setMockData();
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchVoteCounts();
-  }, [provider]);
-
-
-  // This effect loads ledger and user data from localStorage
   useEffect(() => {
     const storedVotesJSON = localStorage.getItem("verityvote_votes");
     const votes: Vote[] = storedVotesJSON ? JSON.parse(storedVotesJSON) : [];
     setLedgerVotes(votes);
+
+    const calculatedResults = candidates.map(c => {
+        const candidateVotes = votes.filter(v => v.candidateId === c.id).length;
+        return { name: c.name, votes: candidateVotes };
+    });
+    setVoteResults(calculatedResults);
+    
+    const calculatedPartyVotes = candidates.map(c => {
+        const candidateVotes = votes.filter(v => v.candidateId === c.id).length;
+        return { party: c.name, votes: candidateVotes };
+    });
+    setPartyVotes(calculatedPartyVotes);
+
+    const total = calculatedResults.reduce((sum, current) => sum + current.votes, 0);
+    setTotalVotes(total);
 
     const storedUsersJSON = localStorage.getItem("verityvote_users");
     const users: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : initialUsers;
@@ -120,9 +67,6 @@ export default function ResultsPage() {
   const turnout = registeredVoters > 0 ? (totalVotes / registeredVoters) * 100 : 0;
 
   const renderChartContent = (chart: React.ReactNode, height: number) => {
-    if (isLoading) {
-      return <Skeleton className={`h-[${height}px] w-full`} />;
-    }
     if (totalVotes === 0) {
       return <div className={`h-[${height}px] w-full flex items-center justify-center text-muted-foreground`}>No votes have been cast yet.</div>;
     }
@@ -133,22 +77,14 @@ export default function ResultsPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Election Results</h1>
-        <p className="text-muted-foreground">Live and transparent vote counts from the blockchain.</p>
+        <p className="text-muted-foreground">Live and transparent vote counts.</p>
       </div>
-
-       {error && !isLoading && (
-        <Alert variant="destructive">
-          <TriangleAlert className="h-4 w-4" />
-          <AlertTitle>Smart Contract Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="col-span-2">
           <CardHeader>
             <CardTitle>Votes per Candidate</CardTitle>
-            <CardDescription>Total votes received by each candidate, fetched live from the blockchain.</CardDescription>
+            <CardDescription>Total votes received by each candidate.</CardDescription>
           </CardHeader>
           <CardContent>
             {renderChartContent(
@@ -205,43 +141,35 @@ export default function ResultsPage() {
              <CardDescription>Key metrics of the current election.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 text-sm">
-             {isLoading ? (
-                <div className="space-y-4">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-4 w-2/3" />
+              <>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Total Votes Cast</span>
+                  <span className="font-semibold">
+                    {totalVotes.toLocaleString()}
+                  </span>
                 </div>
-            ) : (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Total Votes Cast (On-Chain)</span>
-                    <span className="font-semibold">
-                      {totalVotes.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Registered Voters (Simulated)</span>
-                    <span className="font-semibold">{registeredVoters.toLocaleString()}</span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Voter Turnout</span>
-                    <span className="font-semibold">
-                      {turnout.toFixed(2)}%
-                    </span>
-                  </div>
-                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Election Status</span>
-                    <span className="font-semibold text-green-500">Live</span>
-                  </div>
-                </>
-            )}
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Registered Voters</span>
+                  <span className="font-semibold">{registeredVoters.toLocaleString()}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Voter Turnout</span>
+                  <span className="font-semibold">
+                    {turnout.toFixed(2)}%
+                  </span>
+                </div>
+                 <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Election Status</span>
+                  <span className="font-semibold text-green-500">Live</span>
+                </div>
+              </>
           </CardContent>
         </Card>
         <Card className="col-span-1 md:col-span-2">
             <CardHeader>
               <CardTitle>Vote Ledger (Client-Side Simulation)</CardTitle>
               <CardDescription>
-                A transparent log of votes recorded by this browser session. Hashes are from real transactions.
+                A transparent log of votes recorded by this browser session.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -249,7 +177,7 @@ export default function ResultsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Transaction Hash</TableHead>
+                      <TableHead>Vote ID</TableHead>
                       <TableHead>Candidate</TableHead>
                       <TableHead className="text-right">Timestamp</TableHead>
                     </TableRow>
