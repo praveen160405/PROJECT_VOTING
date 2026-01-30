@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion } from "framer-motion";
 import {
-  User,
+  User as UserIcon,
   Fingerprint,
   KeyRound,
   Upload,
@@ -39,6 +39,8 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
+import { initialUsers } from "@/lib/data";
+import type { User } from "@/lib/types";
 
 const formSchema = z
   .object({
@@ -149,11 +151,25 @@ export default function RegisterPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
 
+    const storedUsersJSON = localStorage.getItem("verityvote_users");
+    const users: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : initialUsers;
+    
+    const newUser: User = {
+      id: `user${Date.now()}`,
+      fullName: values.fullName,
+      voterId: values.voterId,
+      createdAt: new Date().toISOString(),
+      isVerified: false,
+    };
+
+    const updatedUsers = [...users, newUser];
+    localStorage.setItem("verityvote_users", JSON.stringify(updatedUsers));
+
     // Simulate API call
     setTimeout(() => {
       toast({
         title: "Registration Successful",
-        description: "Your account has been created. Please sign in.",
+        description: "Your account has been created. An admin will verify your details shortly.",
       });
       router.push("/");
       setIsSubmitting(false);
@@ -188,7 +204,7 @@ export default function RegisterPage() {
                       <FormLabel>Full Name</FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input placeholder="Enter your full name" {...field} className="pl-10"/>
                         </div>
                       </FormControl>

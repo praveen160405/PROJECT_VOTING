@@ -34,28 +34,28 @@ export const initialUsers: User[] = [
         fullName: 'Aarav Sharma',
         voterId: 'V987654321',
         isVerified: true,
-        createdAt: { toDate: () => new Date('2023-10-22T09:00:00Z') }
+        createdAt: new Date('2023-10-22T09:00:00Z').toISOString()
     },
     {
         id: 'user2',
         fullName: 'Diya Patel',
         voterId: 'V123456789',
         isVerified: false,
-        createdAt: { toDate: () => new Date('2023-10-25T11:30:00Z') }
+        createdAt: new Date('2023-10-25T11:30:00Z').toISOString()
     },
     {
         id: 'user3',
         fullName: 'Advik Singh',
         voterId: 'V555666777',
         isVerified: true,
-        createdAt: { toDate: () => new Date('2023-10-28T14:00:00Z') }
+        createdAt: new Date('2023-10-28T14:00:00Z').toISOString()
     },
     {
         id: 'user4',
         fullName: 'Ananya Gupta',
         voterId: 'V112233445',
         isVerified: false,
-        createdAt: { toDate: () => new Date('2023-11-01T16:45:00Z') }
+        createdAt: new Date('2023-11-01T16:45:00Z').toISOString()
     },
 ];
 

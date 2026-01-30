@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Candidate, User } from "@/lib/types";
 import {
   Tabs,
@@ -54,7 +54,7 @@ import { cn } from "@/lib/utils";
 export default function AdminPage() {
   const { toast } = useToast();
   const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
-  const [voters, setVoters] = useState<User[]>(initialUsers);
+  const [voters, setVoters] = useState<User[]>([]);
   const [electionStatus, setElectionStatus] = useState<"Not Started" | "Live" | "Ended">("Not Started");
 
   const [newCandidateName, setNewCandidateName] = useState("");
@@ -65,6 +65,21 @@ export default function AdminPage() {
 
   const [candidateToRemove, setCandidateToRemove] = useState<Candidate | null>(null);
   const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const storedUsers = localStorage.getItem("verityvote_users");
+    if (storedUsers) {
+      setVoters(JSON.parse(storedUsers));
+    } else {
+      localStorage.setItem("verityvote_users", JSON.stringify(initialUsers));
+      setVoters(initialUsers);
+    }
+  }, []);
+
+  const updateVotersInStorage = (updatedVoters: User[]) => {
+    setVoters(updatedVoters);
+    localStorage.setItem("verityvote_users", JSON.stringify(updatedVoters));
+  };
   
   const handleAddCandidate = () => {
     if (!newCandidateName || !newCandidateParty) {
@@ -130,7 +145,8 @@ export default function AdminPage() {
 
   const handleVerifyVoter = (voterId: string) => {
     const voter = voters.find(v => v.id === voterId);
-    setVoters(voters.map(v => v.id === voterId ? { ...v, isVerified: true } : v));
+    const updatedVoters = voters.map(v => v.id === voterId ? { ...v, isVerified: true } : v);
+    updateVotersInStorage(updatedVoters);
      if (voter) {
         toast({
             title: "Voter Verified",
@@ -141,7 +157,8 @@ export default function AdminPage() {
 
   const handleRejectVoter = (voterId: string) => {
     const voter = voters.find(v => v.id === voterId);
-    setVoters(voters.filter(v => v.id !== voterId));
+    const updatedVoters = voters.filter(v => v.id !== voterId);
+    updateVotersInStorage(updatedVoters);
      if (voter) {
         toast({
             variant: "destructive",
@@ -208,7 +225,7 @@ export default function AdminPage() {
                       <TableRow key={voter.id}>
                         <TableCell className="font-medium">{voter.fullName}</TableCell>
                         <TableCell>{voter.voterId}</TableCell>
-                        <TableCell>{voter.createdAt?.toDate().toLocaleDateString() ?? 'N/A'}</TableCell>
+                        <TableCell>{new Date(voter.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <Badge
                             variant={

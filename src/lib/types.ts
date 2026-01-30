@@ -10,7 +10,7 @@ export type User = {
   id: string;
   fullName: string;
   voterId: string;
-  createdAt: any;
+  createdAt: string;
   isVerified: boolean;
 };
 

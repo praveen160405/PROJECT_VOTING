@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -17,9 +18,20 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { initialUsers } from "@/lib/data";
+import type { User } from "@/lib/types";
 
 export default function UsersPage() {
-  const users = initialUsers;
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const storedUsers = localStorage.getItem("verityvote_users");
+    if (storedUsers) {
+      setUsers(JSON.parse(storedUsers));
+    } else {
+      localStorage.setItem("verityvote_users", JSON.stringify(initialUsers));
+      setUsers(initialUsers);
+    }
+  }, []);
 
   return (
     <div className="flex flex-col gap-6">
@@ -51,7 +63,7 @@ export default function UsersPage() {
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.fullName}</TableCell>
                   <TableCell>{user.voterId}</TableCell>
-                  <TableCell>{user.createdAt?.toDate().toLocaleDateString() ?? 'N/A'}</TableCell>
+                  <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Badge
                       variant={user.isVerified ? "default" : "secondary"}
