@@ -19,23 +19,17 @@ export type FirebaseServices = {
     firestore: Firestore;
 };
 
-let firebaseServices: FirebaseServices | null = null;
-
+// This is the robust, idempotent way to initialize Firebase in a Next.js app.
 export const initializeFirebase = (): FirebaseServices => {
     if (typeof window === 'undefined') {
         throw new Error("Firebase can only be initialized on the client.");
-    }
-    
-    if (firebaseServices) {
-        return firebaseServices;
     }
     
     const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const firestore = getFirestore(app);
 
-    firebaseServices = { app, auth, firestore };
-    return firebaseServices;
+    return { app, auth, firestore };
 }
 
 export * from './provider';
