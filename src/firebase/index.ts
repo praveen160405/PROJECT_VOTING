@@ -1,3 +1,5 @@
+"use client";
+
 import { FirebaseApp, initializeApp, getApps, getApp } from 'firebase/app';
 import { Auth, getAuth } from 'firebase/auth';
 import { Firestore, getFirestore } from 'firebase/firestore';
@@ -20,6 +22,10 @@ export type FirebaseServices = {
 let firebaseServices: FirebaseServices | null = null;
 
 export const initializeFirebase = (): FirebaseServices => {
+    if (typeof window === 'undefined') {
+        throw new Error("Firebase can only be initialized on the client.");
+    }
+    
     if (firebaseServices) {
         return firebaseServices;
     }
