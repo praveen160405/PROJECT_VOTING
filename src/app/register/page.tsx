@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -28,6 +28,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 
@@ -37,6 +46,8 @@ const formSchema = z
     voterId: z.string().min(1, "Voter ID is required."),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string(),
+    idProof: z.any().optional(),
+    faceImage: z.string().optional(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
@@ -47,8 +58,16 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCameraDialogOpen, setIsCameraDialogOpen] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | undefined>();
+  const [idProofFileName, setIdProofFileName] = useState<string | null>(null);
+
   const router = useRouter();
   const { toast } = useToast();
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const idProofInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,6 +78,68 @@ export default function RegisterPage() {
       confirmPassword: "",
     },
   });
+
+  const faceImage = form.watch('faceImage');
+
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    const enableCamera = async () => {
+        if (!isCameraDialogOpen) {
+            if(stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            return;
+        }
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            setHasCameraPermission(true);
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (err) {
+            console.error("Error accessing camera: ", err);
+            setHasCameraPermission(false);
+            toast({
+                variant: 'destructive',
+                title: 'Camera Access Denied',
+                description: 'Please enable camera permissions in your browser settings.',
+            });
+        }
+    };
+    enableCamera();
+
+    return () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+    }
+  }, [isCameraDialogOpen, toast]);
+
+  const handleCaptureImage = () => {
+    if (videoRef.current && canvasRef.current) {
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        if (context) {
+            context.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+            const dataUrl = canvas.toDataURL('image/png');
+            form.setValue('faceImage', dataUrl);
+            toast({ title: "Face image captured!" });
+            setIsCameraDialogOpen(false);
+        }
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      form.setValue('idProof', file);
+      setIdProofFileName(file.name);
+      toast({ title: 'ID Proof uploaded', description: file.name });
+    }
+  };
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -194,13 +275,30 @@ export default function RegisterPage() {
                     </FormItem>
                   )}
                 />
+                
+                <input
+                    type="file"
+                    className="hidden"
+                    ref={idProofInputRef}
+                    onChange={handleFileChange}
+                    accept="image/*,.pdf"
+                />
+                <FormField
+                    control={form.control}
+                    name="faceImage"
+                    render={({ field }) => (
+                      <Input type="hidden" {...field} />
+                    )}
+                />
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <Button variant="outline" type="button">
-                        <Upload className="mr-2 h-4 w-4" /> Upload ID Proof
+                    <Button variant={idProofFileName ? "secondary" : "outline"} type="button" onClick={() => idProofInputRef.current?.click()}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        {idProofFileName ? 'ID Uploaded' : 'Upload ID Proof'}
                     </Button>
-                    <Button variant="outline" type="button">
-                        <Camera className="mr-2 h-4 w-4" /> Capture Face Image
+                    <Button variant={faceImage ? "secondary" : "outline"} type="button" onClick={() => setIsCameraDialogOpen(true)}>
+                        <Camera className="mr-2 h-4 w-4" />
+                        {faceImage ? 'Face Captured' : 'Capture Face Image'}
                     </Button>
                 </div>
 
@@ -221,6 +319,34 @@ export default function RegisterPage() {
           </CardContent>
         </Card>
       </motion.div>
+      <Dialog open={isCameraDialogOpen} onOpenChange={setIsCameraDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Capture Face Image</DialogTitle>
+                <DialogDescription>
+                    Center your face in the frame and click capture.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="relative">
+                <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted playsInline />
+                <canvas ref={canvasRef} className="hidden" />
+                {hasCameraPermission === false && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
+                        <Alert variant="destructive" className="m-4">
+                            <AlertTitle>Camera Access Required</AlertTitle>
+                            <AlertDescription>
+                                Please grant camera access in your browser settings to use this feature.
+                            </AlertDescription>
+                        </Alert>
+                    </div>
+                )}
+            </div>
+            <DialogFooter>
+                <Button variant="ghost" onClick={() => setIsCameraDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleCaptureImage} disabled={!hasCameraPermission}>Capture</Button>
+            </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
