@@ -1,11 +1,37 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Pie, PieChart, Cell } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Pie, PieChart, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { voteResults, partyVotes } from "@/lib/data";
-import { ChartTooltipContent } from "@/components/ui/chart"
+import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 
-const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
+const chartConfig = {
+  votes: {
+    label: "Votes",
+    color: "hsl(var(--primary))",
+  },
+  DMK: {
+    label: "DMK",
+    color: "hsl(var(--chart-1))",
+  },
+  ADMK: {
+    label: "ADMK",
+    color: "hsl(var(--chart-2))",
+  },
+  TVK: {
+    label: "TVK",
+    color: "hsl(var(--chart-3))",
+  },
+  NTK: {
+    label: "NTK",
+    color: "hsl(var(--chart-4))",
+  },
+  BJP: {
+    label: "BJP",
+    color: "hsl(var(--chart-5))",
+  },
+} satisfies ChartConfig;
+
 
 export default function ResultsPage() {
   return (
@@ -21,20 +47,18 @@ export default function ResultsPage() {
             <CardDescription>Total votes received by each candidate.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[400px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={voteResults}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip
-                    cursor={{ fill: 'hsl(var(--muted))' }}
-                    content={<ChartTooltipContent />}
-                  />
-                  <Bar dataKey="votes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartContainer config={chartConfig} className="h-[400px] w-full">
+              <BarChart accessibilityLayer data={voteResults}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip
+                  cursor={{ fill: 'hsl(var(--muted))' }}
+                  content={<ChartTooltipContent />}
+                />
+                <Bar dataKey="votes" fill="var(--color-votes)" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ChartContainer>
           </CardContent>
         </Card>
         <Card>
@@ -43,30 +67,28 @@ export default function ResultsPage() {
             <CardDescription>Share of votes for each political party.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Tooltip
-                    cursor={{ fill: 'hsl(var(--muted))' }}
-                    content={<ChartTooltipContent nameKey="party" />}
-                  />
-                  <Pie
-                    data={partyVotes}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
-                    dataKey="votes"
-                    nameKey="party"
-                  >
-                    {partyVotes.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+              <PieChart accessibilityLayer>
+                <Tooltip
+                  cursor={{ fill: 'hsl(var(--muted))' }}
+                  content={<ChartTooltipContent nameKey="party" />}
+                />
+                <Pie
+                  data={partyVotes}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  dataKey="votes"
+                  nameKey="party"
+                >
+                  {partyVotes.map((entry) => (
+                    <Cell key={`cell-${entry.party}`} fill={`var(--color-${entry.party})`} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
           </CardContent>
         </Card>
         <Card>
