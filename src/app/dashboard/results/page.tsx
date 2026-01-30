@@ -1,9 +1,14 @@
 "use client";
 
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Pie, PieChart, Cell } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { useState } from "react";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 import { voteResults, partyVotes } from "@/lib/data";
-import { ChartContainer, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 
 const chartConfig = {
   votes: {
@@ -33,7 +38,84 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 
+function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const handleLogin = () => {
+    setIsSubmitting(true);
+    // Simulate API call for login
+    setTimeout(() => {
+      if (username === 'admin' && password === 'password') {
+        toast({
+          title: "Login Successful",
+          description: "Viewing election results.",
+        });
+        onLoginSuccess();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: "Invalid username or password.",
+        });
+        setIsSubmitting(false);
+      }
+    }, 1000);
+  };
+
+  return (
+    <div className="flex items-center justify-center h-[calc(100vh-10rem)]">
+      <Card className="w-full max-w-sm">
+        <CardHeader>
+          <CardTitle className="text-2xl">Admin Access</CardTitle>
+          <CardDescription>
+            Enter your credentials to view the results.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="username">Username</Label>
+            <Input
+              id="username"
+              type="text"
+              placeholder="admin"
+              required
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Input 
+              id="password" 
+              type="password" 
+              placeholder="password" 
+              required 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button className="w-full" onClick={handleLogin} disabled={isSubmitting}>
+            {isSubmitting ? "Signing In..." : "Sign In"}
+          </Button>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
+
+
 export default function ResultsPage() {
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+
+  if (!isAdminAuthenticated) {
+    return <AdminLogin onLoginSuccess={() => setIsAdminAuthenticated(true)} />;
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -52,7 +134,7 @@ export default function ResultsPage() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <Tooltip
+                <ChartTooltip
                   cursor={{ fill: 'hsl(var(--muted))' }}
                   content={<ChartTooltipContent />}
                 />
@@ -69,7 +151,7 @@ export default function ResultsPage() {
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
               <PieChart accessibilityLayer>
-                <Tooltip
+                <ChartTooltip
                   cursor={{ fill: 'hsl(var(--muted))' }}
                   content={<ChartTooltipContent nameKey="party" />}
                 />
