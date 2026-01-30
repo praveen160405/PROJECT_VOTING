@@ -29,6 +29,7 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    const voterIdRegex = /^[a-zA-Z]{3}[0-9]{7}$/;
     if (!voterId || !password) {
       toast({
         variant: "destructive",
@@ -37,6 +38,16 @@ export default function LoginPage() {
       });
       return;
     }
+
+    if (!voterIdRegex.test(voterId)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid Voter ID Format",
+        description: "Voter ID must be 3 letters followed by 7 numbers (e.g., ABC1234567).",
+      });
+      return;
+    }
+
 
     setIsSubmitting(true);
     toast({
@@ -79,7 +90,7 @@ export default function LoginPage() {
                   <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="voterId"
-                    placeholder="Enter your Voter ID"
+                    placeholder="e.g. ABC1234567"
                     value={voterId}
                     onChange={(e) => setVoterId(e.target.value)}
                     className="pl-10"

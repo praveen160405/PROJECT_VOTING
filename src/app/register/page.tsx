@@ -45,7 +45,9 @@ import type { User } from "@/lib/types";
 const formSchema = z
   .object({
     fullName: z.string().min(1, "Full name is required."),
-    voterId: z.string().regex(/^[0-9]+$/, "Voter ID must be numeric"),
+    voterId: z.string().regex(/^[a-zA-Z]{3}[0-9]{7}$/, {
+      message: "Voter ID must be 3 letters and 7 numbers (e.g. ABC1234567).",
+    }),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string(),
     idProof: z.any().optional(),
@@ -221,7 +223,7 @@ export default function RegisterPage() {
                       <FormControl>
                         <div className="relative">
                             <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Enter your numeric Voter ID" {...field} className="pl-10"/>
+                            <Input placeholder="e.g. ABC1234567" {...field} className="pl-10"/>
                         </div>
                       </FormControl>
                       <FormMessage />
