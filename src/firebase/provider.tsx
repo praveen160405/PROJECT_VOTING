@@ -1,21 +1,22 @@
 "use client";
 
-import React, { createContext, useContext, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { initializeFirebase } from './index';
+import { initializeFirebase, type FirebaseServices } from './index';
 
-interface FirebaseContextValue {
-  app: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
-}
-
-const FirebaseContext = createContext<FirebaseContextValue | null>(null);
+const FirebaseContext = createContext<FirebaseServices | null>(null);
 
 export function FirebaseProvider({ children }: { children: React.ReactNode }) {
-  const services = useMemo(() => initializeFirebase(), []);
+  const [services, setServices] = useState<FirebaseServices | null>(null);
+
+  useEffect(() => {
+    // This effect runs only on the client, after the component mounts,
+    // ensuring that Firebase is never initialized on the server.
+    const firebaseServices = initializeFirebase();
+    setServices(firebaseServices);
+  }, []);
 
   return (
     <FirebaseContext.Provider value={services}>
@@ -24,22 +25,18 @@ export function FirebaseProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export const useFirebase = (): FirebaseContextValue => {
-  const context = useContext(FirebaseContext);
-  if (!context) {
-    throw new Error('useFirebase must be used within a FirebaseProvider.');
-  }
-  return context;
+export const useFirebase = (): FirebaseServices | null => {
+  return useContext(FirebaseContext);
 };
 
-export const useFirebaseApp = (): FirebaseApp => {
-  return useFirebase().app;
+export const useFirebaseApp = (): FirebaseApp | null => {
+  return useFirebase()?.app ?? null;
 };
 
-export const useAuth = (): Auth => {
-  return useFirebase().auth;
+export const useAuth = (): Auth | null => {
+  return useFirebase()?.auth ?? null;
 };
 
-export const useFirestore = (): Firestore => {
-  return useFirebase().firestore;
+export const useFirestore = (): Firestore | null => {
+  return useFirebase()?.firestore ?? null;
 };

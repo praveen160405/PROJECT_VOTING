@@ -12,7 +12,7 @@ export function useUser() {
 
   useEffect(() => {
     if (!auth) {
-      setLoading(false);
+      setLoading(true);
       return;
     };
     

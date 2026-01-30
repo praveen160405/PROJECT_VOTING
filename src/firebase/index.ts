@@ -11,7 +11,7 @@ const firebaseConfig = {
   appId: "1:881712555776:web:3fe086790944534dbfb5e5",
 };
 
-type FirebaseServices = {
+export type FirebaseServices = {
     app: FirebaseApp;
     auth: Auth;
     firestore: Firestore;
