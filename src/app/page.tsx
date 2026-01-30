@@ -61,9 +61,9 @@ export default function LoginPage() {
     setTimeout(() => {
       toast({
         title: "Login Successful",
-        description: "Redirecting to your dashboard...",
+        description: "Redirecting to the voting booth...",
       });
-      router.push("/dashboard");
+      router.push("/dashboard/vote");
       setIsSubmitting(false);
       setLoginMethod(null);
     }, 1500);
@@ -98,9 +98,9 @@ export default function LoginPage() {
     setTimeout(() => {
       toast({
         title: "Aadhar Login Successful",
-        description: "Redirecting to your dashboard...",
+        description: "Redirecting to the voting booth...",
       });
-      router.push("/dashboard");
+      router.push("/dashboard/vote");
       // No need to reset state as we are redirecting.
     }, 2000);
   }
