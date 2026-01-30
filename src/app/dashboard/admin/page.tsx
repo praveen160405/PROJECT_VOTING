@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Candidate } from "@/lib/types";
+import type { Candidate, Voter } from "@/lib/types";
 import {
   Tabs,
   TabsContent,
@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { voters, candidates as initialCandidates } from "@/lib/data";
+import { voters as initialVoters, candidates as initialCandidates } from "@/lib/data";
 import { Check, X, Play, Square, PlusCircle, Pencil, Trash2 } from "lucide-react";
 import {
   Dialog,
@@ -49,11 +49,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 
 
 export default function AdminPage() {
   const { toast } = useToast();
   const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
+  const [voters, setVoters] = useState<Voter[]>(initialVoters);
+  const [electionStatus, setElectionStatus] = useState<"Not Started" | "Live" | "Ended">("Not Started");
+
   const [newCandidateName, setNewCandidateName] = useState("");
   const [newCandidateParty, setNewCandidateParty] = useState("");
 
@@ -125,6 +129,46 @@ export default function AdminPage() {
     setCandidateToRemove(null);
   };
 
+  const handleVerifyVoter = (voterId: string) => {
+    setVoters(voters.map(v => v.id === voterId ? { ...v, isVerified: true } : v));
+    const voter = voters.find(v => v.id === voterId);
+    if (voter) {
+        toast({
+            title: "Voter Verified",
+            description: `${voter.name} has been successfully verified.`
+        });
+    }
+  };
+
+  const handleRejectVoter = (voterId: string) => {
+    const voter = voters.find(v => v.id === voterId);
+    setVoters(voters.filter(v => v.id !== voterId));
+    if (voter) {
+        toast({
+            variant: "destructive",
+            title: "Voter Rejected",
+            description: `${voter.name} has been rejected and removed.`
+        });
+    }
+  };
+
+  const handleStartElection = () => {
+    setElectionStatus("Live");
+    toast({
+        title: "Election Started",
+        description: "The voting polls are now open."
+    });
+  };
+
+  const handleStopElection = () => {
+    setElectionStatus("Ended");
+    toast({
+        variant: "destructive",
+        title: "Election Stopped",
+        description: "The voting polls are now closed."
+    });
+  };
+
   return (
     <>
       <div className="flex flex-col gap-6">
@@ -179,10 +223,10 @@ export default function AdminPage() {
                         <TableCell className="text-right space-x-2">
                           {!voter.isVerified && (
                             <>
-                              <Button variant="ghost" size="icon" className="text-green-600 hover:text-green-700">
+                              <Button variant="ghost" size="icon" className="text-green-600 hover:text-green-700" onClick={() => handleVerifyVoter(voter.id)}>
                                 <Check className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700">
+                              <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700" onClick={() => handleRejectVoter(voter.id)}>
                                 <X className="h-4 w-4" />
                               </Button>
                             </>
@@ -273,15 +317,20 @@ export default function AdminPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex items-center gap-4">
-                <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white">
+                <Button size="lg" className="bg-green-600 hover:bg-green-700 text-white" onClick={handleStartElection} disabled={electionStatus === 'Live'}>
                   <Play className="mr-2 h-5 w-5" /> Start Election
                 </Button>
-                <Button size="lg" variant="destructive">
+                <Button size="lg" variant="destructive" onClick={handleStopElection} disabled={electionStatus !== 'Live'}>
                   <Square className="mr-2 h-5 w-5" /> Stop Election
                 </Button>
               </CardContent>
               <CardFooter>
-                  <p className="text-sm text-muted-foreground">Current Status: <span className="font-bold text-green-500">Live</span></p>
+                  <p className="text-sm text-muted-foreground">Current Status: <span className={cn(
+                    "font-bold",
+                     electionStatus === 'Live' && "text-green-500",
+                     electionStatus === 'Ended' && "text-red-500",
+                     electionStatus === 'Not Started' && "text-yellow-500"
+                  )}>{electionStatus}</span></p>
               </CardFooter>
             </Card>
           </TabsContent>
