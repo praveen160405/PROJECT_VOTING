@@ -235,7 +235,7 @@ export default function RegisterPage() {
                   name="voterId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Voter ID (Email)</FormLabel>
+                      <FormLabel>Voter ID (must be a valid email)</FormLabel>
                       <FormControl>
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

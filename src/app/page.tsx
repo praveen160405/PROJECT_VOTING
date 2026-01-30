@@ -197,12 +197,12 @@ export default function LoginPage() {
                       name="voterId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Voter ID (Email)</FormLabel>
+                          <FormLabel>Voter ID</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                               <Input
-                                placeholder="Enter your email"
+                                placeholder="Enter your registered email"
                                 {...field}
                                 className="pl-10"
                               />
