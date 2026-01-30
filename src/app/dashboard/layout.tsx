@@ -10,10 +10,12 @@ export default function DashboardLayout({
   return (
     <SidebarProvider>
       <DashboardSidebar />
-      <SidebarInset className="bg-background">
+      <SidebarInset>
         <DashboardHeader />
         <main className="p-4 lg:p-6">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );
 }
+
+    

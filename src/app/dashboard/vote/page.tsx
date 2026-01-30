@@ -3,10 +3,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Star, ArrowRight } from 'lucide-react';
-import { Contract, ethers } from "ethers";
+import { Star, ArrowRight, ShieldAlert } from 'lucide-react';
+import { Contract } from "ethers";
 
-import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { candidates } from "@/lib/data";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Candidate } from "@/lib/types";
 import { useWeb3 } from "@/app/providers";
 import { votingContractAddress, votingContractABI } from "@/lib/contract";
@@ -108,9 +109,27 @@ function CandidateCard({ candidate, onVote, isVoted, isWalletConnected }: { cand
 
 export default function VotePage() {
   const [votedCandidate, setVotedCandidate] = useState<Candidate | null>(null);
+  const [hasAlreadyVoted, setHasAlreadyVoted] = useState<boolean>(false);
   const { toast } = useToast();
   const router = useRouter();
   const { signer, address } = useWeb3();
+
+  useEffect(() => {
+    const checkVoteStatus = async () => {
+      if (!signer || !address) return;
+      try {
+        const contract = new Contract(votingContractAddress, votingContractABI, signer);
+        const userHasVoted = await contract.hasVoted(address);
+        if (userHasVoted) {
+          setHasAlreadyVoted(true);
+        }
+      } catch (err) {
+        console.error("Failed to check vote status. This is expected if the contract is not deployed.", err);
+      }
+    };
+
+    checkVoteStatus();
+  }, [signer, address]);
 
   const handleVote = async (candidate: Candidate) => {
     if (!signer || !address) {
@@ -125,7 +144,6 @@ export default function VotePage() {
     try {
       const contract = new Contract(votingContractAddress, votingContractABI, signer);
       
-      // Convert candidate ID 'c1' to a number 1
       const candidateIdNumber = parseInt(candidate.id.replace('c', ''), 10);
       
       toast({
@@ -148,7 +166,7 @@ export default function VotePage() {
       toast({
         variant: "destructive",
         title: "Transaction Failed",
-        description: error.reason || "An error occurred while casting your vote.",
+        description: error.reason || "An error occurred. Make sure your contract is deployed and you are on the correct network.",
       });
     }
   };
@@ -156,7 +174,7 @@ export default function VotePage() {
   useEffect(() => {
     if (votedCandidate) {
       const timer = setTimeout(() => {
-        router.push('/');
+        router.push('/dashboard');
       }, 3000); // 3-second redirect
 
       return () => clearTimeout(timer);
@@ -178,13 +196,13 @@ export default function VotePage() {
               <CardDescription>
                 Your vote for <strong>{votedCandidate.name}</strong> has been successfully recorded on the blockchain.
                 <br/>
-                You will be redirected to the home page shortly.
+                You will be redirected to the dashboard shortly.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link href="/">
+              <Link href="/dashboard">
                 <Button>
-                  Go to Home Page
+                  Go to Dashboard
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
@@ -195,15 +213,38 @@ export default function VotePage() {
     )
   }
 
+  const isWalletConnected = !!address;
+  const isVoted = !!votedCandidate || hasAlreadyVoted;
+
+  const getPageDescription = () => {
+    if (!isWalletConnected) {
+        return "Please connect your wallet to see the candidates and vote.";
+    }
+    if (isVoted) {
+        return "Your vote has been recorded on the blockchain. You cannot vote again.";
+    }
+    return "Select a candidate to cast your vote. This action is irreversible.";
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Voting Booth</h1>
         <p className="text-muted-foreground">
-          {address ? "Select a candidate to cast your vote. You can only vote once." : "Please connect your wallet to vote."}
+          {getPageDescription()}
         </p>
       </div>
       
+      {isWalletConnected && isVoted && (
+        <Alert variant="default" className="bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-950 dark:border-yellow-800 dark:text-yellow-200">
+          <ShieldAlert className="h-4 w-4 !text-yellow-600 dark:!text-yellow-400" />
+          <AlertTitle>Vote Recorded</AlertTitle>
+          <AlertDescription>
+            Our records indicate that this wallet has already cast a vote. Each wallet is allowed only one vote to ensure a fair election.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {candidates.map((candidate) => (
           <motion.div
@@ -216,8 +257,8 @@ export default function VotePage() {
             <CandidateCard
               candidate={candidate}
               onVote={handleVote}
-              isVoted={!!votedCandidate}
-              isWalletConnected={!!address}
+              isVoted={isVoted}
+              isWalletConnected={isWalletConnected}
             />
           </motion.div>
         ))}
@@ -225,3 +266,5 @@ export default function VotePage() {
     </div>
   );
 }
+
+    
