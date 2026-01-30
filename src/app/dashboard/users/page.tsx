@@ -68,9 +68,9 @@ export default function UsersPage() {
               )}
               {users && users.map((user) => (
                 <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell className="font-medium">{user.fullName}</TableCell>
                   <TableCell>{user.voterId}</TableCell>
-                  <TableCell>{new Date(user.registeredAt).toLocaleDateString()}</TableCell>
+                  <TableCell>{user.createdAt?.toDate().toLocaleDateString() ?? 'Pending'}</TableCell>
                   <TableCell>
                     <Badge
                       variant={user.isVerified ? "default" : "secondary"}

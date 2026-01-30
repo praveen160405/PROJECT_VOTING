@@ -141,7 +141,7 @@ export default function AdminPage() {
       if (voter) {
           toast({
               title: "Voter Verified",
-              description: `${voter.name} has been successfully verified.`
+              description: `${voter.fullName} has been successfully verified.`
           });
       }
     } catch (error) {
@@ -163,7 +163,7 @@ export default function AdminPage() {
           toast({
               variant: "destructive",
               title: "Voter Rejected",
-              description: `${voter.name} has been rejected and removed.`
+              description: `${voter.fullName} has been rejected and removed.`
           });
       }
     } catch (error) {
@@ -233,9 +233,9 @@ export default function AdminPage() {
                     {error && <TableRow><TableCell colSpan={5} className="text-center text-destructive">Error loading voters.</TableCell></TableRow>}
                     {voters && voters.map((voter) => (
                       <TableRow key={voter.id}>
-                        <TableCell className="font-medium">{voter.name}</TableCell>
+                        <TableCell className="font-medium">{voter.fullName}</TableCell>
                         <TableCell>{voter.voterId}</TableCell>
-                        <TableCell>{new Date(voter.registeredAt).toLocaleDateString()}</TableCell>
+                        <TableCell>{voter.createdAt?.toDate().toLocaleDateString() ?? 'Pending'}</TableCell>
                         <TableCell>
                           <Badge
                             variant={

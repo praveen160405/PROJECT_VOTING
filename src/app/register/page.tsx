@@ -168,10 +168,10 @@ export default function RegisterPage() {
       // 2. Create user document in Firestore
       const userDocRef = doc(firestore, "users", user.uid);
       await setDoc(userDocRef, {
-        name: values.fullName,
+        fullName: values.fullName,
         voterId: values.voterId,
         isVerified: false,
-        registeredAt: serverTimestamp(),
+        createdAt: serverTimestamp(),
       });
       
       // TODO: Upload ID proof and face image to Firebase Storage

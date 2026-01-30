@@ -8,9 +8,9 @@ export type Candidate = {
 
 export type User = {
   id: string;
-  name: string;
+  fullName: string;
   voterId: string;
-  registeredAt: string;
+  createdAt: any;
   isVerified: boolean;
 };
 

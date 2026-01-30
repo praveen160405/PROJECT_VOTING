@@ -108,11 +108,11 @@ export function DashboardSidebar() {
                 <>
                   <Avatar className="h-8 w-8">
                     <AvatarFallback>
-                      {userProfile ? getInitials(userProfile.name) : '??'}
+                      {userProfile ? getInitials(userProfile.fullName) : '??'}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 truncate">
-                    <p className="font-medium">{userProfile?.name || "Anonymous"}</p>
+                    <p className="font-medium">{userProfile?.fullName || "Anonymous"}</p>
                     <p className="text-xs text-muted-foreground">{userProfile?.voterId || "Not logged in"}</p>
                   </div>
                 </>
