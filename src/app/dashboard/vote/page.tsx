@@ -75,21 +75,13 @@ function CandidateCard({ candidate, onVote, isVoted }: { candidate: Candidate, o
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild disabled={isVoted}>
-        <Card className="group/card flex flex-col overflow-hidden transition-all h-full cursor-pointer data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60 hover:shadow-lg hover:border-primary">
-            <CardContent className="p-4 flex flex-col items-center justify-center flex-grow aspect-square">
-              <Symbol className="h-24 w-24 text-muted-foreground group-hover/card:text-foreground transition-colors" />
-            </CardContent>
-            <div className="flex flex-col flex-grow">
-                <CardHeader className="p-4 flex-grow text-center">
-                    <CardTitle className="text-xl">{candidate.name}</CardTitle>
-                    <CardDescription className="text-xs">{candidate.party}</CardDescription>
-                </CardHeader>
-                <CardFooter className="p-4 pt-0">
-                    <Button className="w-full" variant={isVoted ? "secondary" : "default"} disabled={isVoted}>
-                      {isVoted ? "Vote Cast" : "Vote"}
-                    </Button>
-                </CardFooter>
-            </div>
+        <Card className="group/card relative flex h-full cursor-pointer flex-col items-center justify-center overflow-hidden p-6 text-center transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60">
+          <Symbol className="h-28 w-28 text-muted-foreground transition-colors group-hover/card:text-primary" />
+          <CardTitle className="mt-4 text-2xl font-bold">{candidate.name}</CardTitle>
+          <CardDescription className="mt-1 text-sm">{candidate.party}</CardDescription>
+          <div className="absolute inset-0 bg-primary/90 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover/card:opacity-100">
+            <span className="text-xl font-semibold text-primary-foreground">Vote</span>
+          </div>
         </Card>
       </AlertDialogTrigger>
       <AlertDialogContent>
