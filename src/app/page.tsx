@@ -40,7 +40,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginMethod, setLoginMethod] = useState<"form" | "aadhar" | null>(null);
-  const [isAadharLogin, setIsAadharLogin] = useState(false);
+  const [aadharLoginState, setAadharLoginState] = useState<'none' | 'enterNumber' | 'enterOtp'>('none');
   const router = useRouter();
   const { toast } = useToast();
 
@@ -69,12 +69,21 @@ export default function LoginPage() {
     }, 1500);
   }
 
-  function handleAadharLogin() {
-    setIsAadharLogin(true);
-    toast({
-      title: "Aadhar OTP Sent",
-      description: "Please enter the OTP sent to your registered mobile number.",
-    });
+  function handleAadharLoginClick() {
+    setAadharLoginState('enterNumber');
+  }
+
+  function handleSendAadharOtp() {
+    setIsSubmitting(true);
+    // Simulate sending OTP
+    setTimeout(() => {
+        toast({
+            title: "Aadhar OTP Sent",
+            description: "Please enter the OTP sent to your registered mobile number.",
+        });
+        setAadharLoginState('enterOtp');
+        setIsSubmitting(false);
+    }, 1000);
   }
 
   function handleVerifyAadharOtp() {
@@ -110,44 +119,15 @@ export default function LoginPage() {
               Welcome to VerityVote
             </h1>
             <p className="text-muted-foreground">
-              {isAadharLogin
-                ? "Verify your Aadhar OTP to login."
-                : "Securely cast your vote. One person, one vote."}
+              {aadharLoginState === 'enterNumber'
+                ? 'Enter your Aadhar number to receive an OTP.'
+                : aadharLoginState === 'enterOtp'
+                ? 'Verify your Aadhar OTP to login.'
+                : 'Securely cast your vote. One person, one vote.'}
             </p>
           </CardHeader>
           <CardContent>
-            {isAadharLogin ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="aadhar-otp">Enter OTP</Label>
-                  <div className="relative">
-                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="aadhar-otp"
-                      type="number"
-                      placeholder="6-digit OTP"
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-                <Button
-                  onClick={handleVerifyAadharOtp}
-                  className="w-full"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting && loginMethod === "aadhar"
-                    ? "Verifying..."
-                    : "Verify & Login"}
-                </Button>
-                <Button
-                  variant="link"
-                  className="w-full"
-                  onClick={() => setIsAadharLogin(false)}
-                >
-                  Cancel Aadhar Login
-                </Button>
-              </div>
-            ) : (
+            {aadharLoginState === 'none' ? (
               <>
                 <Form {...form}>
                   <form
@@ -224,7 +204,7 @@ export default function LoginPage() {
                   <Button
                     variant="outline"
                     className="w-full"
-                    onClick={handleAadharLogin}
+                    onClick={handleAadharLoginClick}
                     disabled={isSubmitting}
                   >
                     <Fingerprint className="mr-2 h-4 w-4" />
@@ -241,6 +221,53 @@ export default function LoginPage() {
                   </Link>
                 </p>
               </>
+            ) : aadharLoginState === 'enterNumber' ? (
+                <div className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="aadhar-number">Aadhar Number</Label>
+                        <div className="relative">
+                            <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input id="aadhar-number" type="number" placeholder="Enter 12-digit Aadhar" className="pl-10" />
+                        </div>
+                    </div>
+                    <Button onClick={handleSendAadharOtp} className="w-full" disabled={isSubmitting}>
+                        {isSubmitting ? "Sending OTP..." : "Send OTP"}
+                    </Button>
+                    <Button variant="link" className="w-full" onClick={() => setAadharLoginState('none')}>
+                        Cancel
+                    </Button>
+                </div>
+            ) : ( // aadharLoginState === 'enterOtp'
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="aadhar-otp">Enter OTP</Label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="aadhar-otp"
+                      type="number"
+                      placeholder="6-digit OTP"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={handleVerifyAadharOtp}
+                  className="w-full"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting && loginMethod === "aadhar"
+                    ? "Verifying..."
+                    : "Verify & Login"}
+                </Button>
+                <Button
+                  variant="link"
+                  className="w-full"
+                  onClick={() => setAadharLoginState('none')}
+                >
+                  Cancel
+                </Button>
+              </div>
             )}
           </CardContent>
         </Card>
