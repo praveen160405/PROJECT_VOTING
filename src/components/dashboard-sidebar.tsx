@@ -31,7 +31,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth, useUser, useDoc, useFirestore } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase/provider";
+import { useUser } from "@/firebase/auth/use-user";
+import { useDoc } from "@/firebase/firestore/use-doc";
 import { signOut } from "firebase/auth";
 import { doc } from "firebase/firestore";
 import type { User } from "@/lib/types";

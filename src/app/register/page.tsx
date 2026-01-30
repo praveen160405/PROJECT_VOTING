@@ -39,7 +39,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { useAuth, useFirestore } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase/provider";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 

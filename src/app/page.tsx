@@ -31,7 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { useAuth } from "@/firebase";
+import { useAuth } from "@/firebase/provider";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 const formSchema = z.object({

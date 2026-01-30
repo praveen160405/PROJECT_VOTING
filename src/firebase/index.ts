@@ -15,8 +15,4 @@ export const initializeFirebase = (): FirebaseServices => {
     return { app, auth, firestore };
 }
 
-export * from './provider';
-export * from './auth/use-user';
-export * from './firestore/use-collection';
-export * from './firestore/use-doc';
 export type { FirebaseServices };

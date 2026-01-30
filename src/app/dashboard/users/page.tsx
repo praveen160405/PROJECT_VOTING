@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useCollection, useFirestore } from "@/firebase";
+import { useFirestore } from "@/firebase/provider";
+import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection } from "firebase/firestore";
 import type { User } from "@/lib/types";
 

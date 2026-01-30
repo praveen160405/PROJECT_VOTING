@@ -50,7 +50,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useFirestore, useCollection } from "@/firebase";
+import { useFirestore } from "@/firebase/provider";
+import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, doc, updateDoc, deleteDoc } from "firebase/firestore";
 
 export default function AdminPage() {
