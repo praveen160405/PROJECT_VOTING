@@ -22,7 +22,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { Candidate } from "@/lib/types";
+import type { Candidate, Vote } from "@/lib/types";
 import { useWeb3 } from "@/app/providers";
 import { votingContractAddress, votingContractABI } from "@/lib/contract";
 
@@ -154,6 +154,18 @@ export default function VotePage() {
       const tx = await contract.vote(candidateIdNumber);
       await tx.wait(); // Wait for the transaction to be mined
 
+      // Also save to localStorage for the ledger simulation
+      const newVote: Vote = {
+        id: tx.hash,
+        userId: address,
+        candidateId: candidate.id,
+        votedAt: new Date().toISOString(),
+      };
+      const storedVotesJSON = localStorage.getItem("verityvote_votes");
+      const votes: Vote[] = storedVotesJSON ? JSON.parse(storedVotesJSON) : [];
+      votes.push(newVote);
+      localStorage.setItem("verityvote_votes", JSON.stringify(votes));
+
       setVotedCandidate(candidate);
       toast({
         title: "Vote Submitted to Blockchain!",
@@ -266,5 +278,3 @@ export default function VotePage() {
     </div>
   );
 }
-
-    
