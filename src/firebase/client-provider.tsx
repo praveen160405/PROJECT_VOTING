@@ -1,9 +1,22 @@
 "use client";
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 
-// This provider is no longer necessary due to a simplified Firebase initialization.
-// It is kept in the project to avoid breaking the file structure, but it no longer provides any context.
-export function FirebaseClientProvider({ children }: { children: React.ReactNode }) {
+export function FirebaseClientProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // only render children on client
+  if (!isMounted) {
+    return null;
+  }
+
   return <>{children}</>;
 }

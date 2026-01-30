@@ -39,7 +39,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { auth, firestore } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
@@ -67,6 +67,9 @@ export default function RegisterPage() {
 
   const router = useRouter();
   const { toast } = useToast();
+
+  const auth = useAuth();
+  const firestore = useFirestore();
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -151,6 +154,17 @@ export default function RegisterPage() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
+
+    if (!auth || !firestore) {
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: "Firebase services are not available. Please try again later.",
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       // 1. Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
@@ -160,7 +174,7 @@ export default function RegisterPage() {
       );
       const user = userCredential.user;
 
-      // 2. Create user document in Firestore to be displayed in the 'Users' section
+      // 2. Create user document in Firestore
       const userDocRef = doc(firestore, "users", user.uid);
       await setDoc(userDocRef, {
         fullName: values.fullName,

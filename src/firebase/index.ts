@@ -1,6 +1,6 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { FirebaseApp, initializeApp, getApps, getApp } from 'firebase/app';
+import { Auth, getAuth } from 'firebase/auth';
+import { Firestore, getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
   apiKey: "AIzaSyAA7tZTnalUv4OCAsU_wMe6WGlsMdSMiEU",
@@ -11,10 +11,28 @@ const firebaseConfig = {
   appId: "1:881712555776:web:3fe086790944534dbfb5e5",
 };
 
-const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-export const auth: Auth = getAuth(app);
-export const firestore: Firestore = getFirestore(app);
+type FirebaseServices = {
+    app: FirebaseApp;
+    auth: Auth;
+    firestore: Firestore;
+};
 
+let firebaseServices: FirebaseServices | null = null;
+
+export const initializeFirebase = (): FirebaseServices => {
+    if (firebaseServices) {
+        return firebaseServices;
+    }
+    
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const firestore = getFirestore(app);
+
+    firebaseServices = { app, auth, firestore };
+    return firebaseServices;
+}
+
+export * from './provider';
 export * from './auth/use-user';
 export * from './firestore/use-collection';
 export * from './firestore/use-doc';

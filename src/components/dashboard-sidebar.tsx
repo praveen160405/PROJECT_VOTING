@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useMemo } from "react";
 import {
   Sidebar,
   SidebarHeader,
@@ -30,7 +31,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { auth, firestore, useUser, useDoc } from "@/firebase";
+import { useAuth, useUser, useDoc, useFirestore } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { doc } from "firebase/firestore";
 import type { User } from "@/lib/types";
@@ -40,14 +41,21 @@ export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
+  const auth = useAuth();
+  const firestore = useFirestore();
   const { user: authUser, loading: authLoading } = useUser();
   
-  const userDocRef = authUser ? doc(firestore, "users", authUser.uid) : null;
+  const userDocRef = useMemo(() => {
+    if (!authUser || !firestore) return null;
+    return doc(firestore, "users", authUser.uid);
+  }, [authUser, firestore]);
+  
   const { data: userProfile, loading: profileLoading } = useDoc<User>(userDocRef);
 
   const loading = authLoading || profileLoading;
 
   const handleLogout = async () => {
+    if (!auth) return;
     await signOut(auth);
     router.push('/');
   };

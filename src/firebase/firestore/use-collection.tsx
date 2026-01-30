@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { onSnapshot, query, collection, where, getDocs, Query, DocumentData } from 'firebase/firestore';
+import { onSnapshot, getDocs, Query, DocumentData } from 'firebase/firestore';
 
 interface UseCollectionOptions {
   live?: boolean;
@@ -55,7 +55,10 @@ export function useCollection<T>(
     );
 
     return () => unsubscribe();
-  }, [JSON.stringify(q), options.live]); // Simple serialization for dependency array
+    // Using JSON.stringify on the query is a simple way to create a dependency,
+    // but it might not be perfectly stable for complex queries.
+    // For more robust scenarios, consider a library that serializes Firestore queries.
+  }, [q ? JSON.stringify(q) : null, options.live]);
 
   return { data, loading, error };
 }

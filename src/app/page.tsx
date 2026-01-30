@@ -31,7 +31,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { auth } from "@/firebase";
+import { useAuth } from "@/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 const formSchema = z.object({
@@ -46,6 +46,7 @@ export default function LoginPage() {
   const [aadharLoginState, setAadharLoginState] = useState<'none' | 'enterNumber' | 'enterOtp'>('none');
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,6 +60,8 @@ export default function LoginPage() {
     setIsSubmitting(true);
     setLoginMethod("form");
     
+    if (!auth) return;
+
     try {
       await signInWithEmailAndPassword(auth, values.voterId, values.password);
       toast({
@@ -119,7 +122,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     setLoginMethod("metamask");
 
-    if (typeof window.ethereum === 'undefined') {
+    if (typeof (window as any).ethereum === 'undefined') {
         toast({
             variant: "destructive",
             title: "MetaMask Not Found",
@@ -131,7 +134,7 @@ export default function LoginPage() {
     }
 
     try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await (window as any).ethereum.request({ method: 'eth_requestAccounts' });
         if (accounts && accounts.length > 0) {
             toast({
                 title: "MetaMask Connected",
@@ -196,7 +199,7 @@ export default function LoginPage() {
                       name="voterId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Voter ID</FormLabel>
+                          <FormLabel>Voter ID (Email)</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
