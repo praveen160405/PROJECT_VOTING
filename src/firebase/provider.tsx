@@ -14,7 +14,7 @@ export function FirebaseProvider({
   services,
 }: {
   children: React.ReactNode;
-  services: FirebaseServices;
+  services: FirebaseServices | null;
 }) {
   return (
     <FirebaseContext.Provider value={services}>

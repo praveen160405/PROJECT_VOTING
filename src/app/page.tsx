@@ -60,7 +60,16 @@ export default function LoginPage() {
     setIsSubmitting(true);
     setLoginMethod("form");
     
-    if (!auth) return;
+    if (!auth) {
+        toast({
+            variant: "destructive",
+            title: "Initialization Error",
+            description: "Authentication service is not ready. Please wait a moment and try again.",
+        });
+        setIsSubmitting(false);
+        setLoginMethod(null);
+        return;
+    }
 
     try {
       await signInWithEmailAndPassword(auth, values.voterId, values.password);
@@ -251,10 +260,12 @@ export default function LoginPage() {
                     <Button
                       type="submit"
                       className="w-full"
-                      disabled={isSubmitting}
+                      disabled={isSubmitting || !auth}
                     >
                       {isSubmitting && loginMethod === "form"
                         ? "Signing In..."
+                        : !auth
+                        ? "Initializing..."
                         : "Sign In"}
                     </Button>
                   </form>
@@ -265,7 +276,7 @@ export default function LoginPage() {
                     variant="outline"
                     className="w-full"
                     onClick={handleMetamaskLogin}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !auth}
                   >
                     {isSubmitting && loginMethod === "metamask" ? (
                         "Connecting..."
@@ -280,7 +291,7 @@ export default function LoginPage() {
                     variant="outline"
                     className="w-full"
                     onClick={handleAadharLoginClick}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || !auth}
                   >
                     <Fingerprint className="mr-2 h-4 w-4" />
                     Login with Aadhar

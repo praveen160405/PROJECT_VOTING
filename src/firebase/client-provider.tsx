@@ -14,16 +14,8 @@ export function FirebaseClientProvider({
 
   useEffect(() => {
     // This effect runs only on the client, after the component mounts.
-    if (typeof window !== "undefined") {
-      setServices(initializeFirebase());
-    }
+    setServices(initializeFirebase());
   }, []);
-
-  if (!services) {
-    // Returning null will render nothing until Firebase is initialized.
-    // You could also render a loading spinner here.
-    return null;
-  }
 
   return <FirebaseProvider services={services}>{children}</FirebaseProvider>;
 }
