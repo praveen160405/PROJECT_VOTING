@@ -31,9 +31,11 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
+import { useAuth } from "@/firebase";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 const formSchema = z.object({
-  voterId: z.string().min(1, { message: "Voter ID is required." }),
+  voterId: z.string().email({ message: "Please enter a valid email." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
 
@@ -44,6 +46,7 @@ export default function LoginPage() {
   const [aadharLoginState, setAadharLoginState] = useState<'none' | 'enterNumber' | 'enterOtp'>('none');
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,21 +56,28 @@ export default function LoginPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     setLoginMethod("form");
-    console.log(values);
-
-    // Simulate API call
-    setTimeout(() => {
+    
+    try {
+      await signInWithEmailAndPassword(auth, values.voterId, values.password);
       toast({
         title: "Login Successful",
-        description: "Redirecting to the voting booth...",
+        description: "Redirecting to your dashboard...",
       });
-      router.push("/dashboard/vote");
+      router.push("/dashboard");
+    } catch (error: any) {
+      console.error("Firebase Login Error: ", error);
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: error.message || "An unexpected error occurred.",
+      });
+    } finally {
       setIsSubmitting(false);
       setLoginMethod(null);
-    }, 1500);
+    }
   }
 
   function handleAadharLoginClick() {
@@ -187,12 +197,12 @@ export default function LoginPage() {
                       name="voterId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Voter ID</FormLabel>
+                          <FormLabel>Voter ID (Email)</FormLabel>
                           <FormControl>
                             <div className="relative">
                               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                               <Input
-                                placeholder="Enter your Voter ID"
+                                placeholder="Enter your email"
                                 {...field}
                                 className="pl-10"
                               />

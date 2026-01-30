@@ -39,11 +39,14 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
+import { useAuth, useFirestore } from "@/firebase";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const formSchema = z
   .object({
     fullName: z.string().min(1, "Full name is required."),
-    voterId: z.string().min(1, "Voter ID is required."),
+    voterId: z.string().email("Please enter a valid email."),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string(),
     idProof: z.any().optional(),
@@ -64,6 +67,8 @@ export default function RegisterPage() {
 
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
+  const firestore = useFirestore();
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -149,18 +154,44 @@ export default function RegisterPage() {
     }
   };
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    console.log(values);
-    // Simulate API call for registration
-    setTimeout(() => {
+    try {
+      // 1. Create user in Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        values.voterId,
+        values.password
+      );
+      const user = userCredential.user;
+
+      // 2. Create user document in Firestore
+      const userDocRef = doc(firestore, "users", user.uid);
+      await setDoc(userDocRef, {
+        name: values.fullName,
+        voterId: values.voterId,
+        isVerified: false,
+        registeredAt: serverTimestamp(),
+      });
+      
+      // TODO: Upload ID proof and face image to Firebase Storage
+
       toast({
         title: "Registration Successful",
-        description: "Please check your email for verification.",
+        description: "Your account has been created. Please sign in.",
       });
       router.push("/");
+
+    } catch (error: any) {
+      console.error("Firebase Registration Error: ", error);
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: error.message || "An unexpected error occurred.",
+      });
+    } finally {
       setIsSubmitting(false);
-    }, 1500);
+    }
   }
 
   return (
@@ -204,11 +235,11 @@ export default function RegisterPage() {
                   name="voterId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Voter ID</FormLabel>
+                      <FormLabel>Voter ID (Email)</FormLabel>
                       <FormControl>
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Enter your Voter ID" {...field} className="pl-10"/>
+                            <Input placeholder="Enter your email address" {...field} className="pl-10"/>
                         </div>
                       </FormControl>
                       <FormMessage />

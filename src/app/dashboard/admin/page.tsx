@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { voters as initialVoters, candidates as initialCandidates } from "@/lib/data";
+import { candidates as initialCandidates } from "@/lib/data";
 import { Check, X, Play, Square, PlusCircle, Pencil, Trash2 } from "lucide-react";
 import {
   Dialog,
@@ -50,13 +50,17 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-
+import { useAuth, useFirestore, useCollection } from "@/firebase";
+import { collection, doc, updateDoc, deleteDoc } from "firebase/firestore";
 
 export default function AdminPage() {
   const { toast } = useToast();
   const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
-  const [voters, setVoters] = useState<User[]>(initialVoters);
   const [electionStatus, setElectionStatus] = useState<"Not Started" | "Live" | "Ended">("Not Started");
+
+  const firestore = useFirestore();
+  const votersCollection = collection(firestore, 'users');
+  const { data: voters, loading, error } = useCollection<User>(votersCollection);
 
   const [newCandidateName, setNewCandidateName] = useState("");
   const [newCandidateParty, setNewCandidateParty] = useState("");
@@ -66,7 +70,7 @@ export default function AdminPage() {
 
   const [candidateToRemove, setCandidateToRemove] = useState<Candidate | null>(null);
   const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
-
+  
   const handleAddCandidate = () => {
     if (!newCandidateName || !newCandidateParty) {
       toast({
@@ -129,25 +133,45 @@ export default function AdminPage() {
     setCandidateToRemove(null);
   };
 
-  const handleVerifyVoter = (voterId: string) => {
-    setVoters(voters.map(v => v.id === voterId ? { ...v, isVerified: true } : v));
-    const voter = voters.find(v => v.id === voterId);
-    if (voter) {
-        toast({
-            title: "Voter Verified",
-            description: `${voter.name} has been successfully verified.`
-        });
+  const handleVerifyVoter = async (voterId: string) => {
+    const voterRef = doc(firestore, 'users', voterId);
+    try {
+      await updateDoc(voterRef, { isVerified: true });
+      const voter = voters?.find(v => v.id === voterId);
+      if (voter) {
+          toast({
+              title: "Voter Verified",
+              description: `${voter.name} has been successfully verified.`
+          });
+      }
+    } catch (error) {
+      console.error("Error verifying voter: ", error);
+      toast({
+        variant: "destructive",
+        title: "Verification Failed",
+        description: "Could not update voter status.",
+      });
     }
   };
 
-  const handleRejectVoter = (voterId: string) => {
-    const voter = voters.find(v => v.id === voterId);
-    setVoters(voters.filter(v => v.id !== voterId));
-    if (voter) {
+  const handleRejectVoter = async (voterId: string) => {
+    const voter = voters?.find(v => v.id === voterId);
+    const voterRef = doc(firestore, 'users', voterId);
+    try {
+      await deleteDoc(voterRef);
+      if (voter) {
+          toast({
+              variant: "destructive",
+              title: "Voter Rejected",
+              description: `${voter.name} has been rejected and removed.`
+          });
+      }
+    } catch (error) {
+        console.error("Error rejecting voter: ", error);
         toast({
             variant: "destructive",
-            title: "Voter Rejected",
-            description: `${voter.name} has been rejected and removed.`
+            title: "Rejection Failed",
+            description: "Could not remove voter.",
         });
     }
   };
@@ -205,11 +229,13 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {voters.map((voter) => (
+                    {loading && <TableRow><TableCell colSpan={5} className="text-center">Loading...</TableCell></TableRow>}
+                    {error && <TableRow><TableCell colSpan={5} className="text-center text-destructive">Error loading voters.</TableCell></TableRow>}
+                    {voters && voters.map((voter) => (
                       <TableRow key={voter.id}>
                         <TableCell className="font-medium">{voter.name}</TableCell>
                         <TableCell>{voter.voterId}</TableCell>
-                        <TableCell>{voter.registeredAt}</TableCell>
+                        <TableCell>{new Date(voter.registeredAt).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <Badge
                             variant={

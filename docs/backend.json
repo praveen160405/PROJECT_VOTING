@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's profile in the application.",
+      "type": "object",
+      "properties": {
+        "fullName": {
+          "type": "string",
+          "description": "The user's full name."
+        },
+        "voterId": {
+          "type": "string",
+          "description": "The user's voter ID, used as their email for login."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The timestamp when the user registered."
+        },
+        "isVerified": {
+          "type": "boolean",
+          "description": "Whether the user's identity has been verified by an admin."
+        }
+      },
+      "required": ["fullName", "voterId", "createdAt", "isVerified"]
+    }
+  },
+  "auth": {
+    "providers": ["email_password"]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Stores user profile information, keyed by their Firebase Auth UID."
+    }
+  }
+}

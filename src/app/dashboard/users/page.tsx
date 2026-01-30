@@ -16,10 +16,16 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { voters } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { useCollection, useFirestore } from "@/firebase";
+import { collection } from "firebase/firestore";
+import type { User } from "@/lib/types";
 
 export default function UsersPage() {
+  const firestore = useFirestore();
+  const usersCollection = collection(firestore, 'users');
+  const { data: users, loading, error } = useCollection<User>(usersCollection);
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -32,7 +38,7 @@ export default function UsersPage() {
         <CardHeader>
           <CardTitle>User Database</CardTitle>
           <CardDescription>
-            Browse and manage registered users.
+            Browse and manage registered users from the Firestore database.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -40,17 +46,31 @@ export default function UsersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Voter ID</TableHead>
+                <TableHead>Voter ID (Email)</TableHead>
                 <TableHead>Registered At</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {voters.map((user) => (
+              {loading && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center">
+                    Loading users...
+                  </TableCell>
+                </TableRow>
+              )}
+              {error && (
+                <TableRow>
+                  <TableCell colSpan={4} className="text-center text-destructive">
+                    Error loading users: {error.message}
+                  </TableCell>
+                </TableRow>
+              )}
+              {users && users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.voterId}</TableCell>
-                  <TableCell>{user.registeredAt}</TableCell>
+                  <TableCell>{new Date(user.registeredAt).toLocaleDateString()}</TableCell>
                   <TableCell>
                     <Badge
                       variant={user.isVerified ? "default" : "secondary"}
