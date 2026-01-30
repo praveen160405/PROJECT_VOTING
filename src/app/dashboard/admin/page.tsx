@@ -54,7 +54,7 @@ import { cn } from "@/lib/utils";
 export default function AdminPage() {
   const { toast } = useToast();
   const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
-  const [voters, setVoters] = useState<User[]>(initialUsers);
+  const [voters, setVoters] = useState<User[]>([]);
   const [electionStatus, setElectionStatus] = useState<"Not Started" | "Live" | "Ended">("Not Started");
 
   const [newCandidateName, setNewCandidateName] = useState("");
@@ -71,6 +71,7 @@ export default function AdminPage() {
     if (storedUsers) {
       setVoters(JSON.parse(storedUsers));
     } else {
+      setVoters(initialUsers);
       localStorage.setItem("verityvote_users", JSON.stringify(initialUsers));
     }
   }, []);

@@ -21,13 +21,14 @@ import { initialUsers } from "@/lib/data";
 import type { User } from "@/lib/types";
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
 
   useEffect(() => {
     const storedUsers = localStorage.getItem("verityvote_users");
     if (storedUsers) {
       setUsers(JSON.parse(storedUsers));
     } else {
+      setUsers(initialUsers);
       localStorage.setItem("verityvote_users", JSON.stringify(initialUsers));
     }
   }, []);
