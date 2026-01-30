@@ -1,19 +1,10 @@
 "use client";
 
 import { createContext, useContext, ReactNode } from 'react';
-import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyDF18uonLy32TMh3-s6qPS26TOL7k3aHDo",
-  authDomain: "verity-vote-e-voting.firebaseapp.com",
-  projectId: "verity-vote-e-voting",
-  storageBucket: "verity-vote-e-voting.appspot.com",
-  messagingSenderId: "574880499259",
-  appId: "1:574880499259:web:9643a6bed713833d7b878f",
-  measurementId: "G-9XG5YE7L04"
-};
+import { auth, firestore, app } from './client'; // Import the singletons
+import type { Auth } from 'firebase/auth';
+import type { Firestore } from 'firebase/firestore';
+import type { FirebaseApp } from 'firebase/app';
 
 interface FirebaseContextValue {
     auth: Auth;
@@ -21,15 +12,14 @@ interface FirebaseContextValue {
     app: FirebaseApp;
 }
 
-// Initialize Firebase globally, once.
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const auth = getAuth(app);
-const firestore = getFirestore(app);
+// The services are already initialized in client.ts
 const services: FirebaseContextValue = { auth, firestore, app };
 
 const FirebaseContext = createContext<FirebaseContextValue | null>(services);
 
 export function FirebaseProvider({ children }: { children: ReactNode }) {
+    // The provider now just passes down the pre-initialized services.
+    // No useState, no useEffect.
     return (
         <FirebaseContext.Provider value={services}>
             {children}
@@ -40,6 +30,7 @@ export function FirebaseProvider({ children }: { children: ReactNode }) {
 export const useFirebase = () => {
     const context = useContext(FirebaseContext);
     if (context === undefined || context === null) {
+        // This should theoretically never be thrown if the provider is at the root.
         throw new Error('useFirebase must be used within a FirebaseProvider');
     }
     return context;
