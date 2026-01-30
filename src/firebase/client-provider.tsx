@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { FirebaseProvider } from "./provider";
-import { initializeFirebase, type FirebaseServices } from "./index";
+import { initializeFirebase } from "./index";
+import type { FirebaseServices } from './types';
 
 // This component ensures that Firebase is initialized only on the client side.
 export function FirebaseClientProvider({
