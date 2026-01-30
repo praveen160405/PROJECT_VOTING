@@ -2,16 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { voteResults, partyVotes, candidates } from "@/lib/data";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { candidates, initialUsers } from "@/lib/data";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Vote } from "@/lib/types";
+import type { Vote, VoteResult, PartyVote, User } from "@/lib/types";
 
 const chartConfig = {
   votes: {
@@ -41,86 +37,63 @@ const chartConfig = {
 } satisfies ChartConfig;
 
 
-function AdminLogin({ onLoginSuccess }: { onLoginSuccess: () => void }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-
-  const handleLogin = () => {
-    setIsSubmitting(true);
-    // Simulate API call for login
-    setTimeout(() => {
-      if (username === 'admin' && password === 'password') {
-        toast({
-          title: "Login Successful",
-          description: "Viewing election results.",
-        });
-        onLoginSuccess();
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Login Failed",
-          description: "Invalid username or password.",
-        });
-        setIsSubmitting(false);
-      }
-    }, 1000);
-  };
-
-  return (
-    <div className="flex items-center justify-center h-[calc(100vh-10rem)]">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle className="text-2xl">Admin Access</CardTitle>
-          <CardDescription>
-            Enter your credentials to view the results.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="username">Username</Label>
-            <Input
-              id="username"
-              type="text"
-              placeholder="admin"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-            />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              placeholder="password" 
-              required 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button className="w-full" onClick={handleLogin} disabled={isSubmitting}>
-            {isSubmitting ? "Signing In..." : "Sign In"}
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
-  );
-}
-
-
 export default function ResultsPage() {
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [ledgerVotes, setLedgerVotes] = useState<Vote[]>([]);
+  const [voteResults, setVoteResults] = useState<VoteResult[]>([]);
+  const [partyVotes, setPartyVotes] = useState<PartyVote[]>([]);
+  const [totalVotes, setTotalVotes] = useState(0);
+  const [registeredVoters, setRegisteredVoters] = useState(0);
 
   useEffect(() => {
+    // This effect runs on the client after hydration
     const storedVotesJSON = localStorage.getItem("verityvote_votes");
-    if (storedVotesJSON) {
-      setLedgerVotes(JSON.parse(storedVotesJSON));
-    }
+    const votes: Vote[] = storedVotesJSON ? JSON.parse(storedVotesJSON) : [];
+    setLedgerVotes(votes);
+
+    // Calculate vote results per candidate
+    const candidateResults: { [key: string]: number } = {};
+    candidates.forEach(c => (candidateResults[c.name] = 0));
+
+    votes.forEach(vote => {
+      const candidate = candidates.find(c => c.id === vote.candidateId);
+      if (candidate) {
+        candidateResults[candidate.name]++;
+      }
+    });
+
+    const voteResultsData: VoteResult[] = Object.entries(candidateResults).map(
+      ([name, votes]) => ({ name, votes })
+    );
+    setVoteResults(voteResultsData);
+
+    // Calculate vote results per party
+    const partyResults: { [key: string]: number } = {};
+    candidates.forEach(c => {
+      // Assuming candidate name is the party for chart key purposes
+      if (!partyResults[c.name]) {
+        partyResults[c.name] = 0;
+      }
+    });
+
+    votes.forEach(vote => {
+      const candidate = candidates.find(c => c.id === vote.candidateId);
+      if (candidate) {
+        partyResults[candidate.name]++;
+      }
+    });
+
+    const partyVotesData: PartyVote[] = Object.entries(partyResults).map(
+      ([party, votes]) => ({ party, votes })
+    );
+    setPartyVotes(partyVotesData);
+
+
+    setTotalVotes(votes.length);
+
+    const storedUsersJSON = localStorage.getItem("verityvote_users");
+    const users: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : initialUsers;
+    setRegisteredVoters(users.length);
+
   }, []);
 
   const getCandidateNameById = (id: string) => {
@@ -128,16 +101,13 @@ export default function ResultsPage() {
     return candidate ? candidate.name : "Unknown Candidate";
   };
 
-
-  if (!isAdminAuthenticated) {
-    return <AdminLogin onLoginSuccess={() => setIsAdminAuthenticated(true)} />;
-  }
+  const turnout = registeredVoters > 0 ? (totalVotes / registeredVoters) * 100 : 0;
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Election Results</h1>
-        <p className="text-muted-foreground">Live and transparent vote counts powered by the blockchain.</p>
+        <p className="text-muted-foreground">Live and transparent vote counts.</p>
       </div>
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="col-span-2">
@@ -146,11 +116,12 @@ export default function ResultsPage() {
             <CardDescription>Total votes received by each candidate.</CardDescription>
           </CardHeader>
           <CardContent>
+            {totalVotes > 0 ? (
             <ChartContainer config={chartConfig} className="h-[400px] w-full">
               <BarChart accessibilityLayer data={voteResults}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                 <ChartTooltip
                   cursor={{ fill: 'hsl(var(--muted))' }}
                   content={<ChartTooltipContent />}
@@ -158,6 +129,7 @@ export default function ResultsPage() {
                 <Bar dataKey="votes" fill="var(--color-votes)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
+            ) : (<div className="h-[400px] w-full flex items-center justify-center text-muted-foreground">No votes have been cast yet.</div>)}
           </CardContent>
         </Card>
         <Card>
@@ -166,6 +138,7 @@ export default function ResultsPage() {
             <CardDescription>Share of votes for each political party.</CardDescription>
           </CardHeader>
           <CardContent>
+            {totalVotes > 0 ? (
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
               <PieChart accessibilityLayer>
                 <ChartTooltip
@@ -188,6 +161,7 @@ export default function ResultsPage() {
                 </Pie>
               </PieChart>
             </ChartContainer>
+            ) : (<div className="h-[300px] w-full flex items-center justify-center text-muted-foreground">No votes have been cast yet.</div>)}
           </CardContent>
         </Card>
         <Card>
@@ -199,22 +173,17 @@ export default function ResultsPage() {
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Total Votes Cast</span>
               <span className="font-semibold">
-                {voteResults.reduce((acc, curr) => acc + curr.votes, 0).toLocaleString()}
+                {totalVotes.toLocaleString()}
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Registered Voters</span>
-              <span className="font-semibold">25,830</span>
+              <span className="font-semibold">{registeredVoters.toLocaleString()}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">Voter Turnout</span>
               <span className="font-semibold">
-                {(
-                  (voteResults.reduce((acc, curr) => acc + curr.votes, 0) /
-                    25830) *
-                  100
-                ).toFixed(2)}
-                %
+                {turnout.toFixed(2)}%
               </span>
             </div>
             <div className="flex items-center justify-between">
