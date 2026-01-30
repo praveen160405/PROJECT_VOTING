@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useMemo } from "react";
 import {
   Sidebar,
   SidebarHeader,
@@ -12,9 +11,8 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Vote,
   Users,
@@ -31,35 +29,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useFirebase } from "@/firebase/provider";
-import { useUser } from "@/firebase/auth/use-user";
-import { useDoc } from "@/firebase/firestore/use-doc";
-import { signOut } from "firebase/auth";
-import { doc } from "firebase/firestore";
-import type { User } from "@/lib/types";
 
+const userProfile = {
+    fullName: "Admin User",
+    voterId: "123456",
+};
 
 export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const firebase = useFirebase();
-  const auth = firebase?.auth;
-  const firestore = firebase?.firestore;
-
-  const { user: authUser, loading: authLoading } = useUser();
-  
-  const userDocRef = useMemo(() => {
-    if (!authUser || !firestore) return null;
-    return doc(firestore, "users", authUser.uid);
-  }, [authUser, firestore]);
-  
-  const { data: userProfile, loading: profileLoading } = useDoc<User>(userDocRef);
-
-  const loading = authLoading || profileLoading;
 
   const handleLogout = async () => {
-    if (!auth) return;
-    await signOut(auth);
     router.push('/');
   };
 
@@ -105,27 +85,17 @@ export function DashboardSidebar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex w-full items-center gap-3 rounded-md p-2 text-left text-sm transition-colors hover:bg-sidebar-accent">
-              {loading ? (
-                 <>
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <div className="flex-1 space-y-1">
-                    <Skeleton className="h-4 w-24 rounded-md" />
-                    <Skeleton className="h-3 w-20 rounded-md" />
-                  </div>
-                 </>
-              ) : (
-                <>
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>
-                      {userProfile ? getInitials(userProfile.fullName) : '??'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 truncate">
-                    <p className="font-medium">{userProfile?.fullName || "Anonymous"}</p>
-                    <p className="text-xs text-muted-foreground">{userProfile?.voterId || "Not logged in"}</p>
-                  </div>
-                </>
-              )}
+              <>
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>
+                    {getInitials(userProfile.fullName)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 truncate">
+                  <p className="font-medium">{userProfile.fullName}</p>
+                  <p className="text-xs text-muted-foreground">{userProfile.voterId}</p>
+                </div>
+              </>
               <ChevronUp className="h-4 w-4 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
@@ -135,7 +105,7 @@ export function DashboardSidebar() {
             <DropdownMenuItem disabled>Profile</DropdownMenuItem>
             <DropdownMenuItem disabled>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive focus:bg-destructive/10" disabled={!auth}>
+            <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive focus:bg-destructive/10">
               <LogOut className="mr-2 h-4 w-4" />
               <span>Log out</span>
             </DropdownMenuItem>

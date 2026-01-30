@@ -39,9 +39,6 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { useFirebase } from "@/firebase/provider";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 
 const formSchema = z
   .object({
@@ -67,9 +64,6 @@ export default function RegisterPage() {
 
   const router = useRouter();
   const { toast } = useToast();
-  const firebase = useFirebase();
-  const auth = firebase?.auth;
-  const firestore = firebase?.firestore;
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -153,55 +147,17 @@ export default function RegisterPage() {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!auth || !firestore) {
-      toast({
-        variant: "destructive",
-        title: "Initialization Error",
-        description: "Firebase service is not ready. Please wait a moment and try again.",
-      });
-      return;
-    }
     setIsSubmitting(true);
 
-    try {
-      const emailForAuth = `${values.voterId}@verityvote.com`;
-      // 1. Create user in Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        emailForAuth,
-        values.password
-      );
-      const user = userCredential.user;
-
-      // 2. Create user document in Firestore
-      const userDocRef = doc(firestore, "users", user.uid);
-      await setDoc(userDocRef, {
-        fullName: values.fullName,
-        voterId: values.voterId,
-        isVerified: false,
-        createdAt: serverTimestamp(),
-      });
-      
-      // TODO: Upload ID proof and face image to Firebase Storage
-
+    // Simulate API call
+    setTimeout(() => {
       toast({
         title: "Registration Successful",
         description: "Your account has been created. Please sign in.",
       });
       router.push("/");
-
-    } catch (error: any) {
-      console.error("Firebase Registration Error: ", error);
-      toast({
-        variant: "destructive",
-        title: "Registration Failed",
-        description: error.code === 'auth/email-already-in-use'
-          ? "This Voter ID is already registered."
-          : error.message || "An unexpected error occurred. Please try again.",
-      });
-    } finally {
       setIsSubmitting(false);
-    }
+    }, 1500);
   }
 
   return (
@@ -351,8 +307,8 @@ export default function RegisterPage() {
                     </Button>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isSubmitting || !auth}>
-                  {isSubmitting ? "Registering..." : !auth ? "Initializing..." : "Register"}
+                <Button type="submit" className="w-full" disabled={isSubmitting}>
+                  {isSubmitting ? "Registering..." : "Register"}
                 </Button>
               </form>
             </Form>

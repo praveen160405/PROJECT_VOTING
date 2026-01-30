@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -17,22 +16,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { useFirebase } from "@/firebase/provider";
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { collection } from "firebase/firestore";
-import type { User } from "@/lib/types";
+import { initialUsers } from "@/lib/data";
 
 export default function UsersPage() {
-  const firebase = useFirebase();
-  const firestore = firebase?.firestore;
-  
-  const usersCollection = useMemo(() => {
-    if (!firestore) return null;
-    return collection(firestore, 'users');
-  }, [firestore]);
-  
-  const { data: users, loading, error } = useCollection<User>(usersCollection);
+  const users = initialUsers;
 
   return (
     <div className="flex flex-col gap-6">
@@ -46,7 +33,7 @@ export default function UsersPage() {
         <CardHeader>
           <CardTitle>User Database</CardTitle>
           <CardDescription>
-            Browse and manage registered users from the Firestore database.
+            Browse and manage registered users.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -54,32 +41,17 @@ export default function UsersPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
-                <TableHead>Voter ID (Email)</TableHead>
+                <TableHead>Voter ID</TableHead>
                 <TableHead>Registered At</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center">
-                    Loading users...
-                  </TableCell>
-                </TableRow>
-              )}
-               {!loading && !users && <TableRow><TableCell colSpan={4} className="text-center">Initializing...</TableCell></TableRow>}
-              {error && (
-                <TableRow>
-                  <TableCell colSpan={4} className="text-center text-destructive">
-                    Error loading users: {error.message}
-                  </TableCell>
-                </TableRow>
-              )}
-              {users && users.map((user) => (
+              {users.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.fullName}</TableCell>
                   <TableCell>{user.voterId}</TableCell>
-                  <TableCell>{user.createdAt?.toDate().toLocaleDateString() ?? 'Pending'}</TableCell>
+                  <TableCell>{user.createdAt?.toDate().toLocaleDateString() ?? 'N/A'}</TableCell>
                   <TableCell>
                     <Badge
                       variant={user.isVerified ? "default" : "secondary"}
