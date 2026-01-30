@@ -11,7 +11,7 @@
         },
         "voterId": {
           "type": "string",
-          "description": "The user's voter ID, used as their email for login."
+          "description": "The user's numeric voter ID. This is used as the login identifier."
         },
         "createdAt": {
           "type": "string",

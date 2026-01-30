@@ -9,7 +9,7 @@ import * as z from "zod";
 import { motion } from "framer-motion";
 import {
   Fingerprint,
-  Mail,
+  User,
   KeyRound,
   Eye,
   EyeOff,
@@ -35,7 +35,7 @@ import { auth } from "@/firebase/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 
 const formSchema = z.object({
-  voterId: z.string().email({ message: "Please enter a valid email." }),
+  voterId: z.string().regex(/^[0-9]+$/, { message: "Please enter a valid Voter ID." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
 
@@ -60,7 +60,8 @@ export default function LoginPage() {
     setLoginMethod("form");
     
     try {
-      await signInWithEmailAndPassword(auth, values.voterId, values.password);
+      const emailForAuth = `${values.voterId}@verityvote.com`;
+      await signInWithEmailAndPassword(auth, emailForAuth, values.password);
       toast({
         title: "Login Successful",
         description: "Redirecting to your dashboard...",
@@ -196,12 +197,12 @@ export default function LoginPage() {
                       name="voterId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Voter ID (Email)</FormLabel>
+                          <FormLabel>Voter ID</FormLabel>
                           <FormControl>
                             <div className="relative">
-                              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                               <Input
-                                placeholder="Enter your registered email"
+                                placeholder="Enter your Voter ID"
                                 {...field}
                                 className="pl-10"
                               />

@@ -9,7 +9,7 @@ import * as z from "zod";
 import { motion } from "framer-motion";
 import {
   User,
-  Mail,
+  Fingerprint,
   KeyRound,
   Upload,
   Camera,
@@ -46,7 +46,7 @@ import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 const formSchema = z
   .object({
     fullName: z.string().min(1, "Full name is required."),
-    voterId: z.string().email("Please enter a valid email."),
+    voterId: z.string().regex(/^[0-9]+$/, "Voter ID must be numeric"),
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string(),
     idProof: z.any().optional(),
@@ -153,10 +153,11 @@ export default function RegisterPage() {
     setIsSubmitting(true);
 
     try {
+      const emailForAuth = `${values.voterId}@verityvote.com`;
       // 1. Create user in Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
-        values.voterId,
+        emailForAuth,
         values.password
       );
       const user = userCredential.user;
@@ -231,11 +232,11 @@ export default function RegisterPage() {
                   name="voterId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Voter ID (must be a valid email)</FormLabel>
+                      <FormLabel>Voter ID</FormLabel>
                       <FormControl>
                         <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input placeholder="Enter your email address" {...field} className="pl-10"/>
+                            <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input placeholder="Enter your numeric Voter ID" {...field} className="pl-10"/>
                         </div>
                       </FormControl>
                       <FormMessage />
