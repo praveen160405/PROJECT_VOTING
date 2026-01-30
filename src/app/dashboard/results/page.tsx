@@ -46,18 +46,34 @@ export default function ResultsPage() {
   // This effect fetches live vote counts from the blockchain
   useEffect(() => {
     const fetchVoteCounts = async () => {
-      // Use the connected provider or a default read-only one
-      const readProvider = provider || getDefaultProvider();
       setIsLoading(true);
       setError(null);
+      
+      const setMockData = () => {
+        const mockResults: VoteResult[] = [
+          { name: 'DMK', votes: 150 },
+          { name: 'ADMK', votes: 120 },
+          { name: 'TVK', votes: 90 },
+          { name: 'NTK', votes: 75 },
+          { name: 'BJP', votes: 50 },
+        ];
+        const total = mockResults.reduce((sum, current) => sum + current.votes, 0);
+        setVoteResults(mockResults);
+        setPartyVotes(mockResults.map(r => ({ party: r.name, votes: r.votes })));
+        setTotalVotes(total);
+      };
+      
+      if (votingContractAddress === "0x0000000000000000000000000000000000000000") {
+          setError("The smart contract has not been deployed yet. Please deploy the contract and update the address in `src/lib/contract.ts`. Displaying mock data for now.");
+          setMockData();
+          setIsLoading(false);
+          return;
+      }
+      
       try {
+        // Use the connected provider or a default read-only one
+        const readProvider = provider || getDefaultProvider();
         const contract = new Contract(votingContractAddress, votingContractABI, readProvider);
-
-        if (votingContractAddress === "0x0000000000000000000000000000000000000000") {
-            setError("The smart contract has not been deployed yet. Please deploy the contract and update the address in `src/lib/contract.ts`. Displaying mock data.");
-            setIsLoading(false);
-            return;
-        }
 
         const resultsPromises = candidates.map(async (candidate) => {
           const id = parseInt(candidate.id.replace('c', ''), 10);
@@ -74,7 +90,8 @@ export default function ResultsPage() {
         
       } catch (err: any) {
         console.error("Failed to fetch vote counts from blockchain:", err);
-        setError("Could not fetch live results. Please ensure you are on the correct network and the contract address is correct.");
+        setError("Could not fetch live results. Please ensure you are on the correct network and the contract address is correct. Displaying mock data for now.");
+        setMockData();
       } finally {
         setIsLoading(false);
       }
@@ -105,9 +122,6 @@ export default function ResultsPage() {
   const renderChartContent = (chart: React.ReactNode, height: number) => {
     if (isLoading) {
       return <Skeleton className={`h-[${height}px] w-full`} />;
-    }
-    if (error) {
-      return <div className={`h-[${height}px] w-full flex items-center justify-center text-muted-foreground`}>{totalVotes > 0 ? chart : 'No votes have been cast yet.'}</div>;
     }
     if (totalVotes === 0) {
       return <div className={`h-[${height}px] w-full flex items-center justify-center text-muted-foreground`}>No votes have been cast yet.</div>;
