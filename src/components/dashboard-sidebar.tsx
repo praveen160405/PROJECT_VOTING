@@ -19,6 +19,7 @@ import {
   Shield,
   LogOut,
   ChevronUp,
+  BarChart,
 } from "lucide-react";
 import { Logo } from "./logo";
 import {
@@ -45,6 +46,7 @@ export function DashboardSidebar() {
 
   const menuItems = [
     { href: "/dashboard/vote", label: "Vote", icon: Vote },
+    { href: "/dashboard/results", label: "Results", icon: BarChart },
     { href: "/dashboard/users", label: "Users", icon: Users },
     { href: "/dashboard/admin", label: "Admin Panel", icon: Shield },
   ];
