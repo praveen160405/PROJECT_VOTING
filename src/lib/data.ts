@@ -1,47 +1,30 @@
 import type { Candidate, Voter, VoteResult, PartyVote } from "@/lib/types";
-import { PlaceHolderImages } from "@/lib/placeholder-images";
-
-const findImage = (id: string) => {
-    const image = PlaceHolderImages.find(img => img.id === id);
-    if (!image) {
-        return {
-            imageUrl: "https://picsum.photos/seed/placeholder/400/400",
-            imageHint: "placeholder image"
-        }
-    }
-    return { imageUrl: image.imageUrl, imageHint: image.imageHint };
-}
 
 export const candidates: Candidate[] = [
   {
     id: "c1",
-    name: "M.K. Stalin",
-    party: "Dravida Munnetra Kazhagam (DMK)",
-    ...findImage("candidate-1"),
+    name: "DMK",
+    party: "Dravida Munnetra Kazhagam",
   },
   {
     id: "c2",
-    name: "Edappadi K. Palaniswami",
-    party: "All India Anna Dravida Munnetra Kazhagam (ADMK)",
-    ...findImage("candidate-2"),
+    name: "ADMK",
+    party: "All India Anna Dravida Munnetra Kazhagam",
   },
   {
     id: "c3",
-    name: "Vijay",
-    party: "Tamizhaga Vetri Kazhagam (TVK)",
-    ...findImage("candidate-3"),
+    name: "TVK",
+    party: "Tamizhaga Vetri Kazhagam",
   },
   {
     id: "c4",
-    name: "Seeman",
-    party: "Naam Tamilar Katchi (NTK)",
-    ...findImage("candidate-4"),
+    name: "NTK",
+    party: "Naam Tamilar Katchi",
   },
   {
     id: "c5",
-    name: "K. Annamalai",
-    party: "Bharatiya Janata Party (BJP)",
-    ...findImage("candidate-5"),
+    name: "BJP",
+    party: "Bharatiya Janata Party",
   },
 ];
 
@@ -54,11 +37,11 @@ export const voters: Voter[] = [
 ];
 
 export const voteResults: VoteResult[] = [
-    { name: "M.K. Stalin", votes: 4850 },
-    { name: "Edappadi K. Palaniswami", votes: 3920 },
-    { name: "Vijay", votes: 6100 },
-    { name: "Seeman", votes: 2500 },
-    { name: "K. Annamalai", votes: 3200 },
+    { name: "DMK", votes: 4850 },
+    { name: "ADMK", votes: 3920 },
+    { name: "TVK", votes: 6100 },
+    { name: "NTK", votes: 2500 },
+    { name: "BJP", votes: 3200 },
 ];
 
 export const partyVotes: PartyVote[] = [

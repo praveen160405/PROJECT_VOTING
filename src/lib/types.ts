@@ -2,8 +2,8 @@ export type Candidate = {
   id: string;
   name: string;
   party: string;
-  imageUrl: string;
-  imageHint: string;
+  imageUrl?: string;
+  imageHint?: string;
 };
 
 export type Voter = {
