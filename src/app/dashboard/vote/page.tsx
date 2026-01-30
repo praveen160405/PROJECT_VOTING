@@ -1,7 +1,8 @@
 "use client"
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Star } from 'lucide-react';
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { Star, ArrowRight } from 'lucide-react';
 
 import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -121,6 +122,38 @@ export default function VotePage() {
       duration: 5000,
     });
   };
+  
+  if (votedCandidate) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+          className="w-full max-w-md"
+        >
+          <Card className="text-center">
+            <CardHeader>
+              <CardTitle className="text-3xl font-bold tracking-tight">Thank You for Voting!</CardTitle>
+              <CardDescription>
+                Your vote for <strong>{votedCandidate.name}</strong> has been successfully recorded.
+                <br/>
+                Every vote counts towards a stronger democracy.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Link href="/dashboard/results">
+                <Button>
+                  View Live Results
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -128,26 +161,6 @@ export default function VotePage() {
         <h1 className="text-3xl font-bold tracking-tight">Voting Booth</h1>
         <p className="text-muted-foreground">Select a candidate to cast your vote. You can only vote once.</p>
       </div>
-
-      <AnimatePresence>
-        {votedCandidate && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.3 }}
-          >
-            <Card className="bg-accent/50 border-accent">
-              <CardHeader>
-                <CardTitle>Thank you for voting!</CardTitle>
-                <CardDescription>
-                  You have successfully cast your vote for <strong>{votedCandidate.name}</strong>. Your participation is vital for democracy.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {candidates.map((candidate) => (
