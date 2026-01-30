@@ -68,6 +68,7 @@ export default function RegisterPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const idProofInputRef = useRef<HTMLInputElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -82,37 +83,44 @@ export default function RegisterPage() {
   const faceImage = form.watch('faceImage');
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
     const enableCamera = async () => {
-        if (!isCameraDialogOpen) {
-            if(stream) {
-                stream.getTracks().forEach(track => track.stop());
-            }
-            return;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        streamRef.current = stream;
+        setHasCameraPermission(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
         }
-        try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            setHasCameraPermission(true);
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-            }
-        } catch (err) {
-            console.error("Error accessing camera: ", err);
-            setHasCameraPermission(false);
-            toast({
-                variant: 'destructive',
-                title: 'Camera Access Denied',
-                description: 'Please enable camera permissions in your browser settings.',
-            });
-        }
+      } catch (err) {
+        console.error("Error accessing camera: ", err);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings.',
+        });
+      }
     };
-    enableCamera();
+
+    const disableCamera = () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+        streamRef.current = null;
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    };
+
+    if (isCameraDialogOpen) {
+      enableCamera();
+    } else {
+      disableCamera();
+    }
 
     return () => {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-        }
-    }
+      disableCamera();
+    };
   }, [isCameraDialogOpen, toast]);
 
   const handleCaptureImage = () => {
