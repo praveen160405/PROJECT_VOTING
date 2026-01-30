@@ -1,11 +1,9 @@
 "use client";
 
-import React, { useMemo } from 'react';
-import { FirebaseProvider } from './provider';
-import { initializeFirebase } from './index';
+import React from 'react';
 
+// This provider is no longer necessary due to a simplified Firebase initialization.
+// It is kept in the project to avoid breaking the file structure, but it no longer provides any context.
 export function FirebaseClientProvider({ children }: { children: React.ReactNode }) {
-  const firebaseApp = useMemo(() => initializeFirebase(), []);
-
-  return <FirebaseProvider {...firebaseApp}>{children}</FirebaseProvider>;
+  return <>{children}</>;
 }

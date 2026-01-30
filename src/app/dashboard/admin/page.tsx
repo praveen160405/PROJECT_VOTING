@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useAuth, useFirestore, useCollection } from "@/firebase";
+import { firestore, useCollection } from "@/firebase";
 import { collection, doc, updateDoc, deleteDoc } from "firebase/firestore";
 
 export default function AdminPage() {
@@ -58,7 +58,6 @@ export default function AdminPage() {
   const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
   const [electionStatus, setElectionStatus] = useState<"Not Started" | "Live" | "Ended">("Not Started");
 
-  const firestore = useFirestore();
   const votersCollection = collection(firestore, 'users');
   const { data: voters, loading, error } = useCollection<User>(votersCollection);
 

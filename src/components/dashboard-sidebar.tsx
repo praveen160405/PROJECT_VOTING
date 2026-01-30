@@ -30,7 +30,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuth, useUser, useFirestore, useDoc } from "@/firebase";
+import { auth, firestore, useUser, useDoc } from "@/firebase";
 import { signOut } from "firebase/auth";
 import { doc } from "firebase/firestore";
 import type { User } from "@/lib/types";
@@ -39,8 +39,6 @@ import type { User } from "@/lib/types";
 export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const auth = useAuth();
-  const firestore = useFirestore();
 
   const { user: authUser, loading: authLoading } = useUser();
   

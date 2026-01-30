@@ -17,12 +17,11 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useCollection, useFirestore } from "@/firebase";
+import { useCollection, firestore } from "@/firebase";
 import { collection } from "firebase/firestore";
 import type { User } from "@/lib/types";
 
 export default function UsersPage() {
-  const firestore = useFirestore();
   const usersCollection = collection(firestore, 'users');
   const { data: users, loading, error } = useCollection<User>(usersCollection);
 

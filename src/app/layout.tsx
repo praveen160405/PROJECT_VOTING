@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Toaster } from "@/components/ui/toaster"
-import { FirebaseClientProvider } from '@/firebase/client-provider';
 
 export const metadata: Metadata = {
   title: 'VerityVote',
@@ -26,11 +25,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased">
         <ThemeProvider>
-          <FirebaseClientProvider>
             <div className="auth-background min-h-screen">
               {children}
             </div>
-          </FirebaseClientProvider>
           <Toaster />
         </ThemeProvider>
       </body>
