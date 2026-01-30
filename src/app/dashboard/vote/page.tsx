@@ -1,6 +1,7 @@
 "use client"
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Star, ArrowRight } from 'lucide-react';
 
@@ -113,6 +114,7 @@ function CandidateCard({ candidate, onVote, isVoted }: { candidate: Candidate, o
 export default function VotePage() {
   const [votedCandidate, setVotedCandidate] = useState<Candidate | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleVote = (candidate: Candidate) => {
     setVotedCandidate(candidate);
@@ -122,6 +124,16 @@ export default function VotePage() {
       duration: 5000,
     });
   };
+
+  useEffect(() => {
+    if (votedCandidate) {
+      const timer = setTimeout(() => {
+        router.push('/');
+      }, 3000); // 3-second redirect
+
+      return () => clearTimeout(timer);
+    }
+  }, [votedCandidate, router]);
   
   if (votedCandidate) {
     return (
@@ -138,13 +150,13 @@ export default function VotePage() {
               <CardDescription>
                 Your vote for <strong>{votedCandidate.name}</strong> has been successfully recorded.
                 <br/>
-                Every vote counts towards a stronger democracy.
+                You will be redirected to the home page shortly.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Link href="/dashboard">
+              <Link href="/">
                 <Button>
-                  Back to Dashboard
+                  Go to Home Page
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
