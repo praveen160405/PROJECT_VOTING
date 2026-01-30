@@ -1,23 +1,21 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext } from 'react';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
-import { initializeFirebase, type FirebaseServices } from './index';
+import type { FirebaseServices } from './index';
 
 const FirebaseContext = createContext<FirebaseServices | null>(null);
 
-export function FirebaseProvider({ children }: { children: React.ReactNode }) {
-  const [services, setServices] = useState<FirebaseServices | null>(null);
-
-  useEffect(() => {
-    // This effect runs only on the client, after the component mounts,
-    // ensuring that Firebase is never initialized on the server.
-    const firebaseServices = initializeFirebase();
-    setServices(firebaseServices);
-  }, []);
-
+// This provider makes the Firebase services available to the rest of the app.
+export function FirebaseProvider({
+  children,
+  services,
+}: {
+  children: React.ReactNode;
+  services: FirebaseServices;
+}) {
   return (
     <FirebaseContext.Provider value={services}>
       {children}
@@ -30,13 +28,16 @@ export const useFirebase = (): FirebaseServices | null => {
 };
 
 export const useFirebaseApp = (): FirebaseApp | null => {
-  return useFirebase()?.app ?? null;
+  const services = useFirebase();
+  return services?.app ?? null;
 };
 
 export const useAuth = (): Auth | null => {
-  return useFirebase()?.auth ?? null;
+  const services = useFirebase();
+  return services?.auth ?? null;
 };
 
 export const useFirestore = (): Firestore | null => {
-  return useFirebase()?.firestore ?? null;
+  const services = useFirebase();
+  return services?.firestore ?? null;
 };
