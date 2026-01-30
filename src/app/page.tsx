@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion } from "framer-motion";
 import {
-  Camera,
+  Fingerprint,
   ShieldCheck,
   Mail,
   KeyRound,
@@ -146,16 +146,9 @@ export default function LoginPage() {
             <Separator className="my-6" />
             <div className="space-y-4">
               <Button variant="outline" className="w-full">
-                <Camera className="mr-2 h-4 w-4" />
-                Login with Face Authentication
+                <Fingerprint className="mr-2 h-4 w-4" />
+                Login with Aadhar
               </Button>
-               <div className="space-y-2">
-                 <Label htmlFor="otp">Have an OTP?</Label>
-                 <div className="flex gap-2">
-                   <Input id="otp" placeholder="Enter 6-digit OTP" />
-                   <Button variant="secondary">Verify OTP</Button>
-                 </div>
-               </div>
             </div>
             <p className="mt-6 text-center text-sm text-muted-foreground">
               Don't have an account?{" "}
