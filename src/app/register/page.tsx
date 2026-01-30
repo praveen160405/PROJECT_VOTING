@@ -88,13 +88,11 @@ export default function RegisterPage() {
   const faceImage = form.watch('faceImage');
 
   useEffect(() => {
+    // This function handles stopping the camera stream.
     const disableCamera = () => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
-      }
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
       }
     };
 
@@ -105,6 +103,9 @@ export default function RegisterPage() {
 
     const enableCamera = async () => {
       try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+           throw new Error("Camera not supported in this browser.");
+        }
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         streamRef.current = stream;
         setHasCameraPermission(true);
@@ -114,7 +115,6 @@ export default function RegisterPage() {
       } catch (err) {
         console.error("Error accessing camera: ", err);
         setHasCameraPermission(false);
-        // A persistent alert is shown in the UI instead of a toast.
       }
     };
 
@@ -162,7 +162,7 @@ export default function RegisterPage() {
       );
       const user = userCredential.user;
 
-      // 2. Create user document in Firestore
+      // 2. Create user document in Firestore to be displayed in the 'Users' section
       const userDocRef = doc(firestore, "users", user.uid);
       await setDoc(userDocRef, {
         fullName: values.fullName,
@@ -184,7 +184,7 @@ export default function RegisterPage() {
       toast({
         variant: "destructive",
         title: "Registration Failed",
-        description: error.message || "An unexpected error occurred.",
+        description: error.message || "An unexpected error occurred. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -378,7 +378,7 @@ export default function RegisterPage() {
             )}
             <DialogFooter>
                 <Button variant="ghost" onClick={() => setIsCameraDialogOpen(false)}>Cancel</Button>
-                <Button onClick={handleCaptureImage} disabled={!hasCameraPermission}>Capture</Button>
+                <Button onClick={handleCaptureImage} disabled={hasCameraPermission === false}>Capture</Button>
             </DialogFooter>
         </DialogContent>
       </Dialog>

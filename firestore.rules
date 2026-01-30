@@ -2,19 +2,19 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read their own profile.
     match /users/{userId} {
-      allow read, update: if request.auth != null && request.auth.uid == userId;
-      // Allow creation of user profile during sign-up.
-      allow create: if request.auth != null;
-    }
+      // Allow user to create their own profile during sign-up.
+      // request.auth.uid is available after createUserWithEmailAndPassword completes.
+      allow create: if request.auth != null && request.auth.uid == userId;
 
-    // For the admin panel to work, admins need to be able to list users, 
-    // update the isVerified status, and delete users.
-    // For now, allow any authenticated user these permissions on the users collection.
-    // This should be locked down with custom claims in a real app.
-    match /users/{userId} {
-      allow list, write: if request.auth != null;
+      // Users can read and update their own profile.
+      allow read, update: if request.auth != null && request.auth.uid == userId;
+      
+      // For the admin panel to work, any authenticated user can list all users,
+      // update any user's profile (e.g. verify them), and delete them.
+      // This is insecure for production and should be replaced with custom claims.
+      allow list, delete: if request.auth != null;
+      allow update: if request.auth != null;
     }
   }
 }
