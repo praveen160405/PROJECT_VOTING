@@ -29,7 +29,7 @@ const registerSchema = z.object({
   fullName: z.string().min(1, "Full name is required."),
   voterId: z.string().regex(/^[A-Z]{3}[0-9]{7}$/, "Please enter a valid Voter ID (e.g., ABC1234567)."),
   password: z.string().min(8, "Password must be at least 8 characters long."),
-  idProof: z.any().refine((files) => files?.length == 1, "ID Proof is required."),
+  idProof: z.any().optional(),
 });
 
 export default function RegisterPage() {
@@ -64,11 +64,6 @@ export default function RegisterPage() {
   useEffect(() => {
     const getCameraPermission = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        toast({
-          variant: "destructive",
-          title: "Camera Not Supported",
-          description: "Your browser does not support camera access.",
-        });
         setHasCameraPermission(false);
         return;
       }
@@ -82,11 +77,6 @@ export default function RegisterPage() {
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
-        toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this feature.',
-        });
       }
     };
 
@@ -98,7 +88,7 @@ export default function RegisterPage() {
         stream.getTracks().forEach(track => track.stop());
       }
     }
-  }, [toast]);
+  }, []);
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center p-4">
@@ -164,29 +154,29 @@ export default function RegisterPage() {
                       )}
                     />
                     <FormField
-                        control={control}
-                        name="idProof"
-                        render={({ field: { value, onChange, ...fieldProps } }) => (
-                            <FormItem className="flex flex-col justify-end">
-                                <FormLabel>ID Proof (PDF)</FormLabel>
-                                <FormControl>
-                                    <Input
-                                        {...fieldProps}
-                                        type="file"
-                                        accept="application/pdf"
-                                        onChange={(event) =>
-                                          onChange(event.target.files)
-                                        }
-                                    />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
+                      control={form.control}
+                      name="idProof"
+                      render={({ field: { onChange, ...fieldProps } }) => (
+                        <FormItem className="flex flex-col justify-end">
+                          <FormLabel>ID Proof (PDF, Optional)</FormLabel>
+                          <FormControl>
+                            <Input
+                              {...fieldProps}
+                              type="file"
+                              accept="application/pdf"
+                              onChange={(event) =>
+                                onChange(event.target.files && event.target.files.length > 0 ? event.target.files : undefined)
+                              }
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
                     />
                 </div>
                 
                 <div className="space-y-4">
-                  <Label>Live Identity Verification</Label>
+                  <Label>Live Identity Verification (Optional)</Label>
                    <div className="w-full aspect-video rounded-md border bg-muted overflow-hidden relative">
                     <video ref={videoRef} className="h-full w-full object-cover" autoPlay muted playsInline />
                     {!hasCameraPermission && (
@@ -197,18 +187,11 @@ export default function RegisterPage() {
                       </div>
                     )}
                   </div>
-                  {hasCameraPermission ? (
+                  {hasCameraPermission && (
                      <Button type="button" variant="secondary" className="w-full">
                        <Camera className="mr-2 h-4 w-4" />
                        Capture Photo
                      </Button>
-                  ) : (
-                      <Alert variant="destructive">
-                        <AlertTitle>Camera Access Required</AlertTitle>
-                        <AlertDescription>
-                          Please allow camera access to complete your registration.
-                        </AlertDescription>
-                      </Alert>
                   )}
                 </div>
 
