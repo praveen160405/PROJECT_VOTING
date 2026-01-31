@@ -103,7 +103,6 @@ export default function VotePage() {
   
   const { toast } = useToast();
   const router = useRouter();
-  const { address, contract, connectWallet } = useWeb3();
   const { user, firestore, isUserLoading } = useFirebase();
 
   const userVotesCollection = useMemoFirebase(() => {
@@ -111,7 +110,7 @@ export default function VotePage() {
     return collection(firestore, "users", user.uid, "votes");
   }, [firestore, user]);
 
-  const { data: userVotes, isLoading: isLoadingVotes } = useCollection(userVotesCollection);
+  const { data: userVotes, isLoading: isLoadingVotes } = useCollection<Vote>(userVotesCollection);
 
   const hasAlreadyVoted = useMemo(() => {
     if (userVotes && userVotes.length > 0) return true;
@@ -123,80 +122,24 @@ export default function VotePage() {
   }, []);
 
   const isCheckingVote = isUserLoading || isLoadingVotes;
-  const isContractDeployed = votingContractAddress !== "0x0000000000000000000000000000000000000000";
 
   const handleInitiateVote = (candidate: Candidate) => {
-    if (!user && !address) {
+    if (!user) {
         toast({
             variant: "destructive",
             title: "Not Logged In",
-            description: "Please log in or connect your wallet to vote.",
+            description: "Please log in to vote.",
         });
         router.push('/login');
-        return;
-    }
-    if (!address && isContractDeployed) {
-        toast({
-            variant: "destructive",
-            title: "Wallet Not Connected",
-            description: "Please connect your wallet to vote on the blockchain.",
-        });
-        connectWallet();
         return;
     }
     setSelectedCandidate(candidate);
     setIsConfirming(true);
   };
 
-  const handleVote = async (candidate: Candidate) => {
-    setIsConfirming(false);
-    
-    if (address && contract && isContractDeployed) {
-      await handleBlockchainVote(candidate);
-    } else {
-      await handleFirestoreVote(candidate);
-    }
-  };
-
-  const handleBlockchainVote = async (candidate: Candidate) => {
-     if (!contract) return;
-     setIsSubmitting(true);
-     toast({
-       title: "Submitting Your Vote...",
-       description: "Please confirm the transaction in your wallet.",
-     });
- 
-     try {
-         const candidateIdForContract = candidates.findIndex(c => c.id === candidate.id) + 1;
-         if (candidateIdForContract === 0) throw new Error("Invalid candidate ID.");
- 
-         const tx = await contract.vote(BigInt(candidateIdForContract));
-         toast({ title: "Transaction Sent", description: "Waiting for blockchain confirmation..."});
-         await tx.wait(); 
- 
-         setVotedCandidateId(candidate.id);
- 
-         toast({
-             title: "Vote Submitted!",
-             description: `Your vote for ${candidate.name} has been recorded on the blockchain.`,
-             duration: 5000,
-         });
- 
-     } catch (e: any) {
-         console.error("Vote submission error:", e);
-         toast({
-             variant: "destructive",
-             title: "Transaction Failed",
-             description: e.reason || e.message || "Could not submit your vote.",
-         });
-     } finally {
-         setIsSubmitting(false);
-     }
-  }
-
   const handleFirestoreVote = async (candidate: Candidate) => {
     if (!user || !userVotesCollection) {
-      toast({ variant: "destructive", title: "Authentication Error", description: "Could not identify user." });
+      toast({ variant: "destructive", title: "Authentication Error", description: "Could not identify user. Please try logging in again." });
       return;
     }
     setIsSubmitting(true);
@@ -216,6 +159,11 @@ export default function VotePage() {
     });
     setIsSubmitting(false);
   }
+
+  const handleVote = async (candidate: Candidate) => {
+    setIsConfirming(false);
+    await handleFirestoreVote(candidate);
+  };
 
   useEffect(() => {
     if (votedCandidateId) {
@@ -264,9 +212,9 @@ export default function VotePage() {
   const pageDisabled = !isMounted || isCheckingVote || isSubmitting;
 
   const getPageDescription = () => {
-    if (!user && !address) return "Please log in or connect your wallet to see your voting status.";
     if (isCheckingVote) return "Checking your voting status...";
     if (isVoted) return "Your vote has been recorded. You cannot vote again.";
+    if (!user) return "Please log in to see your voting status.";
     return "Select a candidate to cast your vote. This action is irreversible.";
   }
 
