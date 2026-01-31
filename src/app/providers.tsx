@@ -2,7 +2,7 @@
 
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { type ThemeProviderProps } from "next-themes/dist/types";
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { BrowserProvider, Contract } from 'ethers';
 import { votingContractAddress, votingContractABI } from '@/lib/contract';
 
@@ -33,10 +33,12 @@ const Web3Provider = ({ children }: { children: React.ReactNode }) => {
   const [contract, setContract] = useState<Contract | null>(null);
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+  const isLoadingRef = useRef(false);
 
   const connectWallet = useCallback(async () => {
-    if (isLoading) return;
+    if (isLoadingRef.current) return;
 
+    isLoadingRef.current = true;
     setIsLoading(true);
     setError(null);
     if (typeof window.ethereum !== 'undefined') {
@@ -60,13 +62,15 @@ const Web3Provider = ({ children }: { children: React.ReactNode }) => {
           setError(err.reason || err.message || "Failed to connect wallet.");
         }
       } finally {
+        isLoadingRef.current = false;
         setIsLoading(false);
       }
     } else {
       setError("MetaMask is not installed. Please install it to use this feature.");
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [isLoading]);
+  }, []);
   
   useEffect(() => {
     if (window.ethereum) {
