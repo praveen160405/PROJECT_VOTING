@@ -1,23 +1,23 @@
 import Link from "next/link";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Vote, Shield, ArrowRight } from "lucide-react";
+import { Vote, ArrowRight, BarChart } from "lucide-react";
 
 export default function DashboardPage() {
   const features = [
     {
       title: "Cast Your Vote",
-      description: "Browse verified candidates and make your voice heard.",
+      description: "Browse verified candidates and make your voice heard on the blockchain.",
       link: "/dashboard/vote",
       icon: Vote,
       cta: "Go to Voting Booth",
     },
     {
-      title: "Admin Panel",
-      description: "Manage election settings, verify voters, and oversee the process.",
-      link: "/dashboard/admin",
-      icon: Shield,
-      cta: "Access Admin Panel",
+      title: "View Results",
+      description: "See the live, transparent election results directly from the smart contract.",
+      link: "/dashboard/results",
+      icon: BarChart,
+      cta: "See Live Results",
     },
   ];
 
@@ -28,7 +28,7 @@ export default function DashboardPage() {
         <p className="mt-2 text-muted-foreground">Your secure, transparent, and immutable voting platform.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-6 md:grid-cols-2">
         {features.map((feature) => (
           <Card key={feature.title} className="flex flex-col">
             <CardHeader className="flex flex-row items-center gap-4">
