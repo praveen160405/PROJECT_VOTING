@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Wallet } from "lucide-react";
+import { Wallet, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import { useWeb3 } from "@/app/providers";
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { connectWallet, address, error } = useWeb3();
+  const { connectWallet, address, error, isLoading } = useWeb3();
 
   useEffect(() => {
     if (address) {
@@ -61,9 +61,18 @@ export default function LoginPage() {
             <p className="mb-6 text-center text-muted-foreground">
               Connect your wallet to access the dashboard and cast your vote.
             </p>
-            <Button onClick={handleConnect} size="lg" className="w-full">
-              <Wallet className="mr-2 h-5 w-5" />
-              Connect Wallet
+            <Button onClick={handleConnect} size="lg" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <Wallet className="mr-2 h-5 w-5" />
+                  Connect Wallet
+                </>
+              )}
             </Button>
             <p className="mt-6 text-center text-sm text-muted-foreground">
               This platform uses a decentralized blockchain for voting.

@@ -13,6 +13,7 @@ interface Web3ContextType {
   error: string | null;
   contract: Contract | null;
   provider: BrowserProvider | null;
+  isLoading: boolean;
 }
 
 const Web3Context = createContext<Web3ContextType | null>(null);
@@ -31,8 +32,12 @@ const Web3Provider = ({ children }: { children: React.ReactNode }) => {
   const [error, setError] = useState<string | null>(null);
   const [contract, setContract] = useState<Contract | null>(null);
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const connectWallet = useCallback(async () => {
+    if (isLoading) return;
+
+    setIsLoading(true);
     setError(null);
     if (typeof window.ethereum !== 'undefined') {
       try {
@@ -49,12 +54,19 @@ const Web3Provider = ({ children }: { children: React.ReactNode }) => {
 
       } catch (err: any) {
         console.error("Wallet connection error:", err);
-        setError(err.reason || err.message || "Failed to connect wallet.");
+        if (err.code === -32002) {
+          setError("Connection request already pending. Please check your wallet.");
+        } else {
+          setError(err.reason || err.message || "Failed to connect wallet.");
+        }
+      } finally {
+        setIsLoading(false);
       }
     } else {
       setError("MetaMask is not installed. Please install it to use this feature.");
+      setIsLoading(false);
     }
-  }, []);
+  }, [isLoading]);
   
   useEffect(() => {
     if (window.ethereum) {
@@ -82,7 +94,7 @@ const Web3Provider = ({ children }: { children: React.ReactNode }) => {
   }, [connectWallet]);
 
   return (
-    <Web3Context.Provider value={{ address, connectWallet, error, contract, provider }}>
+    <Web3Context.Provider value={{ address, connectWallet, error, contract, provider, isLoading }}>
       {children}
     </Web3Context.Provider>
   );
