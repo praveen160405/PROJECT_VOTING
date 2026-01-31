@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Star, ArrowRight, ShieldAlert, Loader2 } from 'lucide-react';
-import { collection } from "firebase/firestore";
+import { collection, serverTimestamp } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -144,7 +144,7 @@ export default function VotePage() {
     const newVote: Omit<Vote, 'id'> = {
       voterId: user.uid,
       candidateId: candidate.id,
-      timestamp: new Date().toISOString(),
+      timestamp: serverTimestamp(),
       electionId: "main_election",
       isVerified: true,
     };
