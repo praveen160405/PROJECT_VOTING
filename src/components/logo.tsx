@@ -11,7 +11,7 @@ export function Logo({ className }: { className?: string }) {
     >
       <ShieldCheck className="h-6 w-6" />
       <span className="text-xl font-extrabold tracking-tight text-foreground">
-        VerityVote
+        OOTU
       </span>
     </div>
   );

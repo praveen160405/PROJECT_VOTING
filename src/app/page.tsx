@@ -28,7 +28,7 @@ export default function HomePage() {
           <CardHeader className="items-center text-center p-6">
             <Logo className="mb-4" />
             <CardTitle className="text-3xl font-bold tracking-tight">
-              Welcome to VerityVote
+              Welcome to OOTU
             </CardTitle>
             <CardDescription className="text-lg text-muted-foreground pt-2">
               Your secure & transparent voting platform.

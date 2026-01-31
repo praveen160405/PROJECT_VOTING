@@ -53,7 +53,7 @@ export default function LoginPage() {
     });
 
     try {
-      const emailForAuth = `${values.voterId}@verityvote.app`;
+      const emailForAuth = `${values.voterId}@ootu.app`;
       await signInWithEmailAndPassword(auth, emailForAuth, values.password);
       toast({
         title: "Login Successful!",

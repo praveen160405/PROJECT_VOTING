@@ -64,7 +64,7 @@ export default function ConnectWalletPage() {
               Connect Your Wallet
             </CardTitle>
             <CardDescription className="text-lg text-muted-foreground pt-2">
-              Access the decentralized features of VerityVote.
+              Access the decentralized features of OOTU.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center p-6 pt-2">

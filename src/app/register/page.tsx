@@ -64,7 +64,7 @@ export default function RegisterPage() {
     try {
       // We use a derived email for Firebase Auth, as it requires an email.
       // The user will only ever see and use their Voter ID.
-      const emailForAuth = `${values.voterId}@verityvote.app`;
+      const emailForAuth = `${values.voterId}@ootu.app`;
       const userCredential = await createUserWithEmailAndPassword(auth, emailForAuth, values.password);
       const user = userCredential.user;
 

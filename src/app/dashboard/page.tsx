@@ -24,7 +24,7 @@ export default function DashboardPage() {
   return (
     <div className="flex flex-col gap-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Welcome to the VerityVote Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Welcome to the OOTU Dashboard</h1>
         <p className="mt-2 text-muted-foreground">Your secure, transparent, and immutable voting platform.</p>
       </div>
 

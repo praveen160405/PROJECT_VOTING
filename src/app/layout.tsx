@@ -4,7 +4,7 @@ import { AppProviders } from './providers';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'VerityVote',
+  title: 'OOTU',
   description: 'A secure and transparent decentralized voting system.',
 };
 
