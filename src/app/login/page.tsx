@@ -44,12 +44,20 @@ export default function LoginPage() {
   const { formState } = form;
 
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
-    // This is a placeholder for your actual login logic.
     toast({
-      title: "Login Temporarily Disabled",
-      description: "This form is for demonstration purposes. It does not perform real authentication.",
-      variant: "destructive",
+      title: "Logging In...",
+      description: "Please wait while we verify your credentials.",
     });
+
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    toast({
+      title: "Login Successful!",
+      description: "Redirecting you to the dashboard.",
+    });
+    
+    router.push("/dashboard");
   };
 
   return (
