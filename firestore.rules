@@ -28,12 +28,20 @@ service cloud.firestore {
       allow delete: if isExistingOwner(userId);
     }
 
+    // This is the collection group query rule.
+    // It allows any signed-in user to query the 'votes' collection group.
+    // This is needed for the results page to show aggregate data.
+    match /{path=**}/votes/{voteId} {
+      // We only allow 'list' (queries). We do not allow 'get' (direct doc reads).
+      // Direct reads are handled by the more specific rule below.
+      allow list: if isSignedIn();
+    }
+
     // Votes - A user can create their own vote, and read their own vote.
-    // Listing is allowed for any signed-in user for vote aggregation on the results page.
     // Votes are immutable once created.
     match /users/{userId}/votes/{voteId} {
+      // This rule handles direct document access (get) and writes (create).
       allow get: if isOwner(userId);
-      allow list: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.voterId == userId;
       allow update, delete: if false; // Votes are immutable
     }
