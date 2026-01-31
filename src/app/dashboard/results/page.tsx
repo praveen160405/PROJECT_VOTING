@@ -7,7 +7,7 @@ import { candidates as initialCandidates } from "@/lib/data";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Vote, VoteResult, PartyVote, User, Candidate } from "@/lib/types";
+import type { Vote, VoteResult, PartyVote, Candidate } from "@/lib/types";
 import { useWeb3 } from "@/app/providers";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
@@ -31,7 +31,6 @@ export default function ResultsPage() {
   const [voteResults, setVoteResults] = useState<VoteResult[]>([]);
   const [partyVotes, setPartyVotes] = useState<PartyVote[]>([]);
   const [totalVotes, setTotalVotes] = useState(0);
-  const [registeredVoters, setRegisteredVoters] = useState(0);
   const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
   const [isContractError, setIsContractError] = useState(false);
 
@@ -83,19 +82,12 @@ export default function ResultsPage() {
     const votes: Vote[] = storedVotesJSON ? JSON.parse(storedVotesJSON) : [];
     setLedgerVotes(votes);
 
-    // Load users from local storage
-    const storedUsersJSON = localStorage.getItem("verityvote_users");
-    const users: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : [];
-    setRegisteredVoters(users.length);
-
   }, [fetchResults]);
 
   const getCandidateNameById = (id: string) => {
     const candidate = candidates.find(c => c.id === id);
     return candidate ? candidate.name : "Unknown Candidate";
   };
-
-  const turnout = registeredVoters > 0 ? (totalVotes / registeredVoters) * 100 : 0;
 
   const renderChartContent = (chart: React.ReactNode, height: number) => {
     if (totalVotes === 0 && !isContractError) {
@@ -187,16 +179,6 @@ export default function ResultsPage() {
                   <span className="text-muted-foreground">Total Votes Cast</span>
                   <span className="font-semibold">
                     {totalVotes.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Registered Users</span>
-                  <span className="font-semibold">{registeredVoters.toLocaleString()}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Voter Turnout</span>
-                  <span className="font-semibold">
-                    {turnout.toFixed(2)}%
                   </span>
                 </div>
                  <div className="flex items-center justify-between">

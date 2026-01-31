@@ -6,14 +6,6 @@ export type Candidate = {
   imageHint?: string;
 };
 
-export type User = {
-  id: string;
-  fullName: string;
-  voterId: string;
-  createdAt: string;
-  isVerified: boolean;
-};
-
 export type Vote = {
   id: string;
   userId: string;

@@ -1,4 +1,4 @@
-import type { Candidate, User } from "@/lib/types";
+import type { Candidate } from "@/lib/types";
 
 export const candidates: Candidate[] = [
   {
@@ -27,5 +27,3 @@ export const candidates: Candidate[] = [
     party: "Bharatiya Janata Party",
   },
 ];
-
-export const initialUsers: User[] = [];
