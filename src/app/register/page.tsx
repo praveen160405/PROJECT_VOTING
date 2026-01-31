@@ -104,7 +104,7 @@ export default function RegisterPage() {
         stream.getTracks().forEach(track => track.stop());
       }
     }
-  }, [toast]);
+  }, []);
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center p-4">
@@ -247,13 +247,12 @@ export default function RegisterPage() {
                       </div>
                     )}
                   </div>
-                  {hasCameraPermission && (
+                  {hasCameraPermission ? (
                      <Button type="button" variant="secondary" className="w-full">
                        <Camera className="mr-2 h-4 w-4" />
                        Capture Photo
                      </Button>
-                  )}
-                   { !(hasCameraPermission) && (
+                  ) : (
                       <Alert variant="destructive">
                         <AlertTitle>Camera Access Required</AlertTitle>
                         <AlertDescription>
