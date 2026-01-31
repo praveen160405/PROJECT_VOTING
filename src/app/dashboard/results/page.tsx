@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { candidates as initialCandidates } from "@/lib/data";
@@ -12,6 +12,8 @@ import { useWeb3 } from "@/app/providers";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
 import { votingContractAddress } from "@/lib/contract";
+import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
 
 const chartConfig = {
   votes: {
@@ -27,7 +29,6 @@ const chartConfig = {
 
 
 export default function ResultsPage() {
-  const [ledgerVotes, setLedgerVotes] = useState<Vote[]>([]);
   const [voteResults, setVoteResults] = useState<VoteResult[]>([]);
   const [partyVotes, setPartyVotes] = useState<PartyVote[]>([]);
   const [totalVotes, setTotalVotes] = useState(0);
@@ -35,13 +36,22 @@ export default function ResultsPage() {
   const [isContractError, setIsContractError] = useState(false);
 
   const { contract, provider } = useWeb3();
+  const { user, firestore } = useFirebase();
+
+  const userVotesCollection = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, "users", user.uid, "votes");
+  }, [firestore, user]);
+  
+  const { data: ledgerVotes } = useCollection<Vote>(userVotesCollection);
 
   const isContractDeployed = votingContractAddress !== "0x0000000000000000000000000000000000000000";
 
   const loadMockData = useCallback(() => {
     const mockResults = initialCandidates.map(c => ({ name: c.name, votes: Math.floor(Math.random() * 1000) }));
     setVoteResults(mockResults);
-    setPartyVotes(mockResults.map(r => ({ party: r.name, votes: r.votes })));
+    const mockPartyVotes = initialCandidates.map(c => ({ party: c.name, votes: mockResults.find(r => r.name === c.name)?.votes || 0 }));
+    setPartyVotes(mockPartyVotes);
     setTotalVotes(mockResults.reduce((sum, current) => sum + current.votes, 0));
   }, []);
 
@@ -64,7 +74,8 @@ export default function ResultsPage() {
         total += voteCount;
       }
       setVoteResults(results);
-      setPartyVotes(results.map(r => ({ party: r.name, votes: r.votes })));
+      const partyResults = initialCandidates.map(c => ({ party: c.name, votes: results.find(r => r.name === c.name)?.votes || 0 }));
+      setPartyVotes(partyResults);
       setTotalVotes(total);
     } catch (error) {
       console.error("Failed to fetch smart contract results:", error);
@@ -74,14 +85,7 @@ export default function ResultsPage() {
   }, [contract, provider, isContractDeployed, loadMockData]);
 
   useEffect(() => {
-    // Fetch smart contract results
     fetchResults();
-
-    // Load ledger from local storage
-    const storedVotesJSON = localStorage.getItem("verityvote_votes");
-    const votes: Vote[] = storedVotesJSON ? JSON.parse(storedVotesJSON) : [];
-    setLedgerVotes(votes);
-
   }, [fetchResults]);
 
   const getCandidateNameById = (id: string) => {
@@ -190,9 +194,9 @@ export default function ResultsPage() {
         </Card>
         <Card className="col-span-1 md:col-span-2">
             <CardHeader>
-              <CardTitle>Vote Ledger (Blockchain & Local)</CardTitle>
+              <CardTitle>Your Vote Ledger</CardTitle>
               <CardDescription>
-                A transparent log of all votes recorded by the smart contract and this browser.
+                A transparent log of votes recorded by this account in this browser.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -200,20 +204,20 @@ export default function ResultsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Vote ID / From</TableHead>
+                      <TableHead>Vote ID</TableHead>
                       <TableHead>Candidate</TableHead>
                       <TableHead className="text-right">Timestamp</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {ledgerVotes.length > 0 ? (
+                    {ledgerVotes && ledgerVotes.length > 0 ? (
                       ledgerVotes
                         .slice()
                         .reverse()
                         .map((vote) => (
                           <TableRow key={vote.id}>
                             <TableCell className="font-mono text-xs">
-                              {vote.userId.startsWith('0x') ? `${vote.userId.slice(0,14)}...` : vote.id.slice(0,14) }
+                              {vote.id.slice(0,14)}
                             </TableCell>
                             <TableCell>
                               {getCandidateNameById(vote.candidateId)}
@@ -229,7 +233,7 @@ export default function ResultsPage() {
                           colSpan={3}
                           className="h-24 text-center text-muted-foreground"
                         >
-                          No votes have been recorded yet.
+                          You have not voted with this account yet.
                         </TableCell>
                       </TableRow>
                     )}

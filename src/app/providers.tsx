@@ -5,6 +5,7 @@ import { type ThemeProviderProps } from "next-themes/dist/types";
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { BrowserProvider, Contract } from 'ethers';
 import { votingContractAddress, votingContractABI } from '@/lib/contract';
+import { FirebaseClientProvider } from "@/firebase/client-provider";
 
 // Web3 Context
 interface Web3ContextType {
@@ -44,7 +45,6 @@ const Web3Provider = ({ children }: { children: React.ReactNode }) => {
     if (typeof window.ethereum !== 'undefined') {
       try {
         const browserProvider = new BrowserProvider(window.ethereum);
-        // It's recommended to request accounts, which also prompts the user to connect.
         const signer = await browserProvider.getSigner();
         const userAddress = await signer.getAddress();
         
@@ -76,17 +76,14 @@ const Web3Provider = ({ children }: { children: React.ReactNode }) => {
     if (window.ethereum) {
       window.ethereum.on('accountsChanged', (accounts: string[]) => {
         if (accounts.length > 0) {
-          // Re-connect to get the new signer and update the address
           connectWallet();
         } else {
-          // Handle disconnection
           setAddress(null);
           setContract(null);
           setProvider(null);
         }
       });
 
-      // On initial load, if a wallet is already connected, try to establish connection silently
       const connectSilently = async () => {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts.length > 0) {
@@ -114,9 +111,11 @@ export function AppProviders({ children }: ThemeProviderProps) {
       enableSystem
       disableTransitionOnChange
     >
-      <Web3Provider>
-        {children}
-      </Web3Provider>
+      <FirebaseClientProvider>
+        <Web3Provider>
+          {children}
+        </Web3Provider>
+      </FirebaseClientProvider>
     </NextThemesProvider>
   );
 }

@@ -7,6 +7,7 @@ import { User, Key, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { signInWithEmailAndPassword } from "firebase/auth";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -22,21 +23,23 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
+import { useAuth } from "@/firebase";
 
 
 const loginSchema = z.object({
-  voterId: z.string().min(1, "Voter ID is required."),
+  email: z.string().email("Please enter a valid email address."),
   password: z.string().min(1, "Password is required."),
 });
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
   
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      voterId: "",
+      email: "",
       password: "",
     },
   });
@@ -49,15 +52,21 @@ export default function LoginPage() {
       description: "Please wait while we verify your credentials.",
     });
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-
-    toast({
-      title: "Login Successful!",
-      description: "Redirecting you to the dashboard.",
-    });
-    
-    router.push("/dashboard");
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      toast({
+        title: "Login Successful!",
+        description: "Redirecting you to the dashboard.",
+      });
+      router.push("/dashboard");
+    } catch (error: any) {
+      console.error("Login Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Login Failed",
+        description: error.message || "An unexpected error occurred.",
+      });
+    }
   };
 
   return (
@@ -85,14 +94,14 @@ export default function LoginPage() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="voterId"
+                  name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <Label htmlFor="voterId">Voter ID</Label>
+                      <Label htmlFor="email">Email Address</Label>
                       <div className="relative">
                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" />
+                          <Input id="email" placeholder="your@email.com" {...field} className="pl-10" />
                         </FormControl>
                       </div>
                       <FormMessage />

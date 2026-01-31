@@ -8,6 +8,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useRef, useEffect } from "react";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { doc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -23,11 +25,11 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
 
 const registerSchema = z.object({
   fullName: z.string().min(1, "Full name is required."),
-  voterId: z.string().regex(/^[A-Z]{3}[0-9]{7}$/, "Please enter a valid Voter ID (e.g., ABC1234567)."),
+  email: z.string().email("Please enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters long."),
   idProof: z.any().optional(),
 });
@@ -35,6 +37,8 @@ const registerSchema = z.object({
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const auth = useAuth();
+  const firestore = useFirestore();
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
@@ -43,7 +47,7 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       fullName: "",
-      voterId: "",
+      email: "",
       password: "",
       idProof: undefined,
     },
@@ -57,17 +61,37 @@ export default function RegisterPage() {
       description: "Please wait while we create your account.",
     });
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    console.log(values);
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const user = userCredential.user;
 
-    toast({
-      title: "Registration Successful!",
-      description: "Redirecting you to the login page.",
-    });
-    
-    router.push("/login");
+      const userProfile = {
+        id: user.uid,
+        firstName: values.fullName.split(' ')[0] || '',
+        lastName: values.fullName.split(' ').slice(1).join(' ') || '',
+        email: values.email,
+        voterIdProofHash: '', // Placeholder
+        faceImageHash: '', // Placeholder
+      };
+
+      const userDocRef = doc(firestore, "users", user.uid);
+      setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
+
+      toast({
+        title: "Registration Successful!",
+        description: "Redirecting you to the login page.",
+      });
+      
+      router.push("/login");
+
+    } catch (error: any) {
+      console.error("Registration Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: error.message || "An unexpected error occurred.",
+      });
+    }
   };
   
   useEffect(() => {
@@ -138,12 +162,12 @@ export default function RegisterPage() {
                     />
                     <FormField
                       control={control}
-                      name="voterId"
+                      name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Voter ID</FormLabel>
+                          <FormLabel>Email Address</FormLabel>
                           <FormControl>
-                            <Input placeholder="ABC1234567" {...field} />
+                            <Input placeholder="your@email.com" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -171,11 +195,10 @@ export default function RegisterPage() {
                           <FormControl>
                             <Input
                               {...fieldProps}
-                              value={undefined}
                               type="file"
                               accept="application/pdf"
                               onChange={(event) =>
-                                onChange(event.target.files && event.target.files.length > 0 ? event.target.files[0] : undefined)
+                                onChange(event.target.files && event.target.files[0])
                               }
                             />
                           </FormControl>

@@ -8,7 +8,7 @@ export type Candidate = {
 
 export type Vote = {
   id: string;
-  userId: string;
+  voterId: string;
   candidateId: string;
   votedAt: string;
 };

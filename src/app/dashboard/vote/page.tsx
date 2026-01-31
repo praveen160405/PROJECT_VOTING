@@ -1,10 +1,11 @@
 "use client"
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Star, ArrowRight, ShieldAlert, Loader2 } from 'lucide-react';
 import { useWeb3 } from "@/app/providers";
+import { collection } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Candidate, Vote } from "@/lib/types";
 import { votingContractAddress } from "@/lib/contract";
+import { useFirebase, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
 
 const partySymbols: { [key: string]: React.FC<React.SVGProps<SVGSVGElement>> } = {
   DMK: (props) => (
@@ -94,8 +96,6 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
 
 export default function VotePage() {
   const [votedCandidateId, setVotedCandidateId] = useState<string | null>(null);
-  const [hasAlreadyVoted, setHasAlreadyVoted] = useState<boolean>(false);
-  const [isCheckingVote, setIsCheckingVote] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -103,39 +103,39 @@ export default function VotePage() {
   const { toast } = useToast();
   const router = useRouter();
   const { address, contract, connectWallet } = useWeb3();
+  const { user, firestore, isUserLoading } = useFirebase();
 
+  const userVotesCollection = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, "users", user.uid, "votes");
+  }, [firestore, user]);
+
+  const { data: userVotes, isLoading: isLoadingVotes } = useCollection(userVotesCollection);
+
+  const hasAlreadyVoted = useMemo(() => {
+    if (userVotes && userVotes.length > 0) return true;
+    if (typeof window !== "undefined" && localStorage.getItem("verityvote_voted") === "true") return true;
+    return false;
+  }, [userVotes]);
+
+  const isCheckingVote = isUserLoading || isLoadingVotes;
   const isContractDeployed = votingContractAddress !== "0x0000000000000000000000000000000000000000";
 
-  useEffect(() => {
-    const checkVoteStatus = async () => {
-      if (!address || !contract || !isContractDeployed) {
-        setIsCheckingVote(false);
-        // Fallback to local storage if wallet not connected or contract not deployed
-        if (localStorage.getItem("verityvote_voted")) {
-          setHasAlreadyVoted(true);
-        }
-        return;
-      }
-      setIsCheckingVote(true);
-      try {
-        const hasVoted = await contract.hasVoted(address);
-        setHasAlreadyVoted(hasVoted);
-      } catch (e) {
-        console.error("Could not check vote status:", e);
-        setHasAlreadyVoted(false);
-      } finally {
-        setIsCheckingVote(false);
-      }
-    };
-    checkVoteStatus();
-  }, [address, contract, isContractDeployed]);
-
   const handleInitiateVote = (candidate: Candidate) => {
-    if (!address) {
+    if (!user && !address) {
+        toast({
+            variant: "destructive",
+            title: "Not Logged In",
+            description: "Please log in or connect your wallet to vote.",
+        });
+        router.push('/login');
+        return;
+    }
+    if (!address && isContractDeployed) {
         toast({
             variant: "destructive",
             title: "Wallet Not Connected",
-            description: "Please connect your wallet to vote.",
+            description: "Please connect your wallet to vote on the blockchain.",
         });
         connectWallet();
         return;
@@ -147,75 +147,73 @@ export default function VotePage() {
   const handleVote = async (candidate: Candidate) => {
     setIsConfirming(false);
     
-    if (!contract || !isContractDeployed) {
-        toast({
-            variant: "destructive",
-            title: "Smart Contract Not Deployed",
-            description: "The voting contract is not live yet. Using local vote simulation.",
-        });
-        handleLocalVote(candidate);
-        return;
-    }
-
-    setIsSubmitting(true);
-    toast({
-      title: "Submitting Your Vote...",
-      description: "Please confirm the transaction in your wallet.",
-    });
-
-    try {
-        const candidateIdForContract = candidates.findIndex(c => c.id === candidate.id) + 1;
-        if (candidateIdForContract === 0) throw new Error("Invalid candidate ID.");
-
-        const tx = await contract.vote(BigInt(candidateIdForContract));
-        toast({ title: "Transaction Sent", description: "Waiting for blockchain confirmation..."});
-        await tx.wait(); 
-
-        setVotedCandidateId(candidate.id);
-        setHasAlreadyVoted(true);
-        // also save to local storage for the ledger
-        handleLocalVote(candidate, true);
-
-        toast({
-            title: "Vote Submitted!",
-            description: `Your vote for ${candidate.name} has been recorded on the blockchain.`,
-            duration: 5000,
-        });
-
-    } catch (e: any) {
-        console.error("Vote submission error:", e);
-        toast({
-            variant: "destructive",
-            title: "Transaction Failed",
-            description: e.reason || e.message || "Could not submit your vote.",
-        });
-    } finally {
-        setIsSubmitting(false);
+    if (address && contract && isContractDeployed) {
+      await handleBlockchainVote(candidate);
+    } else {
+      await handleFirestoreVote(candidate);
     }
   };
 
-  const handleLocalVote = (candidate: Candidate, isBlockchainVote = false) => {
-     const newVote: Vote = {
-        id: `vote_${Date.now()}`,
-        userId: address || "local_user",
-        candidateId: candidate.id,
-        votedAt: new Date().toISOString(),
-      };
-      const storedVotesJSON = localStorage.getItem("verityvote_votes");
-      const votes: Vote[] = storedVotesJSON ? JSON.parse(storedVotesJSON) : [];
-      votes.push(newVote);
-      localStorage.setItem("verityvote_votes", JSON.stringify(votes));
-      localStorage.setItem("verityvote_voted", "true");
+  const handleBlockchainVote = async (candidate: Candidate) => {
+     if (!contract) return;
+     setIsSubmitting(true);
+     toast({
+       title: "Submitting Your Vote...",
+       description: "Please confirm the transaction in your wallet.",
+     });
+ 
+     try {
+         const candidateIdForContract = candidates.findIndex(c => c.id === candidate.id) + 1;
+         if (candidateIdForContract === 0) throw new Error("Invalid candidate ID.");
+ 
+         const tx = await contract.vote(BigInt(candidateIdForContract));
+         toast({ title: "Transaction Sent", description: "Waiting for blockchain confirmation..."});
+         await tx.wait(); 
+ 
+         setVotedCandidateId(candidate.id);
+         
+         // also save to local storage for the ledger until Firestore is primary
+         localStorage.setItem("verityvote_voted", "true");
+ 
+         toast({
+             title: "Vote Submitted!",
+             description: `Your vote for ${candidate.name} has been recorded on the blockchain.`,
+             duration: 5000,
+         });
+ 
+     } catch (e: any) {
+         console.error("Vote submission error:", e);
+         toast({
+             variant: "destructive",
+             title: "Transaction Failed",
+             description: e.reason || e.message || "Could not submit your vote.",
+         });
+     } finally {
+         setIsSubmitting(false);
+     }
+  }
 
-      if (!isBlockchainVote) {
-          setVotedCandidateId(candidate.id);
-          setHasAlreadyVoted(true);
-          toast({
-            title: "Vote Submitted (Simulation)!",
-            description: `Your vote for ${candidate.name} has been recorded locally.`,
-            duration: 5000,
-          });
-      }
+  const handleFirestoreVote = async (candidate: Candidate) => {
+    if (!user || !userVotesCollection) {
+      toast({ variant: "destructive", title: "Authentication Error", description: "Could not identify user." });
+      return;
+    }
+    setIsSubmitting(true);
+    const newVote: Omit<Vote, 'id'> = {
+      voterId: user.uid,
+      candidateId: candidate.id,
+      votedAt: new Date().toISOString(),
+    };
+
+    addDocumentNonBlocking(userVotesCollection, newVote);
+    setVotedCandidateId(candidate.id);
+    
+    toast({
+      title: "Vote Submitted!",
+      description: `Your vote for ${candidate.name} has been recorded.`,
+      duration: 5000,
+    });
+    setIsSubmitting(false);
   }
 
   useEffect(() => {
@@ -265,8 +263,8 @@ export default function VotePage() {
   const pageDisabled = isCheckingVote || isSubmitting;
 
   const getPageDescription = () => {
-    if (!address) return "Please connect your wallet to see your voting status.";
-    if (isCheckingVote) return "Checking your voting status on the blockchain...";
+    if (!user && !address) return "Please log in or connect your wallet to see your voting status.";
+    if (isCheckingVote) return "Checking your voting status...";
     if (isVoted) return "Your vote has been recorded. You cannot vote again.";
     return "Select a candidate to cast your vote. This action is irreversible.";
   }
@@ -285,7 +283,7 @@ export default function VotePage() {
           <ShieldAlert className="h-4 w-4 !text-yellow-600 dark:!text-yellow-400" />
           <AlertTitle>Vote Recorded</AlertTitle>
           <AlertDescription>
-            Our records indicate that you have already cast a vote with this wallet. Each wallet is allowed only one vote.
+            Our records indicate that you have already cast a vote. Each account is allowed only one vote.
           </AlertDescription>
         </Alert>
       )}
@@ -295,7 +293,7 @@ export default function VotePage() {
           <Loader2 className="h-4 w-4 animate-spin" />
           <AlertTitle>Processing Vote</AlertTitle>
           <AlertDescription>
-            Your vote is being submitted to the blockchain. Please wait for confirmation.
+            Your vote is being recorded. Please wait.
           </AlertDescription>
         </Alert>
       )}
@@ -323,7 +321,7 @@ export default function VotePage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Your Vote</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to cast your vote for <strong>{selectedCandidate?.name}</strong> from the party <strong>{selectedCandidate?.party}</strong>. This action is irreversible and will be recorded on the blockchain.
+              You are about to cast your vote for <strong>{selectedCandidate?.name}</strong> from the party <strong>{selectedCandidate?.party}</strong>. This action is irreversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
