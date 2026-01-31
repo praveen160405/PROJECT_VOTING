@@ -6,6 +6,7 @@ import {
   Sidebar,
   SidebarHeader,
   SidebarContent,
+  SidebarFooter,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -13,13 +14,25 @@ import {
 import {
   Vote,
   BarChart,
+  LayoutDashboard,
+  LogOut,
+  Settings,
 } from "lucide-react";
 import { Logo } from "./logo";
+import { useAuth } from "@/firebase";
 
 export function DashboardSidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const auth = useAuth();
+
+  const handleLogout = async () => {
+    await auth.signOut();
+    router.push('/login');
+  };
 
   const menuItems = [
+    { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/vote", label: "Vote", icon: Vote },
     { href: "/dashboard/results", label: "Results", icon: BarChart },
   ];
@@ -35,7 +48,7 @@ export function DashboardSidebar() {
             <SidebarMenuItem key={item.href}>
               <Link href={item.href}>
                 <SidebarMenuButton
-                  isActive={pathname.startsWith(item.href)}
+                  isActive={pathname === item.href}
                   tooltip={{ children: item.label }}
                 >
                   <item.icon />
@@ -46,6 +59,27 @@ export function DashboardSidebar() {
           ))}
         </SidebarMenu>
       </SidebarContent>
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+              <Link href="/dashboard/settings">
+                <SidebarMenuButton
+                  isActive={pathname === "/dashboard/settings"}
+                  tooltip={{ children: "Settings" }}
+                >
+                  <Settings />
+                  <span>Settings</span>
+                </SidebarMenuButton>
+              </Link>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+             <SidebarMenuButton onClick={handleLogout} tooltip={{children: "Logout"}}>
+                <LogOut />
+                <span>Logout</span>
+             </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
     </Sidebar>
   );
 }
