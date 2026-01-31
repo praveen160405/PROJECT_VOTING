@@ -38,7 +38,9 @@ export function DashboardSidebar() {
   const { data: userProfile } = useDoc<Voter>(userDocRef);
 
   const handleLogout = async () => {
-    await auth.signOut();
+    if (auth) {
+      await auth.signOut();
+    }
     router.push('/login');
   };
 
