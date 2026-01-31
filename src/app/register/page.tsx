@@ -29,7 +29,10 @@ import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
 
 const registerSchema = z.object({
   fullName: z.string().min(1, "Full name is required."),
-  voterId: z.string().min(6, "Voter ID must be at least 6 characters."),
+  voterId: z
+    .string()
+    .length(10, "Voter ID must be exactly 10 characters.")
+    .regex(/^[a-zA-Z]{3}[0-9]{7}$/, "Voter ID must be 3 letters followed by 7 numbers."),
   password: z.string().min(8, "Password must be at least 8 characters long."),
   idProof: z.any().optional(),
 });
@@ -179,7 +182,7 @@ export default function RegisterPage() {
                         <FormItem>
                           <FormLabel>Voter ID</FormLabel>
                           <FormControl>
-                            <Input placeholder="YourVoterID123" {...field} />
+                            <Input placeholder="ABC1234567" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
