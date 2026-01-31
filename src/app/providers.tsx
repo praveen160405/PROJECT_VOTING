@@ -3,7 +3,7 @@
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { type ThemeProviderProps } from "next-themes/dist/types";
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { ethers, BrowserProvider, Contract } from 'ethers';
+import { BrowserProvider, Contract } from 'ethers';
 import { votingContractAddress, votingContractABI } from '@/lib/contract';
 
 // Web3 Context
@@ -36,7 +36,7 @@ const Web3Provider = ({ children }: { children: React.ReactNode }) => {
     setError(null);
     if (typeof window.ethereum !== 'undefined') {
       try {
-        const browserProvider = new ethers.BrowserProvider(window.ethereum);
+        const browserProvider = new BrowserProvider(window.ethereum);
         // It's recommended to request accounts, which also prompts the user to connect.
         const signer = await browserProvider.getSigner();
         const userAddress = await signer.getAddress();
@@ -44,7 +44,7 @@ const Web3Provider = ({ children }: { children: React.ReactNode }) => {
         setAddress(userAddress);
         setProvider(browserProvider);
 
-        const votingContract = new ethers.Contract(votingContractAddress, votingContractABI, signer);
+        const votingContract = new Contract(votingContractAddress, votingContractABI, signer);
         setContract(votingContract);
 
       } catch (err: any) {
