@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Loader2, Camera } from "lucide-react";
+import { Loader2, Camera, User } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,7 +29,7 @@ import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
 
 const registerSchema = z.object({
   fullName: z.string().min(1, "Full name is required."),
-  email: z.string().email("Please enter a valid email address."),
+  voterId: z.string().min(6, "Voter ID must be at least 6 characters."),
   password: z.string().min(8, "Password must be at least 8 characters long."),
   idProof: z.any().optional(),
 });
@@ -47,7 +47,7 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       fullName: "",
-      email: "",
+      voterId: "",
       password: "",
       idProof: undefined,
     },
@@ -62,14 +62,17 @@ export default function RegisterPage() {
     });
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      // We use a derived email for Firebase Auth, as it requires an email.
+      // The user will only ever see and use their Voter ID.
+      const emailForAuth = `${values.voterId}@verityvote.app`;
+      const userCredential = await createUserWithEmailAndPassword(auth, emailForAuth, values.password);
       const user = userCredential.user;
 
       const userProfile = {
         id: user.uid,
+        voterId: values.voterId,
         firstName: values.fullName.split(' ')[0] || '',
         lastName: values.fullName.split(' ').slice(1).join(' ') || '',
-        email: values.email,
         voterIdProofHash: '', // Placeholder
         faceImageHash: '', // Placeholder
       };
@@ -86,10 +89,18 @@ export default function RegisterPage() {
 
     } catch (error: any) {
       console.error("Registration Error:", error);
+      
+      let description = "An unexpected error occurred.";
+      if (error.code === 'auth/email-already-in-use') {
+        description = "This Voter ID is already registered. Please choose another or log in.";
+      } else if (error.message) {
+        description = error.message;
+      }
+      
       toast({
         variant: "destructive",
         title: "Registration Failed",
-        description: error.message || "An unexpected error occurred.",
+        description: description,
       });
     }
   };
@@ -162,12 +173,12 @@ export default function RegisterPage() {
                     />
                     <FormField
                       control={control}
-                      name="email"
+                      name="voterId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email Address</FormLabel>
+                          <FormLabel>Voter ID</FormLabel>
                           <FormControl>
-                            <Input placeholder="your@email.com" {...field} />
+                            <Input placeholder="YourVoterID123" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

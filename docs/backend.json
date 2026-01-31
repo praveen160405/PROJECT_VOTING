@@ -49,7 +49,11 @@
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the voter entity."
+          "description": "Unique identifier for the voter entity (Firebase Auth UID)."
+        },
+        "voterId": {
+          "type": "string",
+          "description": "The voter's unique identification string used for login."
         },
         "firstName": {
           "type": "string",
@@ -58,11 +62,6 @@
         "lastName": {
           "type": "string",
           "description": "The last name of the voter."
-        },
-        "email": {
-          "type": "string",
-          "description": "The email address of the voter.",
-          "format": "email"
         },
         "voterIdProofHash": {
           "type": "string",
@@ -75,11 +74,9 @@
       },
       "required": [
         "id",
+        "voterId",
         "firstName",
-        "lastName",
-        "email",
-        "voterIdProofHash",
-        "faceImageHash"
+        "lastName"
       ]
     },
     "Candidate": {

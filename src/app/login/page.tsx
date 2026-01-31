@@ -27,7 +27,7 @@ import { useAuth } from "@/firebase";
 
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address."),
+  voterId: z.string().min(1, "Voter ID is required."),
   password: z.string().min(1, "Password is required."),
 });
 
@@ -39,7 +39,7 @@ export default function LoginPage() {
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      voterId: "",
       password: "",
     },
   });
@@ -53,7 +53,8 @@ export default function LoginPage() {
     });
 
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const emailForAuth = `${values.voterId}@verityvote.app`;
+      await signInWithEmailAndPassword(auth, emailForAuth, values.password);
       toast({
         title: "Login Successful!",
         description: "Redirecting you to the dashboard.",
@@ -61,10 +62,18 @@ export default function LoginPage() {
       router.push("/dashboard");
     } catch (error: any) {
       console.error("Login Error:", error);
+      let description = "An unexpected error occurred.";
+      // Generic error for auth failures to avoid user enumeration
+      if (['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(error.code)) {
+        description = "Invalid Voter ID or password. Please try again.";
+      } else if (error.message) {
+        description = error.message;
+      }
+      
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: error.message || "An unexpected error occurred.",
+        description: description,
       });
     }
   };
@@ -86,7 +95,7 @@ export default function LoginPage() {
               Voter Sign In
             </CardTitle>
             <CardDescription className="text-muted-foreground pt-2">
-              Enter your credentials to access the voting platform.
+              Enter your Voter ID and password to access the platform.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -94,14 +103,14 @@ export default function LoginPage() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="email"
+                  name="voterId"
                   render={({ field }) => (
                     <FormItem>
-                      <Label htmlFor="email">Email Address</Label>
+                      <Label htmlFor="voterId">Voter ID</Label>
                       <div className="relative">
                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input id="email" placeholder="your@email.com" {...field} className="pl-10" />
+                          <Input id="voterId" placeholder="Enter your Voter ID" {...field} className="pl-10" />
                         </FormControl>
                       </div>
                       <FormMessage />
