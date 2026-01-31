@@ -10,7 +10,9 @@ export type Vote = {
   id: string;
   voterId: string;
   candidateId: string;
+  electionId: string;
   timestamp: string;
+  isVerified: boolean;
 };
 
 export type VoteResult = {

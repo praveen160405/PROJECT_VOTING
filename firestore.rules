@@ -28,9 +28,12 @@ service cloud.firestore {
       allow delete: if isExistingOwner(userId);
     }
 
-    // Votes - A user can create and read their own votes. Votes are immutable.
+    // Votes - A user can create their own vote, and read their own vote.
+    // Listing is allowed for any signed-in user for vote aggregation on the results page.
+    // Votes are immutable once created.
     match /users/{userId}/votes/{voteId} {
-      allow get, list: if isOwner(userId);
+      allow get: if isOwner(userId);
+      allow list: if isSignedIn();
       allow create: if isOwner(userId) && request.resource.data.voterId == userId;
       allow update, delete: if false; // Votes are immutable
     }

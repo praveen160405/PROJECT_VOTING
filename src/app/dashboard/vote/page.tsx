@@ -145,6 +145,8 @@ export default function VotePage() {
       voterId: user.uid,
       candidateId: candidate.id,
       timestamp: new Date().toISOString(),
+      electionId: "main_election",
+      isVerified: true,
     };
 
     addDocumentNonBlocking(userVotesCollection, newVote);
