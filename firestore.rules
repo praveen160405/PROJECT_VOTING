@@ -1,7 +1,155 @@
+/**
+ * Core Philosophy: This ruleset enforces a strict user-ownership model for sensitive voter
+ * information and their cast votes. All user-specific data is isolated within a
+ * user-owned document tree, making it impossible for one user to access another's
+ * data. Publicly available information, such as candidates and elections, is
+ * stored in separate top-level collections with read-only access for clients.
+ *
+ * Data Structure: The data is organized into a user-centric hierarchy under
+ * `/users/{userId}`, which contains voter profiles and a subcollection for their
+ * votes (`/votes`). This is structurally segregated from global, public-read
+ * collections like `/elections` and `/candidates`.
+ *
+ * Key Security Decisions:
+ * - User Isolation: Users can only access documents within their own `/users/{userId}` path.
+ *   This inherently prevents enumeration of other users.
+ * - Vote Immutability: Once a vote is cast, it is write-once. The rules explicitly
+ *   disallow any updates or deletions to vote documents to ensure the integrity
+ *   of the voting record.
+ * - Admin-Controlled Globals: The creation and management of global data like
+ *   elections and candidates are locked down. Writes are disallowed pending the
+ *   implementation of a server-side admin role, following the principle of
+*   least privilege.
+ *
+ * Denormalization for Authorization: The rules rely on path-based authorization.
+ * The user's UID is part of the path (e.g., `/users/{userId}`), which allows for
+ * fast and simple ownership checks without needing costly `get()` calls to other
+ * documents. Furthermore, on vote creation, the `voterId` field in the document
+ * data is validated against the `{userId}` in the path to ensure relational consistency.
+ *
+ * Structural Segregation: Private user data (`/users/{userId}`) is kept in a
+ * completely separate collection tree from public data (`/elections`, `/candidates`).
+ * This provides a clear security boundary, simplifies list queries, and enhances
+ * performance by ensuring queries don't have to filter through mixed-privacy data.
+ */
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Helper Functions for authentication and authorization logic.
+    // These functions centralize common checks to make rules more readable and maintainable.
+
+    /**
+     * isSignedIn
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * isOwner
+     * Checks if the authenticated user's UID matches the given userId.
+     * This is the primary function for enforcing document ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * isExistingOwner
+     * Ensures a document exists before checking for ownership.
+     * CRITICAL for safe update and delete operations.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    /**
+     * @description
+     *   Manages user profile data. Each user has a document that only they can
+     *   create, read, update, or delete.
+     * @path
+     *   /users/{userId}
+     * @allow
+     *   (create) An authenticated user creating their own profile document: /users/user_abc
+     * @deny
+     *   (update) A user trying to update another user's profile: /users/user_xyz
+     * @principle
+     *   Restricts access to a user's own data tree and enforces self-creation.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Prevent user enumeration for security.
+      allow create: if isOwner(userId) && request.resource.data.id == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description
+     *   Stores a user's cast votes. A user can create a vote, which becomes
+     *   immutable. They can read their own votes but cannot modify or delete them.
+     * @path
+     *   /users/{userId}/votes/{voteId}
+     * @allow
+     *   (create) An authenticated user casting a new vote for themselves: /users/user_abc/votes/vote_123
+     * @deny
+     *   (update) A user trying to change their cast vote. All votes are final.
+     * @principle
+     *   Enforces document ownership, write-once immutability for integrity, and
+     *   validates relational integrity between the vote data and the user path.
+     */
+    match /users/{userId}/votes/{voteId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.voterId == userId;
+      allow update: if false; // Votes are immutable and cannot be changed.
+      allow delete: if false; // Votes are immutable and cannot be deleted.
+    }
+
+    /**
+     * @description
+     *   Stores global election information. This data is public for any client
+     *   to read, but cannot be modified by clients.
+     * @path
+     *   /elections/{electionId}
+     * @allow
+     *   (get) Any user, authenticated or not, reading election details.
+     * @deny
+     *   (create) A regular user attempting to create a new election.
+     * @principle
+     *   Implements a "Public Read with Admin-Only Writes" pattern. Writes are
+     *   disabled pending implementation of a secure admin role.
+     */
+    match /elections/{electionId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false; // TODO: Implement admin role check for creating elections.
+      allow update: if false; // TODO: Implement admin role check for updating elections.
+      allow delete: if false; // TODO: Implement admin role check for deleting elections.
+    }
+
+    /**
+     * @description
+     *   Stores global candidate information. This data is public for any client
+     *   to read, but cannot be modified by clients.
+     * @path
+     *   /candidates/{candidateId}
+     * @allow
+     *   (list) Any user, authenticated or not, listing all candidates.
+     * @deny
+     *   (create) A regular user attempting to add a new candidate.
+     * @principle
+     *   Implements a "Public Read with Admin-Only Writes" pattern. Writes are
+     *   disabled pending implementation of a secure admin role.
+     */
+    match /candidates/{candidateId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if false; // TODO: Implement admin role check for creating candidates.
+      allow update: if false; // TODO: Implement admin role check for updating candidates.
+      allow delete: if false; // TODO: Implement admin role check for deleting candidates.
+    }
   }
 }

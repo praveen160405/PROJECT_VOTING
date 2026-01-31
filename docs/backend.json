@@ -1,36 +1,236 @@
 {
   "entities": {
     "Vote": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Vote",
-      "description": "Represents a single vote cast by a user for a candidate.",
       "type": "object",
+      "description": "Represents a single vote cast in an election.",
       "properties": {
-        "userId": {
+        "id": {
           "type": "string",
-          "description": "The ID of the user who cast the vote."
+          "description": "Unique identifier for the vote entity."
+        },
+        "voterId": {
+          "type": "string",
+          "description": "Reference to Voter. (Relationship: Voter 1:N Vote)"
         },
         "candidateId": {
           "type": "string",
-          "description": "The ID of the candidate who received the vote."
+          "description": "Reference to Candidate. (Relationship: Candidate 1:N Vote)"
         },
-        "votedAt": {
+        "electionId": {
           "type": "string",
-          "format": "date-time",
-          "description": "The timestamp when the vote was cast."
+          "description": "Reference to Election. (Relationship: Election 1:N Vote)"
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "The date and time when the vote was cast.",
+          "format": "date-time"
+        },
+        "isVerified": {
+          "type": "boolean",
+          "description": "Indicates whether the vote has been verified."
         }
       },
-      "required": ["userId", "candidateId", "votedAt"]
+      "required": [
+        "id",
+        "voterId",
+        "candidateId",
+        "electionId",
+        "timestamp",
+        "isVerified"
+      ]
+    },
+    "Voter": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Voter",
+      "type": "object",
+      "description": "Represents a registered voter.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the voter entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the voter."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the voter."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the voter.",
+          "format": "email"
+        },
+        "voterIdProofHash": {
+          "type": "string",
+          "description": "Hash of the voter ID proof document."
+        },
+        "faceImageHash": {
+          "type": "string",
+          "description": "Hash of the voter's facial image."
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "voterIdProofHash",
+        "faceImageHash"
+      ]
+    },
+    "Candidate": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Candidate",
+      "type": "object",
+      "description": "Represents a candidate in an election.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the candidate entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the candidate."
+        },
+        "party": {
+          "type": "string",
+          "description": "The political party of the candidate."
+        },
+        "imageUrl": {
+          "type": "string",
+          "description": "URL of the candidate's image.",
+          "format": "uri"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "party",
+        "imageUrl"
+      ]
+    },
+    "Election": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Election",
+      "type": "object",
+      "description": "Represents an election event.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the election entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the election."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The start date and time of the election.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The end date and time of the election.",
+          "format": "date-time"
+        },
+        "candidateIds": {
+          "type": "array",
+          "description": "References to Candidates participating in this election. (Relationship: Election 1:N Candidate)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "startDate",
+        "endDate",
+        "candidateIds"
+      ]
     }
   },
   "auth": {
-    "providers": []
+    "providers": [
+      "password",
+      "anonymous"
+    ]
   },
   "firestore": {
-    "/votes/{voteId}": {
-      "schema": {
-        "$ref": "#/entities/Vote"
+    "structure": [
+      {
+        "path": "/users/{userId}/votes/{voteId}",
+        "definition": {
+          "entityName": "Vote",
+          "schema": {
+            "$ref": "#/backend/entities/Vote"
+          },
+          "description": "Stores individual votes cast by a voter.  Authorization is based on path ownership (voterId matches userId).",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the voter who owns the votes."
+            },
+            {
+              "name": "voteId",
+              "description": "The ID of the vote document."
+            }
+          ]
+        }
       },
-      "description": "Stores individual vote records, keyed by a unique vote ID."
-    }
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "Voter",
+          "schema": {
+            "$ref": "#/backend/entities/Voter"
+          },
+          "description": "Stores the details of the user. The user owns this document, authorization is based on path ownership.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/elections/{electionId}",
+        "definition": {
+          "entityName": "Election",
+          "schema": {
+            "$ref": "#/backend/entities/Election"
+          },
+          "description": "Stores information about an election. Access controlled by admin roles.",
+          "params": [
+            {
+              "name": "electionId",
+              "description": "The ID of the election."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/candidates/{candidateId}",
+        "definition": {
+          "entityName": "Candidate",
+          "schema": {
+            "$ref": "#/backend/entities/Candidate"
+          },
+          "description": "Stores information about a candidate.  Readable by anyone.",
+          "params": [
+            {
+              "name": "candidateId",
+              "description": "The ID of the candidate."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore data structure is designed to support a secure and transparent voting system, VerityVote, adhering to the principles of authorization independence, clarity, and QAPs (Rules are not filters). It leverages path-based ownership for user-specific data and denormalization to ensure security rules are simple, robust, and easily debuggable. The structure also facilitates the implementation of security rules that enforce vote anonymity and prevent unauthorized data access, aligning with the application's core features.\n\n**Authorization Independence:**  Authorization independence is achieved primarily by using path-based ownership for votes scoped to a specific voter. There's no need to `get()` parent document data to determine authorization.  Each vote is owned by the voter who cast it, making access control straightforward and atomic. Furthermore, election metadata, is used on the client side to decide on available parameters for an election, and is validated using a collection group query that includes electionId, candidateId, and voterId. This approach eliminates hierarchical authorization dependencies, simplifies security rules, and supports atomic operations (transactions/batches).\n\n**QAPs (Rules are not Filters):** The structure supports secure `list` operations by ensuring that all documents within a collection share the same security posture. For example, all votes under `/users/{userId}/votes/{voteId}` are owned by the user identified by `{userId}`. Thus listing votes for a specific user is safe.\n\n**Denormalization:** We are implicitly relying on client-side denormalization for operations related to Elections. This is secure because the rules only allow the document to be created, the rules do not allow the document to be read or updated, which means that all reads must happen through a server.\n\n**Election Design Notes:** Elections are used as global entities. The rules for this collection are secured to only allow admin roles to create elections."
   }
 }
