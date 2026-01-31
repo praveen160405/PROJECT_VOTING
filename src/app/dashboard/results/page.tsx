@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { candidates as initialCandidates } from "@/lib/data";
@@ -8,6 +8,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { VoteResult, PartyVote } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Create mock chart config
 const chartConfig = initialCandidates.reduce((acc, candidate, index) => {
@@ -23,9 +24,16 @@ const chartConfig = initialCandidates.reduce((acc, candidate, index) => {
   },
 } as ChartConfig);
 
+interface ElectionResults {
+  voteResults: VoteResult[];
+  partyVotes: PartyVote[];
+  totalVotes: number;
+}
+
 export default function ResultsPage() {
-  // Generate mock results
-  const electionResults = useMemo(() => {
+  const [electionResults, setElectionResults] = useState<ElectionResults | null>(null);
+
+  useEffect(() => {
     const voteResults: VoteResult[] = initialCandidates.map(c => ({
       name: c.name,
       // Generate random votes for demonstration
@@ -39,8 +47,12 @@ export default function ResultsPage() {
     
     const totalVotes = voteResults.reduce((sum, result) => sum + result.votes, 0);
 
-    return { voteResults, partyVotes, totalVotes };
+    setElectionResults({ voteResults, partyVotes, totalVotes });
   }, []);
+
+  if (!electionResults) {
+    return <ResultsSkeleton />;
+  }
 
   const { voteResults, partyVotes, totalVotes } = electionResults;
 
@@ -149,6 +161,62 @@ export default function ResultsPage() {
               </ScrollArea>
             </CardContent>
           </Card>
+      </div>
+    </div>
+  );
+}
+
+function ResultsSkeleton() {
+  return (
+    <div className="flex flex-col gap-6">
+      <div>
+        <Skeleton className="h-10 w-1/2" />
+        <Skeleton className="mt-2 h-5 w-1/3" />
+      </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card className="col-span-2">
+          <CardHeader>
+            <Skeleton className="h-6 w-1/4" />
+            <Skeleton className="mt-2 h-4 w-1/3" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-[400px] w-full" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/3" />
+            <Skeleton className="mt-2 h-4 w-1/2" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-[300px] w-full" />
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-1/4" />
+            <Skeleton className="mt-2 h-4 w-1/3" />
+          </CardHeader>
+          <CardContent className="grid gap-4 text-sm">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-4 w-1/4" />
+            </div>
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-4 w-1/4" />
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="col-span-1 md:col-span-2">
+          <CardHeader>
+            <Skeleton className="h-6 w-1/4" />
+            <Skeleton className="mt-2 h-4 w-1/3" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-[300px] w-full" />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
