@@ -17,14 +17,25 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
+  Shield,
 } from "lucide-react";
 import { Logo } from "./logo";
-import { useAuth } from "@/firebase";
+import { useFirebase, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { Voter } from "@/lib/types";
+
 
 export function DashboardSidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const auth = useAuth();
+  const { auth, user, firestore } = useFirebase();
+
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, "users", user.uid);
+  }, [firestore, user]);
+
+  const { data: userProfile } = useDoc<Voter>(userDocRef);
 
   const handleLogout = async () => {
     await auth.signOut();
@@ -57,6 +68,19 @@ export function DashboardSidebar() {
               </Link>
             </SidebarMenuItem>
           ))}
+          {userProfile?.isAdmin && (
+             <SidebarMenuItem>
+              <Link href="/dashboard/admin">
+                <SidebarMenuButton
+                  isActive={pathname.startsWith("/dashboard/admin")}
+                  tooltip={{ children: "Admin" }}
+                >
+                  <Shield />
+                  <span>Admin</span>
+                </SidebarMenuButton>
+              </Link>
+            </SidebarMenuItem>
+          )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>

@@ -75,6 +75,7 @@ export default function RegisterPage() {
         lastName: values.fullName.split(' ').slice(1).join(' ') || '',
         voterIdProofHash: '', // Placeholder
         faceImageHash: '', // Placeholder
+        isAdmin: false,
       };
 
       const userDocRef = doc(firestore, "users", user.uid);

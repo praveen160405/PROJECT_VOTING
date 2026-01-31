@@ -70,6 +70,10 @@
         "faceImageHash": {
           "type": "string",
           "description": "Hash of the voter's facial image."
+        },
+        "isAdmin": {
+          "type": "boolean",
+          "description": "Indicates whether the user has administrative privileges."
         }
       },
       "required": [

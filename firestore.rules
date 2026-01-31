@@ -66,21 +66,33 @@ service cloud.firestore {
     }
 
     /**
+     * isAdmin
+     * Checks if the currently authenticated user has admin privileges.
+     * It reads the user's own profile document to check the `isAdmin` flag.
+     */
+    function isAdmin() {
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+
+    /**
      * @description
      *   Manages user profile data. Each user has a document that only they can
-     *   create, read, update, or delete.
+     *   create, read, update, or delete. Admins can list all users.
      * @path
      *   /users/{userId}
      * @allow
      *   (create) An authenticated user creating their own profile document: /users/user_abc
+     *   (list) An admin user listing all user profiles.
      * @deny
      *   (update) A user trying to update another user's profile: /users/user_xyz
      * @principle
-     *   Restricts access to a user's own data tree and enforces self-creation.
+     *   Restricts access to a user's own data tree and enforces self-creation, while
+     *   allowing admins to view all users for management purposes.
      */
     match /users/{userId} {
       allow get: if isOwner(userId);
-      allow list: if false; // Prevent user enumeration for security.
+      allow list: if isAdmin();
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
@@ -111,45 +123,41 @@ service cloud.firestore {
     /**
      * @description
      *   Stores global election information. This data is public for any client
-     *   to read, but cannot be modified by clients.
+     *   to read, but can only be modified by admins.
      * @path
      *   /elections/{electionId}
      * @allow
      *   (get) Any user, authenticated or not, reading election details.
+     *   (create) An admin creating a new election.
      * @deny
      *   (create) A regular user attempting to create a new election.
      * @principle
-     *   Implements a "Public Read with Admin-Only Writes" pattern. Writes are
-     *   disabled pending implementation of a secure admin role.
+     *   Implements a "Public Read with Admin-Only Writes" pattern.
      */
     match /elections/{electionId} {
       allow get: if true;
       allow list: if true;
-      allow create: if false; // TODO: Implement admin role check for creating elections.
-      allow update: if false; // TODO: Implement admin role check for updating elections.
-      allow delete: if false; // TODO: Implement admin role check for deleting elections.
+      allow create, update, delete: if isAdmin();
     }
 
     /**
      * @description
      *   Stores global candidate information. This data is public for any client
-     *   to read, but cannot be modified by clients.
+     *   to read, but can only be modified by admins.
      * @path
      *   /candidates/{candidateId}
      * @allow
      *   (list) Any user, authenticated or not, listing all candidates.
+     *   (create) An admin creating a new candidate.
      * @deny
      *   (create) A regular user attempting to add a new candidate.
      * @principle
-     *   Implements a "Public Read with Admin-Only Writes" pattern. Writes are
-     *   disabled pending implementation of a secure admin role.
+     *   Implements a "Public Read with Admin-Only Writes" pattern.
      */
     match /candidates/{candidateId} {
       allow get: if true;
       allow list: if true;
-      allow create: if false; // TODO: Implement admin role check for creating candidates.
-      allow update: if false; // TODO: Implement admin role check for updating candidates.
-      allow delete: if false; // TODO: Implement admin role check for deleting candidates.
+      allow create, update, delete: if isAdmin();
     }
   }
 }

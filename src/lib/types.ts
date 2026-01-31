@@ -22,3 +22,11 @@ export type PartyVote = {
   party: string;
   votes: number;
 };
+
+export type Voter = {
+  id: string;
+  voterId: string;
+  firstName: string;
+  lastName: string;
+  isAdmin?: boolean;
+};
