@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
-import { collection } from "firebase/firestore";
+import { collection, collectionGroup, getDocs, query } from "firebase/firestore";
 import { format, isValid } from "date-fns";
 import { Loader2 } from "lucide-react";
 
@@ -37,7 +37,7 @@ interface ElectionResults {
 
 export default function ResultsPage() {
   const [electionResults, setElectionResults] = useState<ElectionResults | null>(null);
-  const [isMounted, setIsMounted] = useState(false);
+  const [isLoadingResults, setIsLoadingResults] = useState(true);
 
   const { user, firestore, isUserLoading } = useFirebase();
 
@@ -45,50 +45,78 @@ export default function ResultsPage() {
     if (!firestore || !user) return null;
     return collection(firestore, 'users', user.uid, 'votes');
   }, [firestore, user]);
-
-  const { data: userVotes, isLoading: isLoadingVotes } = useCollection<Vote>(userVotesCollection);
+  const { data: userVotes, isLoading: isLoadingUserVotes } = useCollection<Vote>(userVotesCollection);
   
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    if (!firestore) return;
 
+    const fetchResults = async () => {
+      setIsLoadingResults(true);
+      try {
+        const votesQuery = query(collectionGroup(firestore, 'votes'));
+        const querySnapshot = await getDocs(votesQuery);
+        
+        const voteCounts: { [key: string]: number } = {};
+        initialCandidates.forEach(c => voteCounts[c.id] = 0);
 
-  useEffect(() => {
-    if (!isMounted) return;
+        querySnapshot.forEach(doc => {
+          const vote = doc.data() as Vote;
+          if (vote.candidateId && voteCounts.hasOwnProperty(vote.candidateId)) {
+            voteCounts[vote.candidateId]++;
+          }
+        });
 
-    // This effect is for the mock chart data
-    const generateMockData = () => {
-      const voteResults: VoteResult[] = initialCandidates.map(c => ({
-        name: c.name,
-        // Generate random votes for demonstration
-        votes: Math.floor(Math.random() * 5000) + 1000
-      }));
+        const voteResults: VoteResult[] = initialCandidates.map(c => ({
+          name: c.name,
+          votes: voteCounts[c.id] || 0
+        }));
 
-      const partyVotes: PartyVote[] = voteResults.map(vr => ({
-          party: vr.name, 
-          votes: vr.votes
-      }));
-      
-      const totalVotes = voteResults.reduce((sum, result) => sum + result.votes, 0);
+        const partyVotes: PartyVote[] = voteResults.map(vr => ({
+            party: vr.name, 
+            votes: vr.votes
+        }));
+        
+        const totalVotes = voteResults.reduce((sum, result) => sum + result.votes, 0);
 
-      setElectionResults({ voteResults, partyVotes, totalVotes });
+        setElectionResults({ voteResults, partyVotes, totalVotes });
+      } catch (error) {
+        console.error("Error fetching election results:", error);
+        // Handle error, maybe show a message to the user
+      } finally {
+        setIsLoadingResults(false);
+      }
     };
     
-    generateMockData();
-  }, [isMounted]);
+    fetchResults();
 
-  if (!isMounted || !electionResults) {
+    // Set up a listener for real-time updates if desired
+    // This is a more advanced scenario that might require restructuring
+    // to avoid reading all docs on every change. For now, a manual refresh
+    // or periodic refetch would be simpler.
+
+  }, [firestore]);
+
+  if (isLoadingResults) {
     return <ResultsSkeleton />;
+  }
+  
+  if (!electionResults) {
+    return (
+        <div className="flex flex-col gap-6">
+            <h1 className="text-3xl font-bold tracking-tight">Election Results</h1>
+            <p className="text-muted-foreground">Could not load election results.</p>
+        </div>
+    );
   }
 
   const { voteResults, partyVotes, totalVotes } = electionResults;
-  const isLoadingLedger = isUserLoading || isLoadingVotes;
+  const isLoadingLedger = isUserLoading || isLoadingUserVotes;
 
   return (
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Election Results</h1>
-        <p className="text-muted-foreground">Demonstration of election results using mock data.</p>
+        <p className="text-muted-foreground">Live results from the decentralized voting ledger.</p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
@@ -189,7 +217,16 @@ export default function ResultsPage() {
                       userVotes.map((vote) => {
                         const candidate = initialCandidates.find(c => c.id === vote.candidateId);
                         const voteTimestamp = vote.timestamp as any;
-                        const date = voteTimestamp?.toDate ? voteTimestamp.toDate() : new Date(voteTimestamp);
+                        let date: Date;
+
+                        // Firestore Timestamps have a toDate() method. This is the most reliable way to convert them.
+                        if (voteTimestamp && typeof voteTimestamp.toDate === 'function') {
+                            date = voteTimestamp.toDate();
+                        } else {
+                            // If timestamp is null or undefined (e.g. pending server time), this will result in an invalid date.
+                            date = new Date(NaN);
+                        }
+
                         return (
                           <TableRow key={vote.id}>
                             <TableCell className="font-mono text-xs truncate max-w-[100px]">{vote.id}</TableCell>
