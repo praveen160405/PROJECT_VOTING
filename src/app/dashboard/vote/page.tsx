@@ -99,6 +99,7 @@ export default function VotePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   
   const { toast } = useToast();
   const router = useRouter();
@@ -114,9 +115,12 @@ export default function VotePage() {
 
   const hasAlreadyVoted = useMemo(() => {
     if (userVotes && userVotes.length > 0) return true;
-    if (typeof window !== "undefined" && localStorage.getItem("verityvote_voted") === "true") return true;
     return false;
   }, [userVotes]);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const isCheckingVote = isUserLoading || isLoadingVotes;
   const isContractDeployed = votingContractAddress !== "0x0000000000000000000000000000000000000000";
@@ -171,9 +175,6 @@ export default function VotePage() {
          await tx.wait(); 
  
          setVotedCandidateId(candidate.id);
-         
-         // also save to local storage for the ledger until Firestore is primary
-         localStorage.setItem("verityvote_voted", "true");
  
          toast({
              title: "Vote Submitted!",
@@ -226,7 +227,7 @@ export default function VotePage() {
     }
   }, [votedCandidateId, router]);
   
-  if (votedCandidateId) {
+  if (isMounted && votedCandidateId) {
     const votedCandidate = candidates.find(c => c.id === votedCandidateId);
     return (
       <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
@@ -260,7 +261,7 @@ export default function VotePage() {
   }
 
   const isVoted = hasAlreadyVoted;
-  const pageDisabled = isCheckingVote || isSubmitting;
+  const pageDisabled = !isMounted || isCheckingVote || isSubmitting;
 
   const getPageDescription = () => {
     if (!user && !address) return "Please log in or connect your wallet to see your voting status.";
@@ -274,11 +275,11 @@ export default function VotePage() {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Voting Booth</h1>
         <p className="text-muted-foreground">
-          {getPageDescription()}
+          {isMounted ? getPageDescription() : "Loading..."}
         </p>
       </div>
       
-      {isVoted && (
+      {isMounted && isVoted && (
         <Alert variant="default" className="bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-950 dark:border-yellow-800 dark:text-yellow-200">
           <ShieldAlert className="h-4 w-4 !text-yellow-600 dark:!text-yellow-400" />
           <AlertTitle>Vote Recorded</AlertTitle>
