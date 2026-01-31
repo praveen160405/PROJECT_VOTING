@@ -45,6 +45,7 @@ export default function RegisterPage() {
       fullName: "",
       voterId: "",
       password: "",
+      idProof: undefined,
     },
   });
 
@@ -165,25 +166,22 @@ export default function RegisterPage() {
                     <FormField
                         control={control}
                         name="idProof"
-                        render={({ field: { onChange, ...rest } }) => {
-                            const { ref, ...fieldProps } = rest;
-                            const fileRef = form.register('idProof').ref;
-                            return(
-                                <FormItem className="flex flex-col justify-end">
-                                    <FormLabel>ID Proof (PDF)</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="file"
-                                            accept="application/pdf"
-                                            onChange={(e) => onChange(e.target.files)}
-                                            {...fieldProps}
-                                            ref={fileRef}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )
-                        }}
+                        render={({ field: { value, onChange, ...fieldProps } }) => (
+                            <FormItem className="flex flex-col justify-end">
+                                <FormLabel>ID Proof (PDF)</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        {...fieldProps}
+                                        type="file"
+                                        accept="application/pdf"
+                                        onChange={(event) =>
+                                          onChange(event.target.files)
+                                        }
+                                    />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
                     />
                 </div>
                 
