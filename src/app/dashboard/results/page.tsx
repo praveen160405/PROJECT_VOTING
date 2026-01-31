@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
 import { collection } from "firebase/firestore";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { Loader2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -37,6 +37,7 @@ interface ElectionResults {
 
 export default function ResultsPage() {
   const [electionResults, setElectionResults] = useState<ElectionResults | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   const { user, firestore, isUserLoading } = useFirebase();
 
@@ -46,8 +47,15 @@ export default function ResultsPage() {
   }, [firestore, user]);
 
   const { data: userVotes, isLoading: isLoadingVotes } = useCollection<Vote>(userVotesCollection);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
 
   useEffect(() => {
+    if (!isMounted) return;
+
     // This effect is for the mock chart data
     const generateMockData = () => {
       const voteResults: VoteResult[] = initialCandidates.map(c => ({
@@ -67,9 +75,9 @@ export default function ResultsPage() {
     };
     
     generateMockData();
-  }, []);
+  }, [isMounted]);
 
-  if (!electionResults) {
+  if (!isMounted || !electionResults) {
     return <ResultsSkeleton />;
   }
 
@@ -180,11 +188,15 @@ export default function ResultsPage() {
                     {!isLoadingLedger && userVotes && userVotes.length > 0 ? (
                       userVotes.map((vote) => {
                         const candidate = initialCandidates.find(c => c.id === vote.candidateId);
+                        const voteTimestamp = vote.timestamp as any;
+                        const date = voteTimestamp?.toDate ? voteTimestamp.toDate() : new Date(voteTimestamp);
                         return (
                           <TableRow key={vote.id}>
                             <TableCell className="font-mono text-xs truncate max-w-[100px]">{vote.id}</TableCell>
                             <TableCell>{candidate ? candidate.name : 'Unknown'}</TableCell>
-                            <TableCell className="text-right">{format(new Date(vote.timestamp), "PPp")}</TableCell>
+                            <TableCell className="text-right">
+                              {isValid(date) ? format(date, "PPp") : "Processing..."}
+                            </TableCell>
                           </TableRow>
                         )
                       })
