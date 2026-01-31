@@ -4,6 +4,7 @@ import { useWeb3 } from "@/app/providers";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
+import { Wallet } from "lucide-react";
 
 export function ConnectWalletButton() {
     const { connectWallet, address, error } = useWeb3();
@@ -22,6 +23,7 @@ export function ConnectWalletButton() {
     if (address) {
         return (
             <div className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm">
+                <Wallet className="h-4 w-4 text-green-500" />
                 <span>{`${address.substring(0, 6)}...${address.substring(address.length - 4)}`}</span>
             </div>
         );
@@ -29,6 +31,7 @@ export function ConnectWalletButton() {
 
     return (
         <Button onClick={connectWallet}>
+            <Wallet className="mr-2 h-4 w-4" />
             Connect Wallet
         </Button>
     );

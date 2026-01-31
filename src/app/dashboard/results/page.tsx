@@ -1,13 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { candidates, initialUsers } from "@/lib/data";
+import { candidates as initialCandidates } from "@/lib/data";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { Vote, VoteResult, PartyVote, User } from "@/lib/types";
+import type { Vote, VoteResult, PartyVote, User, Candidate } from "@/lib/types";
+import { useWeb3 } from "@/app/providers";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
+import { votingContractAddress } from "@/lib/contract";
 
 const chartConfig = {
   votes: {
@@ -24,40 +28,67 @@ const chartConfig = {
 
 export default function ResultsPage() {
   const [ledgerVotes, setLedgerVotes] = useState<Vote[]>([]);
-  const [voteResults, setVoteResults] = useState<VoteResult[]>(
-    candidates.map(c => ({ name: c.name, votes: 0 }))
-  );
-  const [partyVotes, setPartyVotes] = useState<PartyVote[]>(
-    candidates.map(c => ({ party: c.name, votes: 0 }))
-  );
+  const [voteResults, setVoteResults] = useState<VoteResult[]>([]);
+  const [partyVotes, setPartyVotes] = useState<PartyVote[]>([]);
   const [totalVotes, setTotalVotes] = useState(0);
   const [registeredVoters, setRegisteredVoters] = useState(0);
+  const [candidates, setCandidates] = useState<Candidate[]>(initialCandidates);
+  const [isContractError, setIsContractError] = useState(false);
+
+  const { contract, provider } = useWeb3();
+
+  const isContractDeployed = votingContractAddress !== "0x0000000000000000000000000000000000000000";
+
+  const loadMockData = useCallback(() => {
+    const mockResults = initialCandidates.map(c => ({ name: c.name, votes: Math.floor(Math.random() * 1000) }));
+    setVoteResults(mockResults);
+    setPartyVotes(mockResults.map(r => ({ party: r.name, votes: r.votes })));
+    setTotalVotes(mockResults.reduce((sum, current) => sum + current.votes, 0));
+  }, []);
+
+  const fetchResults = useCallback(async () => {
+    if (!contract || !provider || !isContractDeployed) {
+      setIsContractError(true);
+      loadMockData();
+      return;
+    }
+
+    try {
+      setIsContractError(false);
+      const results: VoteResult[] = [];
+      let total = 0;
+      for (let i = 0; i < initialCandidates.length; i++) {
+        const candidateId = i + 1;
+        const votes = await contract.getVotes(candidateId);
+        const voteCount = Number(votes);
+        results.push({ name: initialCandidates[i].name, votes: voteCount });
+        total += voteCount;
+      }
+      setVoteResults(results);
+      setPartyVotes(results.map(r => ({ party: r.name, votes: r.votes })));
+      setTotalVotes(total);
+    } catch (error) {
+      console.error("Failed to fetch smart contract results:", error);
+      setIsContractError(true);
+      loadMockData();
+    }
+  }, [contract, provider, isContractDeployed, loadMockData]);
 
   useEffect(() => {
+    // Fetch smart contract results
+    fetchResults();
+
+    // Load ledger from local storage
     const storedVotesJSON = localStorage.getItem("verityvote_votes");
     const votes: Vote[] = storedVotesJSON ? JSON.parse(storedVotesJSON) : [];
     setLedgerVotes(votes);
 
-    const calculatedResults = candidates.map(c => {
-        const candidateVotes = votes.filter(v => v.candidateId === c.id).length;
-        return { name: c.name, votes: candidateVotes };
-    });
-    setVoteResults(calculatedResults);
-    
-    const calculatedPartyVotes = candidates.map(c => {
-        const candidateVotes = votes.filter(v => v.candidateId === c.id).length;
-        return { party: c.name, votes: candidateVotes };
-    });
-    setPartyVotes(calculatedPartyVotes);
-
-    const total = calculatedResults.reduce((sum, current) => sum + current.votes, 0);
-    setTotalVotes(total);
-
+    // Load users from local storage
     const storedUsersJSON = localStorage.getItem("verityvote_users");
-    const users: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : initialUsers;
+    const users: User[] = storedUsersJSON ? JSON.parse(storedUsersJSON) : [];
     setRegisteredVoters(users.length);
 
-  }, []);
+  }, [fetchResults]);
 
   const getCandidateNameById = (id: string) => {
     const candidate = candidates.find(c => c.id === id);
@@ -67,7 +98,7 @@ export default function ResultsPage() {
   const turnout = registeredVoters > 0 ? (totalVotes / registeredVoters) * 100 : 0;
 
   const renderChartContent = (chart: React.ReactNode, height: number) => {
-    if (totalVotes === 0) {
+    if (totalVotes === 0 && !isContractError) {
       return <div className={`h-[${height}px] w-full flex items-center justify-center text-muted-foreground`}>No votes have been cast yet.</div>;
     }
     return chart;
@@ -79,6 +110,16 @@ export default function ResultsPage() {
         <h1 className="text-3xl font-bold tracking-tight">Election Results</h1>
         <p className="text-muted-foreground">Live and transparent vote counts.</p>
       </div>
+
+      {isContractError && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Smart Contract Error</AlertTitle>
+            <AlertDescription>
+              The smart contract has not been deployed yet. Please deploy the contract and update the address in `src/lib/contract.ts`. Displaying mock data for now.
+            </AlertDescription>
+          </Alert>
+      )}
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="col-span-2">
@@ -126,7 +167,7 @@ export default function ResultsPage() {
                       dataKey="votes"
                       nameKey="party"
                     >
-                      {partyVotes.map((entry) => (
+                      {partyVotes.map((entry, index) => (
                         <Cell key={`cell-${entry.party}`} fill={`var(--color-${entry.party})`} />
                       ))}
                     </Pie>
@@ -149,7 +190,7 @@ export default function ResultsPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Registered Voters</span>
+                  <span className="text-muted-foreground">Registered Users</span>
                   <span className="font-semibold">{registeredVoters.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -167,9 +208,9 @@ export default function ResultsPage() {
         </Card>
         <Card className="col-span-1 md:col-span-2">
             <CardHeader>
-              <CardTitle>Vote Ledger (Client-Side Simulation)</CardTitle>
+              <CardTitle>Vote Ledger (Blockchain & Local)</CardTitle>
               <CardDescription>
-                A transparent log of votes recorded by this browser session.
+                A transparent log of all votes recorded by the smart contract and this browser.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -177,7 +218,7 @@ export default function ResultsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Vote ID</TableHead>
+                      <TableHead>Vote ID / From</TableHead>
                       <TableHead>Candidate</TableHead>
                       <TableHead className="text-right">Timestamp</TableHead>
                     </TableRow>
@@ -190,7 +231,7 @@ export default function ResultsPage() {
                         .map((vote) => (
                           <TableRow key={vote.id}>
                             <TableCell className="font-mono text-xs">
-                              {`${vote.id.slice(0,14)}...`}
+                              {vote.userId.startsWith('0x') ? `${vote.userId.slice(0,14)}...` : vote.id.slice(0,14) }
                             </TableCell>
                             <TableCell>
                               {getCandidateNameById(vote.candidateId)}
@@ -206,7 +247,7 @@ export default function ResultsPage() {
                           colSpan={3}
                           className="h-24 text-center text-muted-foreground"
                         >
-                          No votes have been recorded in this browser session.
+                          No votes have been recorded yet.
                         </TableCell>
                       </TableRow>
                     )}
