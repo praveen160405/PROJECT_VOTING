@@ -2,13 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
+import { collection } from "firebase/firestore";
+import { format } from "date-fns";
+import { Loader2 } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { candidates as initialCandidates } from "@/lib/data";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import type { VoteResult, PartyVote } from "@/lib/types";
+import type { VoteResult, PartyVote, Vote } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 
 // Create mock chart config
 const chartConfig = initialCandidates.reduce((acc, candidate, index) => {
@@ -33,21 +38,35 @@ interface ElectionResults {
 export default function ResultsPage() {
   const [electionResults, setElectionResults] = useState<ElectionResults | null>(null);
 
+  const { user, firestore, isUserLoading } = useFirebase();
+
+  const userVotesCollection = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, 'users', user.uid, 'votes');
+  }, [firestore, user]);
+
+  const { data: userVotes, isLoading: isLoadingVotes } = useCollection<Vote>(userVotesCollection);
+
   useEffect(() => {
-    const voteResults: VoteResult[] = initialCandidates.map(c => ({
-      name: c.name,
-      // Generate random votes for demonstration
-      votes: Math.floor(Math.random() * 5000) + 1000
-    }));
+    // This effect is for the mock chart data
+    const generateMockData = () => {
+      const voteResults: VoteResult[] = initialCandidates.map(c => ({
+        name: c.name,
+        // Generate random votes for demonstration
+        votes: Math.floor(Math.random() * 5000) + 1000
+      }));
 
-    const partyVotes: PartyVote[] = voteResults.map(vr => ({
-        party: vr.name, 
-        votes: vr.votes
-    }));
+      const partyVotes: PartyVote[] = voteResults.map(vr => ({
+          party: vr.name, 
+          votes: vr.votes
+      }));
+      
+      const totalVotes = voteResults.reduce((sum, result) => sum + result.votes, 0);
+
+      setElectionResults({ voteResults, partyVotes, totalVotes });
+    };
     
-    const totalVotes = voteResults.reduce((sum, result) => sum + result.votes, 0);
-
-    setElectionResults({ voteResults, partyVotes, totalVotes });
+    generateMockData();
   }, []);
 
   if (!electionResults) {
@@ -55,6 +74,7 @@ export default function ResultsPage() {
   }
 
   const { voteResults, partyVotes, totalVotes } = electionResults;
+  const isLoadingLedger = isUserLoading || isLoadingVotes;
 
   return (
     <div className="flex flex-col gap-6">
@@ -148,14 +168,38 @@ export default function ResultsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    <TableRow>
-                      <TableCell
-                        colSpan={3}
-                        className="h-24 text-center text-muted-foreground"
-                      >
-                        Your voting history will appear here once connected to the database.
-                      </TableCell>
-                    </TableRow>
+                    {isLoadingLedger && (
+                        <TableRow>
+                            <TableCell colSpan={3} className="h-24">
+                                <div className="flex justify-center items-center">
+                                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                </div>
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    {!isLoadingLedger && userVotes && userVotes.length > 0 ? (
+                      userVotes.map((vote) => {
+                        const candidate = initialCandidates.find(c => c.id === vote.candidateId);
+                        return (
+                          <TableRow key={vote.id}>
+                            <TableCell className="font-mono text-xs truncate max-w-[100px]">{vote.id}</TableCell>
+                            <TableCell>{candidate ? candidate.name : 'Unknown'}</TableCell>
+                            <TableCell className="text-right">{format(new Date(vote.timestamp), "PPp")}</TableCell>
+                          </TableRow>
+                        )
+                      })
+                    ) : (
+                      !isLoadingLedger && (
+                        <TableRow>
+                          <TableCell
+                            colSpan={3}
+                            className="h-24 text-center text-muted-foreground"
+                          >
+                            {isUserLoading ? 'Authenticating...' : !user ? 'Log in to see your vote history.' : 'You have not cast any votes yet.'}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    )}
                   </TableBody>
                 </Table>
               </ScrollArea>
