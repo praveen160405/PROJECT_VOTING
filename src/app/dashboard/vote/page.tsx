@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Star, ArrowRight, ShieldAlert, Loader2 } from 'lucide-react';
-import { useWeb3 } from "@/app/providers";
 import { collection } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,7 +22,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Candidate, Vote } from "@/lib/types";
-import { votingContractAddress } from "@/lib/contract";
 import { useFirebase, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
 
 const partySymbols: { [key: string]: React.FC<React.SVGProps<SVGSVGElement>> } = {
@@ -146,7 +144,7 @@ export default function VotePage() {
     const newVote: Omit<Vote, 'id'> = {
       voterId: user.uid,
       candidateId: candidate.id,
-      votedAt: new Date().toISOString(),
+      timestamp: new Date().toISOString(),
     };
 
     addDocumentNonBlocking(userVotesCollection, newVote);

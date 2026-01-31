@@ -10,7 +10,7 @@ export type Vote = {
   id: string;
   voterId: string;
   candidateId: string;
-  votedAt: string;
+  timestamp: string;
 };
 
 export type VoteResult = {
