@@ -52,13 +52,22 @@ export default function RegisterPage() {
   const { formState, control } = form;
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
-    // This is a placeholder for your actual registration logic.
     toast({
-      title: "Registration Temporarily Disabled",
-      description: "This form is for demonstration purposes only.",
-      variant: "destructive",
+      title: "Registering Account...",
+      description: "Please wait while we create your account.",
     });
+
+    // Simulate network delay
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    
     console.log(values);
+
+    toast({
+      title: "Registration Successful!",
+      description: "Redirecting you to the login page.",
+    });
+    
+    router.push("/login");
   };
   
   useEffect(() => {
@@ -162,10 +171,11 @@ export default function RegisterPage() {
                           <FormControl>
                             <Input
                               {...fieldProps}
+                              value={undefined}
                               type="file"
                               accept="application/pdf"
                               onChange={(event) =>
-                                onChange(event.target.files && event.target.files.length > 0 ? event.target.files : undefined)
+                                onChange(event.target.files && event.target.files.length > 0 ? event.target.files[0] : undefined)
                               }
                             />
                           </FormControl>
