@@ -19,7 +19,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Candidate, Vote } from "@/lib/types";
@@ -74,34 +73,21 @@ const partySymbols: { [key: string]: React.FC<React.SVGProps<SVGSVGElement>> } =
 
 function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean, disabled: boolean }) {
   const Symbol = partySymbols[candidate.name] || (() => null);
-  
+  const isDisabled = isVoted || disabled;
+
   return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild disabled={isVoted || disabled}>
-        <Card className="group/card relative flex h-full cursor-pointer flex-col items-center justify-center overflow-hidden p-6 text-center transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60">
-          <Symbol className="h-28 w-28 text-muted-foreground transition-colors group-hover/card:text-primary" />
-          <CardTitle className="mt-4 text-2xl font-bold">{candidate.name}</CardTitle>
-          <CardDescription className="mt-1 text-sm">{candidate.party}</CardDescription>
-          <div className="absolute inset-0 bg-primary/90 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover/card:opacity-100">
-            <span className="text-xl font-semibold text-primary-foreground">Vote</span>
-          </div>
-        </Card>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Confirm Your Vote</AlertDialogTitle>
-          <AlertDialogDescription>
-            You are about to cast your vote for <strong>{candidate.name}</strong> from the party <strong>{candidate.party}</strong>. This action is irreversible and will be recorded on the blockchain.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={() => onVote(candidate)}>
-            Confirm Vote
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <Card 
+      onClick={() => !isDisabled && onVote(candidate)}
+      className="group/card relative flex h-full cursor-pointer flex-col items-center justify-center overflow-hidden p-6 text-center transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60"
+      data-disabled={isDisabled ? true : undefined}
+    >
+      <Symbol className="h-28 w-28 text-muted-foreground transition-colors group-hover/card:text-primary" />
+      <CardTitle className="mt-4 text-2xl font-bold">{candidate.name}</CardTitle>
+      <CardDescription className="mt-1 text-sm">{candidate.party}</CardDescription>
+      <div className="absolute inset-0 bg-primary/90 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 data-[disabled]:hidden">
+        <span className="text-xl font-semibold text-primary-foreground">Vote</span>
+      </div>
+    </Card>
   );
 }
 
@@ -111,6 +97,8 @@ export default function VotePage() {
   const [hasAlreadyVoted, setHasAlreadyVoted] = useState<boolean>(false);
   const [isCheckingVote, setIsCheckingVote] = useState<boolean>(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
+  const [isConfirming, setIsConfirming] = useState(false);
   
   const { toast } = useToast();
   const router = useRouter();
@@ -142,9 +130,8 @@ export default function VotePage() {
     checkVoteStatus();
   }, [address, contract, isContractDeployed]);
 
-
-  const handleVote = async (candidate: Candidate) => {
-    if (!address || !contract) {
+  const handleInitiateVote = (candidate: Candidate) => {
+    if (!address) {
         toast({
             variant: "destructive",
             title: "Wallet Not Connected",
@@ -153,8 +140,14 @@ export default function VotePage() {
         connectWallet();
         return;
     }
+    setSelectedCandidate(candidate);
+    setIsConfirming(true);
+  };
+
+  const handleVote = async (candidate: Candidate) => {
+    setIsConfirming(false);
     
-    if (!isContractDeployed) {
+    if (!contract || !isContractDeployed) {
         toast({
             variant: "destructive",
             title: "Smart Contract Not Deployed",
@@ -318,13 +311,29 @@ export default function VotePage() {
           >
             <CandidateCard
               candidate={candidate}
-              onVote={handleVote}
+              onVote={handleInitiateVote}
               isVoted={isVoted}
               disabled={pageDisabled}
             />
           </motion.div>
         ))}
       </div>
+      <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Your Vote</AlertDialogTitle>
+            <AlertDialogDescription>
+              You are about to cast your vote for <strong>{selectedCandidate?.name}</strong> from the party <strong>{selectedCandidate?.party}</strong>. This action is irreversible and will be recorded on the blockchain.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => selectedCandidate && handleVote(selectedCandidate)}>
+              Confirm Vote
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
