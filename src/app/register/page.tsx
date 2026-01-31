@@ -31,7 +31,7 @@ const registerSchema = z.object({
   fullName: z.string().min(1, "Full name is required."),
   voterId: z
     .string()
-    .length(10, "Voter ID must be exactly 10 characters.")
+    .max(10, "Voter ID cannot be more than 10 characters long.")
     .regex(/^[a-zA-Z]{3}[0-9]{7}$/, "Voter ID must be 3 letters followed by 7 numbers."),
   password: z.string().min(8, "Password must be at least 8 characters long."),
   idProof: z.any().optional(),
