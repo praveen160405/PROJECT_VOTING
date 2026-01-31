@@ -113,11 +113,13 @@ service cloud.firestore {
      *   validates relational integrity between the vote data and the user path.
      */
     match /users/{userId}/votes/{voteId} {
+      // Read access: owner can get. anyone signed in can list (for collection group query)
       allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
+      allow list: if isSignedIn();
+
+      // Write access: owner can create, but not update/delete.
       allow create: if isOwner(userId) && request.resource.data.voterId == userId;
-      allow update: if false; // Votes are immutable and cannot be changed.
-      allow delete: if false; // Votes are immutable and cannot be deleted.
+      allow update, delete: if false;
     }
 
     /**
