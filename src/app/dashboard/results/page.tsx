@@ -59,7 +59,7 @@ export default function ResultsPage() {
       let total = 0;
       for (let i = 0; i < initialCandidates.length; i++) {
         const candidateId = i + 1;
-        const votes = await contract.getVotes(candidateId);
+        const votes = await contract.getVotes(BigInt(candidateId));
         const voteCount = Number(votes);
         results.push({ name: initialCandidates[i].name, votes: voteCount });
         total += voteCount;

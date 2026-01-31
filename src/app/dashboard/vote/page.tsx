@@ -167,7 +167,7 @@ export default function VotePage() {
         const candidateIdForContract = candidates.findIndex(c => c.id === candidate.id) + 1;
         if (candidateIdForContract === 0) throw new Error("Invalid candidate ID.");
 
-        const tx = await contract.vote(candidateIdForContract);
+        const tx = await contract.vote(BigInt(candidateIdForContract));
         toast({ title: "Transaction Sent", description: "Waiting for blockchain confirmation..."});
         await tx.wait(); 
 
