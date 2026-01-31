@@ -1,0 +1,135 @@
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { Mail, Key, Loader2 } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { Logo } from "@/components/logo";
+import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
+
+
+const loginSchema = z.object({
+  email: z.string().email("Please enter a valid email address."),
+  password: z.string().min(1, "Password is required."),
+});
+
+export default function LoginPage() {
+  const router = useRouter();
+  const { toast } = useToast();
+  
+  const form = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  });
+
+  const { formState } = form;
+
+  const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+    // This is a placeholder for your actual login logic.
+    // In a real app, you would call Firebase or your backend here.
+    toast({
+      title: "Login Temporarily Disabled",
+      description: "This form is for demonstration purposes. Please use the Wallet Connect option.",
+      variant: "destructive",
+    });
+  };
+
+  return (
+    <main className="flex min-h-screen w-full items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-md"
+      >
+        <Card className="glassmorphic-card shadow-2xl">
+          <CardHeader className="items-center text-center p-6">
+            <Link href="/" className="mb-4">
+              <Logo />
+            </Link>
+            <CardTitle className="text-3xl font-bold tracking-tight">
+              Sign In
+            </CardTitle>
+            <CardDescription className="text-muted-foreground pt-2">
+              Enter your credentials to access your account.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <Label htmlFor="email">Email</Label>
+                      <div className="relative">
+                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <FormControl>
+                          <Input id="email" type="email" placeholder="name@example.com" {...field} className="pl-10" />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                       <div className="flex items-center justify-between">
+                        <Label htmlFor="password">Password</Label>
+                        <Link href="#" className="text-sm font-medium text-primary hover:underline">
+                          Forgot password?
+                        </Link>
+                      </div>
+                      <div className="relative">
+                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                        <FormControl>
+                          <Input id="password" type="password" placeholder="••••••••" {...field} className="pl-10" />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit" className="w-full" disabled={formState.isSubmitting}>
+                   {formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sign In
+                </Button>
+              </form>
+            </Form>
+          </CardContent>
+          <CardFooter className="p-6 pt-0">
+             <p className="w-full text-center text-sm text-muted-foreground">
+                Don&apos;t have an account?{" "}
+                <Link href="/register" className="font-medium text-primary hover:underline">
+                  Sign up
+                </Link>
+              </p>
+          </CardFooter>
+        </Card>
+      </motion.div>
+    </main>
+  );
+}
