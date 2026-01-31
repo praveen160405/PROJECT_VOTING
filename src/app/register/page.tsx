@@ -3,12 +3,11 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Loader2, Calendar as CalendarIcon, Camera } from "lucide-react";
+import { Loader2, Camera } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useRef, useEffect } from "react";
-import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,18 +23,12 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const registerSchema = z.object({
   fullName: z.string().min(1, "Full name is required."),
   voterId: z.string().regex(/^[A-Z]{3}[0-9]{7}$/, "Please enter a valid Voter ID (e.g., ABC1234567)."),
   password: z.string().min(8, "Password must be at least 8 characters long."),
-  dob: z.date({
-    required_error: "A date of birth is required.",
-  }),
   idProof: z.any().refine((files) => files?.length == 1, "ID Proof is required."),
 });
 
@@ -104,7 +97,7 @@ export default function RegisterPage() {
         stream.getTracks().forEach(track => track.stop());
       }
     }
-  }, []);
+  }, [toast]);
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center p-4">
@@ -169,47 +162,6 @@ export default function RegisterPage() {
                         </FormItem>
                       )}
                     />
-                     <FormField
-                      control={control}
-                      name="dob"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col pt-2">
-                          <FormLabel>Date of birth</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP")
-                                  ) : (
-                                    <span>Pick a date</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                  date > new Date() || date < new Date("1900-01-01")
-                                }
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                     <FormField
                         control={control}
                         name="idProof"
@@ -217,7 +169,7 @@ export default function RegisterPage() {
                             const { ref, ...fieldProps } = rest;
                             const fileRef = form.register('idProof').ref;
                             return(
-                                <FormItem>
+                                <FormItem className="flex flex-col justify-end">
                                     <FormLabel>ID Proof (PDF)</FormLabel>
                                     <FormControl>
                                         <Input
