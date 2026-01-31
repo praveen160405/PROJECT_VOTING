@@ -2,12 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
+import { format } from "date-fns";
+import { collection, Timestamp } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { candidates as initialCandidates } from "@/lib/data";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart";
-import type { VoteResult, PartyVote } from "@/lib/types";
+import type { VoteResult, PartyVote, Vote } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+
 
 const chartConfig = initialCandidates.reduce((acc, candidate, index) => {
   acc[candidate.name] = {
@@ -31,6 +36,15 @@ interface ElectionResults {
 export default function ResultsPage() {
   const [electionResults, setElectionResults] = useState<ElectionResults | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const { user, firestore, isUserLoading } = useFirebase();
+
+  const userVotesCollection = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return collection(firestore, "users", user.uid, "votes");
+  }, [firestore, user]);
+
+  const { data: userVotes, isLoading: isLoadingVotes } = useCollection<Vote>(userVotesCollection);
 
   useEffect(() => {
     // Generate mock data on the client to avoid hydration mismatch
@@ -146,10 +160,86 @@ export default function ResultsPage() {
                 </div>
           </CardContent>
         </Card>
+
+        <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle>Your Vote Ledger</CardTitle>
+              <CardDescription>
+                A record of the votes you have personally cast.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Vote ID</TableHead>
+                    <TableHead>Candidate</TableHead>
+                    <TableHead className="text-right">Timestamp</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(isUserLoading || isLoadingVotes) && (
+                    <>
+                      <LedgerRowSkeleton />
+                      <LedgerRowSkeleton />
+                    </>
+                  )}
+                  {!isUserLoading && !isLoadingVotes && userVotes && userVotes.length > 0 && (
+                    userVotes.map((vote) => {
+                      const candidate = initialCandidates.find(
+                        (c) => c.id === vote.candidateId
+                      );
+
+                      let formattedTimestamp = 'Processing...';
+                      // Check if the timestamp is a valid Firestore Timestamp object before converting
+                      if (vote.timestamp && vote.timestamp instanceof Timestamp) {
+                        formattedTimestamp = format(vote.timestamp.toDate(), "PPp");
+                      }
+                      
+                      return (
+                        <TableRow key={vote.id}>
+                          <TableCell className="font-mono text-xs truncate max-w-[100px]">{vote.id}</TableCell>
+                          <TableCell>{candidate ? candidate.name : 'Unknown'}</TableCell>
+                          <TableCell className="text-right">{formattedTimestamp}</TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                   {!isUserLoading && !isLoadingVotes && (!userVotes || userVotes.length === 0) && (
+                      <TableRow>
+                        <TableCell
+                          colSpan={3}
+                          className="h-24 text-center text-muted-foreground"
+                        >
+                          You have not cast any votes yet.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
       </div>
     </div>
   );
 }
+
+function LedgerRowSkeleton() {
+  return (
+    <TableRow>
+      <TableCell>
+        <Skeleton className="h-4 w-24" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-4 w-16" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-4 w-32 ml-auto" />
+      </TableCell>
+    </TableRow>
+  );
+}
+
 
 function ResultsSkeleton() {
   return (
@@ -193,6 +283,18 @@ function ResultsSkeleton() {
             </div>
           </CardContent>
         </Card>
+         <Card className="md:col-span-2">
+            <CardHeader>
+              <Skeleton className="h-6 w-1/4" />
+              <Skeleton className="mt-2 h-4 w-2/5" />
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                  <Skeleton className="h-12 w-full" />
+                  <Skeleton className="h-12 w-full" />
+                </div>
+            </CardContent>
+          </Card>
       </div>
     </div>
   );
