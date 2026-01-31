@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Mail, Key, Loader2 } from "lucide-react";
+import { User, Key, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,7 +25,7 @@ import { Form, FormField, FormItem, FormControl, FormMessage } from "@/component
 
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address."),
+  voterId: z.string().min(1, "Voter ID is required."),
   password: z.string().min(1, "Password is required."),
 });
 
@@ -36,7 +36,7 @@ export default function LoginPage() {
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      voterId: "",
       password: "",
     },
   });
@@ -45,10 +45,9 @@ export default function LoginPage() {
 
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     // This is a placeholder for your actual login logic.
-    // In a real app, you would call Firebase or your backend here.
     toast({
       title: "Login Temporarily Disabled",
-      description: "This form is for demonstration purposes. Please use the Wallet Connect option.",
+      description: "This form is for demonstration purposes. It does not perform real authentication.",
       variant: "destructive",
     });
   };
@@ -67,10 +66,10 @@ export default function LoginPage() {
               <Logo />
             </Link>
             <CardTitle className="text-3xl font-bold tracking-tight">
-              Sign In
+              Voter Sign In
             </CardTitle>
             <CardDescription className="text-muted-foreground pt-2">
-              Enter your credentials to access your account.
+              Enter your credentials to access the voting platform.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -78,14 +77,14 @@ export default function LoginPage() {
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={form.control}
-                  name="email"
+                  name="voterId"
                   render={({ field }) => (
                     <FormItem>
-                      <Label htmlFor="email">Email</Label>
+                      <Label htmlFor="voterId">Voter ID</Label>
                       <div className="relative">
-                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input id="email" type="email" placeholder="name@example.com" {...field} className="pl-10" />
+                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" />
                         </FormControl>
                       </div>
                       <FormMessage />
@@ -124,7 +123,7 @@ export default function LoginPage() {
              <p className="w-full text-center text-sm text-muted-foreground">
                 Don&apos;t have an account?{" "}
                 <Link href="/register" className="font-medium text-primary hover:underline">
-                  Sign up
+                  Register
                 </Link>
               </p>
           </CardFooter>

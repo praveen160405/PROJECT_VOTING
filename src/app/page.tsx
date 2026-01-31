@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Mail, Wallet } from "lucide-react";
+import { UserPlus, LogIn, Wallet } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter
 } from "@/components/ui/card";
 import { Logo } from "@/components/logo";
 
@@ -34,19 +35,37 @@ export default function HomePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
-            <Link href="/login">
+            <Link href="/register">
               <Button variant="outline" size="lg" className="w-full h-full flex flex-col py-6">
-                <Mail className="h-8 w-8 mb-2" />
-                <span className="font-semibold">Sign In with Email</span>
+                <UserPlus className="h-8 w-8 mb-2" />
+                <span className="font-semibold">Register New Voter</span>
               </Button>
             </Link>
-            <Link href="/wallet-connect">
+            <Link href="/login">
                <Button size="lg" className="w-full h-full flex flex-col py-6">
-                <Wallet className="h-8 w-8 mb-2" />
-                <span className="font-semibold">Connect Wallet</span>
+                <LogIn className="h-8 w-8 mb-2" />
+                <span className="font-semibold">Voter Login</span>
               </Button>
             </Link>
           </CardContent>
+           <div className="relative px-6">
+            <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">
+                Or
+                </span>
+            </div>
+          </div>
+          <CardFooter className="p-6">
+            <Link href="/wallet-connect" className="w-full">
+                <Button variant="secondary" size="lg" className="w-full">
+                    <Wallet className="mr-2 h-5 w-5" />
+                    Continue with Wallet
+                </Button>
+            </Link>
+          </CardFooter>
         </Card>
       </motion.div>
     </main>

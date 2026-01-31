@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Mail, Key, User, Loader2 } from "lucide-react";
+import { Loader2, Calendar as CalendarIcon, Camera } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState, useRef, useEffect } from "react";
+import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,38 +23,88 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
-
+import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const registerSchema = z.object({
   fullName: z.string().min(1, "Full name is required."),
-  email: z.string().email("Please enter a valid email address."),
+  voterId: z.string().regex(/^[A-Z]{3}[0-9]{7}$/, "Please enter a valid Voter ID (e.g., ABC1234567)."),
   password: z.string().min(8, "Password must be at least 8 characters long."),
+  dob: z.date({
+    required_error: "A date of birth is required.",
+  }),
+  idProof: z.any().refine((files) => files?.length == 1, "ID Proof is required."),
 });
 
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
   
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       fullName: "",
-      email: "",
+      voterId: "",
       password: "",
     },
   });
 
-  const { formState } = form;
+  const { formState, control } = form;
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
     // This is a placeholder for your actual registration logic.
     toast({
       title: "Registration Temporarily Disabled",
-      description: "This form is for demonstration purposes. Please use the Wallet Connect option.",
+      description: "This form is for demonstration purposes only.",
       variant: "destructive",
     });
+    console.log(values);
   };
+  
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast({
+          variant: "destructive",
+          title: "Camera Not Supported",
+          description: "Your browser does not support camera access.",
+        });
+        setHasCameraPermission(false);
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this feature.',
+        });
+      }
+    };
+
+    getCameraPermission();
+    
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    }
+  }, [toast]);
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center p-4">
@@ -60,7 +112,7 @@ export default function RegisterPage() {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-md"
+        className="w-full max-w-2xl"
       >
         <Card className="glassmorphic-card shadow-2xl">
           <CardHeader className="items-center text-center p-6">
@@ -68,66 +120,152 @@ export default function RegisterPage() {
               <Logo />
             </Link>
             <CardTitle className="text-3xl font-bold tracking-tight">
-              Create an Account
+              Create a Voter Account
             </CardTitle>
             <CardDescription className="text-muted-foreground pt-2">
-              Get started with your secure voting account.
+              Fill in your details to register for secure voting.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                 <FormField
-                  control={form.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Label htmlFor="fullName">Full Name</Label>
-                      <div className="relative">
-                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <FormControl>
-                          <Input id="fullName" placeholder="John Doe" {...field} className="pl-10" />
-                        </FormControl>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={control}
+                      name="fullName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Full Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="John Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
+                      name="voterId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Voter ID</FormLabel>
+                          <FormControl>
+                            <Input placeholder="ABC1234567" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Password</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="••••••••" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                     <FormField
+                      control={control}
+                      name="dob"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-col pt-2">
+                          <FormLabel>Date of birth</FormLabel>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant={"outline"}
+                                  className={cn(
+                                    "w-full pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "PPP")
+                                  ) : (
+                                    <span>Pick a date</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={field.onChange}
+                                disabled={(date) =>
+                                  date > new Date() || date < new Date("1900-01-01")
+                                }
+                                initialFocus
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                        control={control}
+                        name="idProof"
+                        render={({ field: { onChange, ...rest } }) => {
+                            const { ref, ...fieldProps } = rest;
+                            const fileRef = form.register('idProof').ref;
+                            return(
+                                <FormItem>
+                                    <FormLabel>ID Proof (PDF)</FormLabel>
+                                    <FormControl>
+                                        <Input
+                                            type="file"
+                                            accept="application/pdf"
+                                            onChange={(e) => onChange(e.target.files)}
+                                            {...fieldProps}
+                                            ref={fileRef}
+                                        />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )
+                        }}
+                    />
+                </div>
+                
+                <div className="space-y-4">
+                  <Label>Live Identity Verification</Label>
+                   <div className="w-full aspect-video rounded-md border bg-muted overflow-hidden relative">
+                    <video ref={videoRef} className="h-full w-full object-cover" autoPlay muted playsInline />
+                    {!hasCameraPermission && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                        <Camera className="h-12 w-12 text-muted-foreground mb-4"/>
+                        <p className="text-muted-foreground">Camera access is required for identity verification.</p>
+                        <p className="text-xs text-muted-foreground mt-1">Please allow camera permissions in your browser.</p>
                       </div>
-                      <FormMessage />
-                    </FormItem>
+                    )}
+                  </div>
+                  {hasCameraPermission && (
+                     <Button type="button" variant="secondary" className="w-full">
+                       <Camera className="mr-2 h-4 w-4" />
+                       Capture Photo
+                     </Button>
                   )}
-                />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <Label htmlFor="email">Email</Label>
-                      <div className="relative">
-                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <FormControl>
-                          <Input id="email" type="email" placeholder="name@example.com" {...field} className="pl-10" />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
+                   { !(hasCameraPermission) && (
+                      <Alert variant="destructive">
+                        <AlertTitle>Camera Access Required</AlertTitle>
+                        <AlertDescription>
+                          Please allow camera access to complete your registration.
+                        </AlertDescription>
+                      </Alert>
                   )}
-                />
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                       <Label htmlFor="password">Password</Label>
-                      <div className="relative">
-                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                        <FormControl>
-                          <Input id="password" type="password" placeholder="••••••••" {...field} className="pl-10" />
-                        </FormControl>
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                </div>
+
                 <Button type="submit" className="w-full" disabled={formState.isSubmitting}>
                    {formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Account
+                  Register
                 </Button>
               </form>
             </Form>
