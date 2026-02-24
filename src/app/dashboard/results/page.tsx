@@ -16,7 +16,7 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@
 import { useWeb3 } from "@/app/providers";
 import { Badge } from "@/components/ui/badge";
 import { Globe } from "lucide-react";
-
+import { votingContractAddress } from "@/lib/contract";
 
 const chartConfig = initialCandidates.reduce((acc, candidate, index) => {
   acc[candidate.name] = {
@@ -56,14 +56,21 @@ export default function ResultsPage() {
     const fetchData = async () => {
       setIsLoading(true);
       
+      const isZeroAddress = votingContractAddress === "0x0000000000000000000000000000000000000000";
+      
       try {
-        if (contract) {
+        if (contract && !isZeroAddress) {
           // Fetch real data from the blockchain
           const results: VoteResult[] = await Promise.all(
             initialCandidates.map(async (c) => {
               const numericId = parseInt(c.id.replace('c', ''));
-              const votes = await contract.getVotes(numericId);
-              return { name: c.name, votes: Number(votes) };
+              try {
+                const votes = await contract.getVotes(numericId);
+                return { name: c.name, votes: Number(votes) };
+              } catch (e) {
+                console.error(`Failed to fetch votes for candidate ${numericId}:`, e);
+                return { name: c.name, votes: 0 };
+              }
             })
           );
 
@@ -72,7 +79,7 @@ export default function ResultsPage() {
 
           setElectionResults({ voteResults: results, partyVotes, totalVotes, isLiveBlockchain: true });
         } else {
-          // Fallback to mock data if no wallet connected or contract not available
+          // Fallback to mock data if no wallet connected, contract not available, or zero address
           const voteResults: VoteResult[] = initialCandidates.map(c => ({
             name: c.name,
             votes: Math.floor(Math.random() * 5000) + 1000
@@ -83,8 +90,17 @@ export default function ResultsPage() {
         }
       } catch (err) {
         console.error("Error fetching blockchain results:", err);
-        // Ensure we still show something
-        setElectionResults(prev => prev || null);
+        // Ensure we still show something in case of unexpected error
+        const mockResults: VoteResult[] = initialCandidates.map(c => ({
+          name: c.name,
+          votes: 0
+        }));
+        setElectionResults({ 
+          voteResults: mockResults, 
+          partyVotes: mockResults.map(r => ({ party: r.name, votes: r.votes })), 
+          totalVotes: 0, 
+          isLiveBlockchain: false 
+        });
       } finally {
         setIsLoading(false);
       }
