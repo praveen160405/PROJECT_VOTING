@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Key, Loader2 } from "lucide-react";
+import { User, Key, Loader2, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +19,14 @@ import {
   CardDescription,
   CardFooter,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
@@ -25,22 +34,34 @@ import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
 import { useAuth } from "@/firebase";
 
-
 const loginSchema = z.object({
   voterId: z.string().min(1, "Voter ID is required."),
   password: z.string().min(1, "Password is required."),
+});
+
+const forgotPasswordSchema = z.object({
+  voterId: z.string().min(1, "Voter ID is required."),
 });
 
 export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+  const [isResetLoading, setIsResetLoading] = useState(false);
   
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       voterId: "",
       password: "",
+    },
+  });
+
+  const resetForm = useForm<z.infer<typeof forgotPasswordSchema>>({
+    resolver: zodResolver(forgotPasswordSchema),
+    defaultValues: {
+      voterId: "",
     },
   });
 
@@ -63,8 +84,7 @@ export default function LoginPage() {
     } catch (error: any) {
       console.error("Login Error:", error);
       let description = "An unexpected error occurred.";
-      // Generic error for auth failures to avoid user enumeration
-      if (['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(error.code)) {
+      if (['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password', 'auth/invalid-email'].includes(error.code)) {
         description = "Invalid Voter ID or password. Please try again.";
       } else if (error.message) {
         description = error.message;
@@ -75,6 +95,29 @@ export default function LoginPage() {
         title: "Login Failed",
         description: description,
       });
+    }
+  };
+
+  const onResetPassword = async (values: z.infer<typeof forgotPasswordSchema>) => {
+    setIsResetLoading(true);
+    try {
+      const emailForAuth = `${values.voterId}@ootu.app`;
+      await sendPasswordResetEmail(auth, emailForAuth);
+      toast({
+        title: "Reset Email Sent",
+        description: `If an account exists for ${values.voterId}, a password reset link has been sent to your registered email.`,
+      });
+      setIsResetDialogOpen(false);
+      resetForm.reset();
+    } catch (error: any) {
+      console.error("Reset Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Reset Failed",
+        description: "Could not send reset email. Please check your Voter ID and try again.",
+      });
+    } finally {
+      setIsResetLoading(false);
     }
   };
 
@@ -124,9 +167,13 @@ export default function LoginPage() {
                     <FormItem>
                        <div className="flex items-center justify-between">
                         <Label htmlFor="password">Password</Label>
-                        <Link href="#" className="text-sm font-medium text-primary hover:underline">
+                        <button 
+                          type="button"
+                          onClick={() => setIsResetDialogOpen(true)}
+                          className="text-sm font-medium text-primary hover:underline"
+                        >
                           Forgot password?
-                        </Link>
+                        </button>
                       </div>
                       <div className="relative">
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -155,6 +202,46 @@ export default function LoginPage() {
           </CardFooter>
         </Card>
       </motion.div>
+
+      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Enter your Voter ID below and we&apos;ll send you a link to reset your password.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...resetForm}>
+            <form onSubmit={resetForm.handleSubmit(onResetPassword)} className="space-y-4 py-2">
+              <FormField
+                control={resetForm.control}
+                name="voterId"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label htmlFor="resetVoterId">Voter ID</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                        <Input id="resetVoterId" placeholder="ABC1234567" {...field} className="pl-9" />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter className="sm:justify-start">
+                <Button type="submit" disabled={isResetLoading}>
+                  {isResetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Send Reset Link
+                </Button>
+                <Button type="button" variant="secondary" onClick={() => setIsResetDialogOpen(false)}>
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }
