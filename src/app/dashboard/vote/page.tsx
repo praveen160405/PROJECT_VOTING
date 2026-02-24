@@ -1,9 +1,10 @@
+
 "use client"
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Star, ArrowRight, ShieldAlert, Loader2 } from 'lucide-react';
+import { Star, ArrowRight, ShieldAlert, Loader2, Wallet } from 'lucide-react';
 import { collection, serverTimestamp } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -23,6 +24,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Candidate, Vote } from "@/lib/types";
 import { useFirebase, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
+import { useWeb3 } from "@/app/providers";
 
 const partySymbols: { [key: string]: React.FC<React.SVGProps<SVGSVGElement>> } = {
   DMK: (props) => (
@@ -95,6 +97,7 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
 export default function VotePage() {
   const [votedCandidateId, setVotedCandidateId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -102,6 +105,7 @@ export default function VotePage() {
   const { toast } = useToast();
   const router = useRouter();
   const { user, firestore, isUserLoading } = useFirebase();
+  const { contract, address, connectWallet, isLoading: isWeb3Loading } = useWeb3();
 
   const userVotesCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -126,21 +130,58 @@ export default function VotePage() {
         toast({
             variant: "destructive",
             title: "Not Logged In",
-            description: "Please log in to vote.",
+            description: "Please log in to your OOTU account to vote.",
         });
         router.push('/login');
+        return;
+    }
+    if (!address) {
+        toast({
+            variant: "destructive",
+            title: "Wallet Not Connected",
+            description: "Please connect your Web3 wallet to vote on the blockchain.",
+        });
         return;
     }
     setSelectedCandidate(candidate);
     setIsConfirming(true);
   };
 
-  const handleFirestoreVote = async (candidate: Candidate) => {
-    if (!user || !userVotesCollection) {
-      toast({ variant: "destructive", title: "Authentication Error", description: "Could not identify user. Please try logging in again." });
+  const handleBlockchainVote = async (candidate: Candidate) => {
+    if (!contract) {
+      toast({ variant: "destructive", title: "Web3 Error", description: "Smart contract not initialized." });
       return;
     }
-    setIsSubmitting(true);
+
+    try {
+      // Map candidate string ID to numeric ID (c1 -> 1, c2 -> 2...)
+      const numericId = parseInt(candidate.id.replace('c', ''));
+      
+      const tx = await contract.vote(numericId);
+      setTxHash(tx.hash);
+      
+      toast({
+        title: "Transaction Sent",
+        description: "Your vote is being broadcast to the blockchain ledger.",
+      });
+
+      await tx.wait();
+      
+      return true;
+    } catch (error: any) {
+      console.error("Blockchain Vote Error:", error);
+      toast({
+        variant: "destructive",
+        title: "Blockchain Error",
+        description: error.reason || error.message || "Failed to submit vote to blockchain.",
+      });
+      return false;
+    }
+  }
+
+  const handleFirestoreVote = async (candidate: Candidate) => {
+    if (!user || !userVotesCollection) return;
+
     const newVote: Omit<Vote, 'id'> = {
       voterId: user.uid,
       candidateId: candidate.id,
@@ -150,26 +191,33 @@ export default function VotePage() {
     };
 
     addDocumentNonBlocking(userVotesCollection, newVote);
-    setVotedCandidateId(candidate.id);
-    
-    toast({
-      title: "Vote Submitted!",
-      description: `Your vote for ${candidate.name} has been recorded.`,
-      duration: 5000,
-    });
-    setIsSubmitting(false);
   }
 
   const handleVote = async (candidate: Candidate) => {
     setIsConfirming(false);
-    await handleFirestoreVote(candidate);
+    setIsSubmitting(true);
+
+    const success = await handleBlockchainVote(candidate);
+    
+    if (success) {
+      await handleFirestoreVote(candidate);
+      setVotedCandidateId(candidate.id);
+      
+      toast({
+        title: "Vote Confirmed!",
+        description: `Your vote for ${candidate.name} is now immutable on the blockchain.`,
+        duration: 5000,
+      });
+    }
+
+    setIsSubmitting(false);
   };
 
   useEffect(() => {
     if (votedCandidateId) {
       const timer = setTimeout(() => {
         router.push('/dashboard/results');
-      }, 3000); 
+      }, 4000); 
 
       return () => clearTimeout(timer);
     }
@@ -187,11 +235,13 @@ export default function VotePage() {
         >
           <Card className="text-center">
             <CardHeader>
-              <CardTitle className="text-3xl font-bold tracking-tight">Thank You for Voting!</CardTitle>
+              <CardTitle className="text-3xl font-bold tracking-tight">Transaction Confirmed!</CardTitle>
               <CardDescription>
-                Your vote for <strong>{votedCandidate?.name}</strong> has been successfully recorded.
+                Your vote for <strong>{votedCandidate?.name}</strong> has been etched into the blockchain.
                 <br/>
-                You will be redirected to the results page shortly.
+                <span className="mt-2 block text-xs font-mono text-muted-foreground break-all">
+                  Hash: {txHash}
+                </span>
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -209,40 +259,47 @@ export default function VotePage() {
   }
 
   const isVoted = hasAlreadyVoted;
-  const pageDisabled = !isMounted || isCheckingVote || isSubmitting;
+  const pageDisabled = !isMounted || isCheckingVote || isSubmitting || isWeb3Loading;
 
   const getPageDescription = () => {
-    if (isCheckingVote) return "Checking your voting status...";
-    if (isVoted) return "Your vote has been recorded. You cannot vote again.";
-    if (!user) return "Please log in to see your voting status.";
-    return "Select a candidate to cast your vote. This action is irreversible.";
+    if (isCheckingVote) return "Verifying your eligibility...";
+    if (isVoted) return "You have already participated in this election.";
+    if (!address) return "Please connect your wallet to interact with the voting contract.";
+    return "Cast your immutable vote on the blockchain ledger.";
   }
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Voting Booth</h1>
-        <p className="text-muted-foreground">
-          {isMounted ? getPageDescription() : "Loading..."}
-        </p>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Voting Booth</h1>
+          <p className="text-muted-foreground">
+            {isMounted ? getPageDescription() : "Initialising..."}
+          </p>
+        </div>
+        {!address && isMounted && (
+          <Button onClick={connectWallet} variant="outline" className="gap-2">
+            <Wallet className="h-4 w-4" /> Connect Wallet to Vote
+          </Button>
+        )}
       </div>
       
       {isMounted && isVoted && (
         <Alert variant="default" className="bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-950 dark:border-yellow-800 dark:text-yellow-200">
           <ShieldAlert className="h-4 w-4 !text-yellow-600 dark:!text-yellow-400" />
-          <AlertTitle>Vote Recorded</AlertTitle>
+          <AlertTitle>Vote Already Cast</AlertTitle>
           <AlertDescription>
-            Our records indicate that you have already cast a vote. Each account is allowed only one vote.
+            Our records show you have already submitted your choice. Participation is limited to one vote per verified voter.
           </AlertDescription>
         </Alert>
       )}
 
        {isSubmitting && (
-         <Alert>
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <AlertTitle>Processing Vote</AlertTitle>
+         <Alert className="border-primary/50 bg-primary/5">
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <AlertTitle>Executing On-Chain Transaction</AlertTitle>
           <AlertDescription>
-            Your vote is being recorded. Please wait.
+            Interacting with the smart contract. Please confirm the transaction in your wallet.
           </AlertDescription>
         </Alert>
       )}
@@ -268,15 +325,16 @@ export default function VotePage() {
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Your Vote</AlertDialogTitle>
+            <AlertDialogTitle>Confirm On-Chain Action</AlertDialogTitle>
             <AlertDialogDescription>
-              You are about to cast your vote for <strong>{selectedCandidate?.name}</strong> from the party <strong>{selectedCandidate?.party}</strong>. This action is irreversible.
+              You are casting a blockchain vote for <strong>{selectedCandidate?.name}</strong>. 
+              This will trigger a wallet transaction and the result will be permanent and transparent.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogCancel>Review Choice</AlertDialogCancel>
             <AlertDialogAction onClick={() => selectedCandidate && handleVote(selectedCandidate)}>
-              Confirm Vote
+              Confirm & Submit
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

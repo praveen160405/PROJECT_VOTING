@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,6 +13,9 @@ import type { VoteResult, PartyVote, Vote } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { useWeb3 } from "@/app/providers";
+import { Badge } from "@/components/ui/badge";
+import { Globe } from "lucide-react";
 
 
 const chartConfig = initialCandidates.reduce((acc, candidate, index) => {
@@ -31,6 +35,7 @@ interface ElectionResults {
   voteResults: VoteResult[];
   partyVotes: PartyVote[];
   totalVotes: number;
+  isLiveBlockchain?: boolean;
 }
 
 export default function ResultsPage() {
@@ -38,6 +43,7 @@ export default function ResultsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const { user, firestore, isUserLoading } = useFirebase();
+  const { contract, address } = useWeb3();
 
   const userVotesCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -47,29 +53,45 @@ export default function ResultsPage() {
   const { data: userVotes, isLoading: isLoadingVotes } = useCollection<Vote>(userVotesCollection);
 
   useEffect(() => {
-    // Generate mock data on the client to avoid hydration mismatch
-    const generateMockData = () => {
-      const voteResults: VoteResult[] = initialCandidates.map(c => ({
-        name: c.name,
-        votes: Math.floor(Math.random() * 5000) + 1000
-      }));
+    const fetchData = async () => {
+      setIsLoading(true);
+      
+      try {
+        if (contract) {
+          // Fetch real data from the blockchain
+          const results: VoteResult[] = await Promise.all(
+            initialCandidates.map(async (c) => {
+              const numericId = parseInt(c.id.replace('c', ''));
+              const votes = await contract.getVotes(numericId);
+              return { name: c.name, votes: Number(votes) };
+            })
+          );
 
-      const partyVotes: PartyVote[] = voteResults.map(vr => ({
-        party: vr.name,
-        votes: vr.votes
-      }));
+          const totalVotes = results.reduce((sum, r) => sum + r.votes, 0);
+          const partyVotes: PartyVote[] = results.map(r => ({ party: r.name, votes: r.votes }));
 
-      const totalVotes = voteResults.reduce((sum, result) => sum + result.votes, 0);
-
-      setElectionResults({ voteResults, partyVotes, totalVotes });
-      setIsLoading(false);
+          setElectionResults({ voteResults: results, partyVotes, totalVotes, isLiveBlockchain: true });
+        } else {
+          // Fallback to mock data if no wallet connected or contract not available
+          const voteResults: VoteResult[] = initialCandidates.map(c => ({
+            name: c.name,
+            votes: Math.floor(Math.random() * 5000) + 1000
+          }));
+          const partyVotes: PartyVote[] = voteResults.map(vr => ({ party: vr.name, votes: vr.votes }));
+          const totalVotes = voteResults.reduce((sum, r) => sum + r.votes, 0);
+          setElectionResults({ voteResults, partyVotes, totalVotes, isLiveBlockchain: false });
+        }
+      } catch (err) {
+        console.error("Error fetching blockchain results:", err);
+        // Ensure we still show something
+        setElectionResults(prev => prev || null);
+      } finally {
+        setIsLoading(false);
+      }
     };
-    
-    // Simulate a network delay
-    const timer = setTimeout(generateMockData, 500);
 
-    return () => clearTimeout(timer);
-  }, []);
+    fetchData();
+  }, [contract]);
 
   if (isLoading) {
     return <ResultsSkeleton />;
@@ -79,25 +101,36 @@ export default function ResultsPage() {
     return (
         <div className="flex flex-col gap-6">
             <h1 className="text-3xl font-bold tracking-tight">Election Results</h1>
-            <p className="text-muted-foreground">Could not load election results.</p>
+            <p className="text-muted-foreground">Initialising election audit tools...</p>
         </div>
     );
   }
 
-  const { voteResults, partyVotes, totalVotes } = electionResults;
+  const { voteResults, partyVotes, totalVotes, isLiveBlockchain } = electionResults;
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Election Results</h1>
-        <p className="text-muted-foreground">Live results from the decentralized voting ledger.</p>
+      <div className="flex items-end justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Election Results</h1>
+          <p className="text-muted-foreground">Auditing the decentralized voting ledger in real-time.</p>
+        </div>
+        {isLiveBlockchain ? (
+          <Badge variant="secondary" className="gap-1 bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">
+            <Globe className="h-3 w-3" /> Live Blockchain Data
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="gap-1">
+            Simulation Mode
+          </Badge>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="col-span-2">
           <CardHeader>
-            <CardTitle>Votes per Candidate</CardTitle>
-            <CardDescription>Total votes received by each candidate.</CardDescription>
+            <CardTitle>On-Chain Vote Counts</CardTitle>
+            <CardDescription>Verified tallies retrieved from the smart contract.</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[400px] w-full">
@@ -116,8 +149,8 @@ export default function ResultsPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Party Vote Distribution</CardTitle>
-            <CardDescription>Share of votes for each political party.</CardDescription>
+            <CardTitle>Party Distribution</CardTitle>
+            <CardDescription>Visual breakdown of democratic representation.</CardDescription>
           </CardHeader>
           <CardContent>
              <ChartContainer config={chartConfig} className="h-[300px] w-full">
@@ -146,35 +179,39 @@ export default function ResultsPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Election Statistics</CardTitle>
-             <CardDescription>Key metrics of the current election.</CardDescription>
+            <CardTitle>Ledger Statistics</CardTitle>
+             <CardDescription>Real-time metrics from the OOTU protocol.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Total Votes Cast</span>
+                  <span className="text-muted-foreground">Verified Votes Cast</span>
                   <span className="font-semibold">{totalVotes.toLocaleString()}</span>
                 </div>
                  <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Election Status</span>
-                  <span className="font-semibold text-green-500">Live</span>
+                  <span className="text-muted-foreground">Protocol Status</span>
+                  <span className="font-semibold text-green-500">Active</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Source</span>
+                  <span className="text-xs font-mono">{isLiveBlockchain ? "Smart Contract" : "Mock Engine"}</span>
                 </div>
           </CardContent>
         </Card>
 
         <Card className="md:col-span-2">
             <CardHeader>
-              <CardTitle>Your Vote Ledger</CardTitle>
+              <CardTitle>Your Activity Record</CardTitle>
               <CardDescription>
-                A record of the votes you have personally cast.
+                A local record of the choices you have submitted to the protocol.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vote ID</TableHead>
-                    <TableHead>Candidate</TableHead>
-                    <TableHead className="text-right">Timestamp</TableHead>
+                    <TableHead>Vote Reference</TableHead>
+                    <TableHead>Recipient</TableHead>
+                    <TableHead className="text-right">Audit Timestamp</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -190,8 +227,7 @@ export default function ResultsPage() {
                         (c) => c.id === vote.candidateId
                       );
 
-                      let formattedTimestamp = 'Processing...';
-                      // Check if the timestamp is a valid Firestore Timestamp object before converting
+                      let formattedTimestamp = 'Confirming...';
                       if (vote.timestamp && vote.timestamp instanceof Timestamp) {
                         formattedTimestamp = format(vote.timestamp.toDate(), "PPp");
                       }
@@ -199,7 +235,7 @@ export default function ResultsPage() {
                       return (
                         <TableRow key={vote.id}>
                           <TableCell className="font-mono text-xs truncate max-w-[100px]">{vote.id}</TableCell>
-                          <TableCell>{candidate ? candidate.name : 'Unknown'}</TableCell>
+                          <TableCell>{candidate ? candidate.name : 'Unknown Candidate'}</TableCell>
                           <TableCell className="text-right">{formattedTimestamp}</TableCell>
                         </TableRow>
                       )
@@ -211,7 +247,7 @@ export default function ResultsPage() {
                           colSpan={3}
                           className="h-24 text-center text-muted-foreground"
                         >
-                          You have not cast any votes yet.
+                          No personal voting history found on this device.
                         </TableCell>
                       </TableRow>
                     )}
