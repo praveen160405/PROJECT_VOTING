@@ -9,7 +9,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -57,6 +57,11 @@ export default function LoginPage() {
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
   const [showOtpField, setShowOtpField] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -167,6 +172,8 @@ export default function LoginPage() {
     }
   };
 
+  if (!isMounted) return null;
+
   return (
     <main className="flex min-h-screen w-full items-center justify-center p-4">
       <motion.div
@@ -213,13 +220,14 @@ export default function LoginPage() {
                     <FormItem>
                        <div className="flex items-center justify-between">
                         <FormLabel>Password</FormLabel>
-                        <button 
+                        <Button 
+                          variant="link"
                           type="button"
                           onClick={() => setIsResetDialogOpen(true)}
-                          className="text-sm font-medium text-primary hover:underline"
+                          className="h-auto p-0 text-sm font-medium text-primary hover:underline"
                         >
                           Forgot password?
-                        </button>
+                        </Button>
                       </div>
                       <div className="relative">
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
