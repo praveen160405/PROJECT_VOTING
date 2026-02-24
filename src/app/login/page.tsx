@@ -1,9 +1,10 @@
+
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Key, Loader2, Mail } from "lucide-react";
+import { User, Key, Loader2, Mail, Phone, Hash } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,7 +32,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
-import { Form, FormField, FormItem, FormControl, FormMessage } from "@/components/ui/form";
+import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
 import { useAuth } from "@/firebase";
 
 const loginSchema = z.object({
@@ -41,6 +42,12 @@ const loginSchema = z.object({
 
 const forgotPasswordSchema = z.object({
   voterId: z.string().min(1, "Voter ID is required."),
+  phoneNumber: z
+    .string()
+    .min(10, "Phone number must be at least 10 digits.")
+    .max(10, "Phone number cannot exceed 10 digits.")
+    .regex(/^[0-9]+$/, "Phone number must contain only numbers."),
+  otp: z.string().optional(),
 });
 
 export default function LoginPage() {
@@ -49,6 +56,7 @@ export default function LoginPage() {
   const auth = useAuth();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
+  const [showOtpField, setShowOtpField] = useState(false);
   
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -62,6 +70,8 @@ export default function LoginPage() {
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
       voterId: "",
+      phoneNumber: "",
+      otp: "",
     },
   });
 
@@ -98,23 +108,59 @@ export default function LoginPage() {
     }
   };
 
+  const handleSendOtp = async () => {
+    const voterId = resetForm.getValues("voterId");
+    const phoneNumber = resetForm.getValues("phoneNumber");
+
+    if (!voterId || phoneNumber.length !== 10) {
+      resetForm.trigger(["voterId", "phoneNumber"]);
+      return;
+    }
+
+    setIsResetLoading(true);
+    // Simulate sending OTP
+    setTimeout(() => {
+      setIsResetLoading(false);
+      setShowOtpField(true);
+      toast({
+        title: "OTP Sent",
+        description: `A verification code has been sent to ${phoneNumber}.`,
+      });
+    }, 1500);
+  };
+
   const onResetPassword = async (values: z.infer<typeof forgotPasswordSchema>) => {
+    if (!showOtpField) {
+      handleSendOtp();
+      return;
+    }
+
+    if (!values.otp || values.otp.length < 4) {
+      toast({
+        variant: "destructive",
+        title: "Invalid OTP",
+        description: "Please enter the 6-digit code sent to your phone.",
+      });
+      return;
+    }
+
     setIsResetLoading(true);
     try {
       const emailForAuth = `${values.voterId}@ootu.app`;
       await sendPasswordResetEmail(auth, emailForAuth);
       toast({
-        title: "Reset Email Sent",
-        description: `If an account exists for ${values.voterId}, a password reset link has been sent to your registered email.`,
+        title: "Verification Successful",
+        description: `A password reset link has been sent to the email associated with Voter ID: ${values.voterId}.`,
       });
       setIsResetDialogOpen(false);
       resetForm.reset();
+      setShowOtpField(false);
     } catch (error: any) {
       console.error("Reset Error:", error);
       toast({
         variant: "destructive",
         title: "Reset Failed",
-        description: "Could not send reset email. Please check your Voter ID and try again.",
+        description: "Could not send reset link. Please check your Voter ID and try again.",
       });
     } finally {
       setIsResetLoading(false);
@@ -149,7 +195,7 @@ export default function LoginPage() {
                   name="voterId"
                   render={({ field }) => (
                     <FormItem>
-                      <Label htmlFor="voterId">Voter ID</Label>
+                      <FormLabel>Voter ID</FormLabel>
                       <div className="relative">
                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
@@ -166,7 +212,7 @@ export default function LoginPage() {
                   render={({ field }) => (
                     <FormItem>
                        <div className="flex items-center justify-between">
-                        <Label htmlFor="password">Password</Label>
+                        <FormLabel>Password</FormLabel>
                         <button 
                           type="button"
                           onClick={() => setIsResetDialogOpen(true)}
@@ -203,12 +249,18 @@ export default function LoginPage() {
         </Card>
       </motion.div>
 
-      <Dialog open={isResetDialogOpen} onOpenChange={setIsResetDialogOpen}>
+      <Dialog open={isResetDialogOpen} onOpenChange={(open) => {
+        setIsResetDialogOpen(open);
+        if (!open) {
+          setShowOtpField(false);
+          resetForm.reset();
+        }
+      }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
-              Enter your Voter ID below and we&apos;ll send you a link to reset your password.
+              Verify your identity using your Voter ID and registered phone number.
             </DialogDescription>
           </DialogHeader>
           <Form {...resetForm}>
@@ -218,21 +270,63 @@ export default function LoginPage() {
                 name="voterId"
                 render={({ field }) => (
                   <FormItem>
-                    <Label htmlFor="resetVoterId">Voter ID</Label>
+                    <FormLabel>Voter ID</FormLabel>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <FormControl>
-                        <Input id="resetVoterId" placeholder="ABC1234567" {...field} className="pl-9" />
+                        <Input id="resetVoterId" placeholder="ABC1234567" {...field} className="pl-9" disabled={showOtpField} />
                       </FormControl>
                     </div>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              <DialogFooter className="sm:justify-start">
+              <FormField
+                control={resetForm.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <FormControl>
+                        <Input id="resetPhone" placeholder="10-digit number" {...field} className="pl-9" disabled={showOtpField} maxLength={10} />
+                      </FormControl>
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {showOtpField && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-2"
+                >
+                  <FormField
+                    control={resetForm.control}
+                    name="otp"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Enter OTP</FormLabel>
+                        <div className="relative">
+                          <Hash className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <FormControl>
+                            <Input id="otp" placeholder="6-digit code" {...field} className="pl-9" maxLength={6} />
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </motion.div>
+              )}
+
+              <DialogFooter className="sm:justify-start gap-2">
                 <Button type="submit" disabled={isResetLoading}>
                   {isResetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Send Reset Link
+                  {showOtpField ? "Verify & Reset Password" : "Send OTP"}
                 </Button>
                 <Button type="button" variant="secondary" onClick={() => setIsResetDialogOpen(false)}>
                   Cancel
