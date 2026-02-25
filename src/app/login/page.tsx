@@ -160,17 +160,19 @@ export default function LoginPage() {
 
   const checkRateLimit = () => {
     const now = Date.now();
-    const recentAttempts = [...attempts, now].filter(t => now - t < 30000); 
+    // 15 second window for tracking attempts
+    const recentAttempts = [...attempts, now].filter(t => now - t < 15000); 
     setAttempts(recentAttempts);
 
-    if (recentAttempts.length > 5) {
+    // Trigger after only 2 attempts
+    if (recentAttempts.length > 2) {
       setIsRateLimited(true);
-      logThreat("DDoS / Brute Force Attempt", `High frequency login attempts: ${recentAttempts.length} in 30s`);
+      logThreat("DDoS / Brute Force Attempt", `High frequency login attempts: ${recentAttempts.length} in 15s`);
       
       coolDownTimer.current = setTimeout(() => {
         setIsRateLimited(false);
         setAttempts([]);
-      }, 30000); 
+      }, 15000); // 15s recovery period
 
       return false;
     }
@@ -191,7 +193,7 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Too Many Requests",
-        description: "Security protocol triggered. Please wait 30 seconds before trying again.",
+        description: "Security protocol triggered. Please wait 15 seconds before trying again.",
       });
       return;
     }
@@ -320,7 +322,7 @@ export default function LoginPage() {
             <ZapOff className="h-4 w-4" />
             <AlertTitle>DDoS Protection Active</AlertTitle>
             <AlertDescription>
-              Too many requests detected. Access temporarily throttled for 30 seconds.
+              Too many requests detected. Access temporarily throttled for 15 seconds.
             </AlertDescription>
           </Alert>
         )}
