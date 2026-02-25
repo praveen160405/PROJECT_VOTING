@@ -16,8 +16,8 @@ import { Loader2 } from 'lucide-react';
 import React from 'react';
 
 const profileSchema = z.object({
-  firstName: z.string().min(1, 'First name is required.'),
-  lastName: z.string().min(1, 'Last name is required.'),
+  firstName: z.string().trim().min(1, 'First name is required.').max(50, 'Name is too long.'),
+  lastName: z.string().trim().min(1, 'Last name is required.').max(50, 'Name is too long.'),
 });
 
 export default function SettingsPage() {

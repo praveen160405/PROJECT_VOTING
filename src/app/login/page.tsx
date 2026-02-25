@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -29,25 +28,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
 import { useAuth } from "@/firebase";
 
 const loginSchema = z.object({
-  voterId: z.string().min(1, "Voter ID is required."),
+  voterId: z.string().trim().min(1, "Voter ID is required."),
   password: z.string().min(1, "Password is required."),
 });
 
 const forgotPasswordSchema = z.object({
-  voterId: z.string().min(1, "Voter ID is required."),
+  voterId: z.string().trim().min(1, "Voter ID is required."),
   phoneNumber: z
     .string()
-    .min(10, "Phone number must be at least 10 digits.")
-    .max(10, "Phone number cannot exceed 10 digits.")
+    .trim()
+    .min(10, "Phone number must be exactly 10 digits.")
+    .max(10, "Phone number must be exactly 10 digits.")
     .regex(/^[0-9]+$/, "Phone number must contain only numbers."),
-  otp: z.string().optional(),
+  otp: z.string().trim().optional(),
 });
 
 export default function LoginPage() {
@@ -89,7 +88,8 @@ export default function LoginPage() {
     });
 
     try {
-      const emailForAuth = `${values.voterId}@ootu.app`;
+      // Use structured email for Auth
+      const emailForAuth = `${values.voterId.toLowerCase()}@ootu.app`;
       await signInWithEmailAndPassword(auth, emailForAuth, values.password);
       toast({
         title: "Login Successful!",
@@ -123,7 +123,7 @@ export default function LoginPage() {
     }
 
     setIsResetLoading(true);
-    // Simulate sending OTP
+    // Simulate sending OTP (Backend verification would happen here in a real scenario)
     setTimeout(() => {
       setIsResetLoading(false);
       setShowOtpField(true);
@@ -144,14 +144,14 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Invalid OTP",
-        description: "Please enter the 6-digit code sent to your phone.",
+        description: "Please enter the verification code sent to your phone.",
       });
       return;
     }
 
     setIsResetLoading(true);
     try {
-      const emailForAuth = `${values.voterId}@ootu.app`;
+      const emailForAuth = `${values.voterId.toLowerCase()}@ootu.app`;
       await sendPasswordResetEmail(auth, emailForAuth);
       toast({
         title: "Verification Successful",
@@ -206,7 +206,7 @@ export default function LoginPage() {
                       <div className="relative">
                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input id="voterId" placeholder="Enter your Voter ID" {...field} className="pl-10" />
+                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" />
                         </FormControl>
                       </div>
                       <FormMessage />
@@ -331,7 +331,7 @@ export default function LoginPage() {
                 </motion.div>
               )}
 
-              <DialogFooter className="sm:justify-start gap-2">
+              <DialogFooter className="sm:justify-end gap-2">
                 <Button type="submit" disabled={isResetLoading}>
                   {isResetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {showOtpField ? "Verify & Reset Password" : "Send OTP"}

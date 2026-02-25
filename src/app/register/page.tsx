@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Loader2, Camera, User } from "lucide-react";
+import { Loader2, Camera } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,12 +28,13 @@ import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "
 import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
 
 const registerSchema = z.object({
-  fullName: z.string().min(1, "Full name is required."),
+  fullName: z.string().trim().min(1, "Full name is required.").max(100, "Full name is too long."),
   voterId: z
     .string()
-    .max(10, "Voter ID cannot be more than 10 characters long.")
+    .trim()
+    .length(10, "Voter ID must be exactly 10 characters long.")
     .regex(/^[a-zA-Z]{3}[0-9]{7}$/, "Voter ID must be 3 letters followed by 7 numbers."),
-  password: z.string().min(8, "Password must be at least 8 characters long."),
+  password: z.string().min(8, "Password must be at least 8 characters long.").max(72, "Password is too long."),
   idProof: z.any().optional(),
 });
 
@@ -65,19 +66,18 @@ export default function RegisterPage() {
     });
 
     try {
-      // We use a derived email for Firebase Auth, as it requires an email.
-      // The user will only ever see and use their Voter ID.
-      const emailForAuth = `${values.voterId}@ootu.app`;
+      // Use structured email for Auth, mapped to Voter ID
+      const emailForAuth = `${values.voterId.toLowerCase()}@ootu.app`;
       const userCredential = await createUserWithEmailAndPassword(auth, emailForAuth, values.password);
       const user = userCredential.user;
 
       const userProfile = {
         id: user.uid,
-        voterId: values.voterId,
+        voterId: values.voterId.toUpperCase(),
         firstName: values.fullName.split(' ')[0] || '',
         lastName: values.fullName.split(' ').slice(1).join(' ') || '',
-        voterIdProofHash: '', // Placeholder
-        faceImageHash: '', // Placeholder
+        voterIdProofHash: '',
+        faceImageHash: '',
         isAdmin: false,
       };
 
@@ -182,7 +182,7 @@ export default function RegisterPage() {
                         <FormItem>
                           <FormLabel>Voter ID</FormLabel>
                           <FormControl>
-                            <Input placeholder="ABC1234567" {...field} />
+                            <Input placeholder="ABC1234567" {...field} maxLength={10} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
