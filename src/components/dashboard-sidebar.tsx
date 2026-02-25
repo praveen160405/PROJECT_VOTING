@@ -78,7 +78,7 @@ export function DashboardSidebar() {
                   tooltip={{ children: "Admin" }}
                 >
                   <Shield />
-                  <span>Admin</span>
+                  <span>Admin Panel</span>
                 </SidebarMenuButton>
               </Link>
             </SidebarMenuItem>
