@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -89,7 +90,7 @@ export default function LoginPage() {
         }
       }
     } catch (e) {
-      console.error("IP check failed:", e);
+      // Fail silently for IP check
     }
   };
   
@@ -129,7 +130,7 @@ export default function LoginPage() {
         });
       }
     } catch (e) {
-      console.error("Failed to log threat:", e);
+      // Log threat silently
     }
   };
 
@@ -164,7 +165,7 @@ export default function LoginPage() {
     const recentAttempts = [...attempts, now].filter(t => now - t < 15000); 
     setAttempts(recentAttempts);
 
-    // Trigger after only 2 attempts
+    // Trigger after only 2 attempts (3rd click blocks)
     if (recentAttempts.length > 2) {
       setIsRateLimited(true);
       logThreat("DDoS / Brute Force Attempt", `High frequency login attempts: ${recentAttempts.length} in 15s`);
@@ -210,11 +211,6 @@ export default function LoginPage() {
       return;
     }
 
-    toast({
-      title: "Logging In...",
-      description: "Please wait while we verify your credentials.",
-    });
-
     try {
       const emailForAuth = `${values.voterId.toLowerCase()}@ootu.app`;
       await signInWithEmailAndPassword(auth, emailForAuth, values.password);
@@ -224,12 +220,15 @@ export default function LoginPage() {
       });
       router.push("/dashboard");
     } catch (error: any) {
-      console.error("Login Error:", error);
       let description = "An unexpected error occurred.";
-      if (['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password', 'auth/invalid-email'].includes(error.code)) {
+      
+      // Handle standard auth errors gracefully without console logging
+      if (['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password', 'auth/invalid-email', 'auth/user-disabled'].includes(error.code)) {
         description = "Invalid Voter ID or password. Please try again.";
-      } else if (error.message) {
-        description = error.message;
+      } else {
+        // Log unexpected system errors only
+        console.error("Authentication System Error:", error);
+        if (error.message) description = error.message;
       }
       
       toast({
@@ -287,7 +286,6 @@ export default function LoginPage() {
       resetForm.reset();
       setShowOtpField(false);
     } catch (error: any) {
-      console.error("Reset Error:", error);
       toast({
         variant: "destructive",
         title: "Reset Failed",
