@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -9,6 +10,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { useState, useEffect } from "react";
+import { collection, serverTimestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +33,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
-import { useAuth } from "@/firebase";
+import { useAuth, useFirestore, addDocumentNonBlocking } from "@/firebase";
 
 const loginSchema = z.object({
   voterId: z.string().trim().min(1, "Voter ID is required."),
@@ -53,6 +55,7 @@ export default function LoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const auth = useAuth();
+  const firestore = useFirestore();
   const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
   const [isResetLoading, setIsResetLoading] = useState(false);
   const [showOtpField, setShowOtpField] = useState(false);
@@ -81,7 +84,55 @@ export default function LoginPage() {
 
   const { formState } = form;
 
+  // Attack detection patterns
+  const detectAttacks = (values: z.infer<typeof loginSchema>) => {
+    const patterns = [
+      /' OR '1'='1/i,
+      /--/i,
+      /\/\*/i,
+      /UNION SELECT/i,
+      /DROP TABLE/i,
+      /SLEEP\(/i,
+      /WAITFOR DELAY/i,
+      /<script/i,
+      /{\s*\$gt\s*: ""}/i // Common NoSQL injection
+    ];
+
+    const input = values.voterId + " " + values.password;
+    return patterns.some(pattern => pattern.test(input));
+  };
+
+  const logThreat = async (type: string, payload: string) => {
+    try {
+      // Get public IP for demonstration
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      const ip = ipData.ip || 'Unknown';
+
+      const threatsRef = collection(firestore, 'threats');
+      addDocumentNonBlocking(threatsRef, {
+        ipAddress: ip,
+        type: type,
+        payload: payload,
+        timestamp: serverTimestamp()
+      });
+    } catch (e) {
+      console.error("Failed to log threat:", e);
+    }
+  };
+
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+    // Check for attacks
+    if (detectAttacks(values)) {
+      logThreat("SQLi / Injection Attempt", values.voterId + " | [REDACTED]");
+      toast({
+        variant: "destructive",
+        title: "Security Alert",
+        description: "Suspicious activity detected. Your IP has been logged for review.",
+      });
+      return;
+    }
+
     toast({
       title: "Logging In...",
       description: "Please wait while we verify your credentials.",
@@ -204,7 +255,7 @@ export default function LoginPage() {
                       <div className="relative">
                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" maxLength={10} />
+                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" maxLength={20} />
                         </FormControl>
                       </div>
                       <FormMessage />

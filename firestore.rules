@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -29,21 +30,21 @@ service cloud.firestore {
     }
 
     // This is the collection group query rule.
-    // It allows any signed-in user to query the 'votes' collection group.
-    // This is needed for the results page to show aggregate data.
     match /{path=**}/votes/{voteId} {
-      // We only allow 'list' (queries). We do not allow 'get' (direct doc reads).
-      // Direct reads are handled by the more specific rule below.
       allow list: if isSignedIn();
     }
 
-    // Votes - A user can create their own vote, and read their own vote.
-    // Votes are immutable once created.
+    // Votes
     match /users/{userId}/votes/{voteId} {
-      // This rule handles direct document access (get) and writes (create).
       allow get: if isOwner(userId);
       allow create: if isOwner(userId) && request.resource.data.voterId == userId;
       allow update, delete: if false; // Votes are immutable
+    }
+
+    // Threats - Anyone can report an attack attempt, but only admins can read.
+    match /threats/{threatId} {
+      allow create: if true;
+      allow get, list: if isAdmin();
     }
 
     // Public collections

@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Vote": {
@@ -153,6 +154,38 @@
         "endDate",
         "candidateIds"
       ]
+    },
+    "Threat": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Threat",
+      "type": "object",
+      "description": "Represents a detected security threat or attack attempt.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "IP address of the origin of the attack."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of attack (e.g., SQL Injection, Brute Force)."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "payload": {
+          "type": "string",
+          "description": "The suspicious input or payload detected."
+        }
+      },
+      "required": [
+        "ipAddress",
+        "type",
+        "timestamp"
+      ]
     }
   },
   "auth": {
@@ -170,15 +203,15 @@
           "schema": {
             "$ref": "#/backend/entities/Vote"
           },
-          "description": "Stores individual votes cast by a voter.  Authorization is based on path ownership (voterId matches userId).",
+          "description": "Stores individual votes cast by a voter.",
           "params": [
             {
               "name": "userId",
-              "description": "The ID of the voter who owns the votes."
+              "description": "The ID of the voter."
             },
             {
               "name": "voteId",
-              "description": "The ID of the vote document."
+              "description": "The ID of the vote."
             }
           ]
         }
@@ -190,7 +223,7 @@
           "schema": {
             "$ref": "#/backend/entities/Voter"
           },
-          "description": "Stores the details of the user. The user owns this document, authorization is based on path ownership.",
+          "description": "Stores the details of the user.",
           "params": [
             {
               "name": "userId",
@@ -206,7 +239,7 @@
           "schema": {
             "$ref": "#/backend/entities/Election"
           },
-          "description": "Stores information about an election. Access controlled by admin roles.",
+          "description": "Stores information about an election.",
           "params": [
             {
               "name": "electionId",
@@ -222,7 +255,7 @@
           "schema": {
             "$ref": "#/backend/entities/Candidate"
           },
-          "description": "Stores information about a candidate.  Readable by anyone.",
+          "description": "Stores information about a candidate.",
           "params": [
             {
               "name": "candidateId",
@@ -230,8 +263,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/threats/{threatId}",
+        "definition": {
+          "entityName": "Threat",
+          "schema": {
+            "$ref": "#/backend/entities/Threat"
+          },
+          "description": "Logged security incidents and attack attempts.",
+          "params": [
+            {
+              "name": "threatId",
+              "description": "Unique ID for the threat record."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to support a secure and transparent voting system, OOTU, adhering to the principles of authorization independence, clarity, and QAPs (Rules are not filters). It leverages path-based ownership for user-specific data and denormalization to ensure security rules are simple, robust, and easily debuggable. The structure also facilitates the implementation of security rules that enforce vote anonymity and prevent unauthorized data access, aligning with the application's core features.\\n\\n**Authorization Independence:**  Authorization independence is achieved primarily by using path-based ownership for votes scoped to a specific voter. There's no need to `get()` parent document data to determine authorization.  Each vote is owned by the voter who cast it, making access control straightforward and atomic. Furthermore, election metadata, is used on the client side to decide on available parameters for an election, and is validated using a collection group query that includes electionId, candidateId, and voterId. This approach eliminates hierarchical authorization dependencies, simplifies security rules, and supports atomic operations (transactions/batches).\\n\\n**QAPs (Rules are not Filters):** The structure supports secure `list` operations by ensuring that all documents within a collection share the same security posture. For example, all votes under `/users/{userId}/votes/{voteId}` are owned by the user identified by `{userId}`. Thus listing votes for a specific user is safe.\\n\\n**Denormalization:** We are implicitly relying on client-side denormalization for operations related to Elections. This is secure because the rules only allow the document to be created, the rules do not allow the document to be read or updated, which means that all reads must happen through a server.\\n\\n**Election Design Notes:** Elections are used as global entities. The rules for this collection are secured to only allow admin roles to create elections."
+    "reasoning": "The Firestore data structure is optimized for security and real-time monitoring. The 'threats' collection allows for centralized logging of suspicious activity, while existing user and voting structures maintain high isolation."
   }
 }

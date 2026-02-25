@@ -1,3 +1,4 @@
+
 export type Candidate = {
   id: string;
   name: string;
@@ -31,4 +32,12 @@ export type Voter = {
   firstName: string;
   lastName: string;
   isAdmin?: boolean;
+};
+
+export type Threat = {
+  id: string;
+  ipAddress: string;
+  type: string;
+  timestamp: any;
+  payload: string;
 };
