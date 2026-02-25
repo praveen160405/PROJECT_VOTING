@@ -12,8 +12,17 @@ import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ShieldCheck } from 'lucide-react';
-import React from 'react';
+import { Loader2, ShieldCheck, Lock } from 'lucide-react';
+import React, { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 const profileSchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required.').max(50, 'Name is too long.'),
@@ -23,6 +32,8 @@ const profileSchema = z.object({
 export default function SettingsPage() {
   const { user, firestore, isUserLoading } = useFirebase();
   const { toast } = useToast();
+  const [isAdminPasswordOpen, setIsAdminPasswordOpen] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
 
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -64,17 +75,31 @@ export default function SettingsPage() {
     });
   };
 
-  const handlePromoteToAdmin = () => {
-    if (!userDocRef) return;
-    
-    updateDocumentNonBlocking(userDocRef, {
-        isAdmin: true,
-    });
+  const handlePromoteToAdminClick = () => {
+    setIsAdminPasswordOpen(true);
+  };
 
-    toast({
-        title: 'Admin Access Granted',
-        description: 'You are now an administrator. The Admin Panel is now visible in your sidebar.',
-    });
+  const handleConfirmAdmin = () => {
+    if (adminPasswordInput === 'admin123') {
+      if (!userDocRef) return;
+      
+      updateDocumentNonBlocking(userDocRef, {
+          isAdmin: true,
+      });
+
+      toast({
+          title: 'Admin Access Granted',
+          description: 'You are now an administrator. The Admin Panel is now visible in your sidebar.',
+      });
+      setIsAdminPasswordOpen(false);
+      setAdminPasswordInput('');
+    } else {
+      toast({
+          variant: "destructive",
+          title: 'Incorrect Password',
+          description: 'The password you entered is incorrect.',
+      });
+    }
   };
   
   const isLoading = isUserLoading || isProfileLoading;
@@ -155,7 +180,7 @@ export default function SettingsPage() {
                 </Button>
 
                 {!userProfile.isAdmin && (
-                  <Button variant="outline" type="button" onClick={handlePromoteToAdmin} className="text-primary border-primary hover:bg-primary/10">
+                  <Button variant="outline" type="button" onClick={handlePromoteToAdminClick} className="text-primary border-primary hover:bg-primary/10">
                     <ShieldCheck className="mr-2 h-4 w-4" />
                     Become Admin (Prototype Only)
                   </Button>
@@ -164,6 +189,40 @@ export default function SettingsPage() {
           </Card>
         </form>
       </Form>
+
+      <Dialog open={isAdminPasswordOpen} onOpenChange={setIsAdminPasswordOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Admin Access Required</DialogTitle>
+            <DialogDescription>
+              Enter the prototype admin password to grant yourself administrative privileges.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="admin-password">Admin Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="admin-password"
+                  type="password"
+                  value={adminPasswordInput}
+                  onChange={(e) => setAdminPasswordInput(e.target.value)}
+                  className="pl-9"
+                  placeholder="••••••••"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleConfirmAdmin();
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAdminPasswordOpen(false)}>Cancel</Button>
+            <Button onClick={handleConfirmAdmin}>Verify & Promote</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
