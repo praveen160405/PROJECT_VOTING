@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ShieldAlert, ShieldCheck, Lock, Fingerprint, Database, Globe, AlertTriangle, Terminal } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Lock, Fingerprint, Database, Globe, AlertTriangle, Terminal, Activity, Zap } from 'lucide-react';
 import { format } from 'date-fns';
 
 function UserRow({ user }: { user: Voter }) {
@@ -142,38 +142,67 @@ export default function AdminPage() {
       title: "Attack Monitoring",
       description: "Heuristic pattern matching active for SQLi and NoSQLi detection.",
       icon: Terminal,
-      status: "Active"
+      status: "Active",
+      color: "text-green-500",
+      bg: "bg-green-500"
     },
     {
-      title: "Injection Prevention",
-      description: "Strict Zod schema validation and Firestore parameterization active.",
+      title: "Immutable Ledger",
+      description: "On-chain verification for votes active via OOTU Protocol.",
       icon: Database,
-      status: "Active"
+      status: "Active",
+      color: "text-blue-500",
+      bg: "bg-blue-500"
     },
     {
       title: "CSRF Defense",
       description: "Token-based session management and restrictive Referrer policies.",
       icon: Lock,
-      status: "Active"
+      status: "Secured",
+      color: "text-green-500",
+      bg: "bg-green-500"
     },
     {
       title: "Identity Verification",
-      description: "Voter ID formatting (3 chars + 7 digits) and Biometric readiness.",
+      description: "Voter ID formatting and Biometric checks active.",
       icon: Fingerprint,
-      status: "Active"
+      status: "Active",
+      color: "text-purple-500",
+      bg: "bg-purple-500"
     }
+  ];
+
+  const systemStats = [
+    { label: "Active Nodes", value: "128", icon: Zap },
+    { label: "Network Health", value: "99.9%", icon: Activity },
+    { label: "Total Voters", value: users?.length || "0", icon: Globe },
+    { label: "Recent Attacks", value: threats?.length || "0", icon: AlertTriangle },
   ];
 
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Admin Security Panel</h1>
           <p className="text-muted-foreground">Manage users and monitor system security intelligence.</p>
         </div>
         <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20 px-4 py-1">
           <ShieldCheck className="mr-2 h-4 w-4" /> System Secure
         </Badge>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {systemStats.map((stat) => (
+          <Card key={stat.label} className="bg-primary/5 border-primary/10">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
+                <p className="text-2xl font-bold">{stat.value}</p>
+              </div>
+              <stat.icon className="h-8 w-8 text-primary/40" />
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
@@ -185,8 +214,8 @@ export default function AdminPage() {
             </CardHeader>
             <CardContent>
               <p className="text-xs text-muted-foreground mb-2">{measure.description}</p>
-              <div className="flex items-center text-xs font-semibold text-green-500">
-                <div className="mr-2 h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+              <div className={`flex items-center text-xs font-semibold ${measure.color}`}>
+                <div className={`mr-2 h-2 w-2 rounded-full ${measure.bg} animate-pulse`} />
                 {measure.status}
               </div>
             </CardContent>

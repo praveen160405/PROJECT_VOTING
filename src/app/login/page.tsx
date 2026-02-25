@@ -95,7 +95,10 @@ export default function LoginPage() {
       /SLEEP\(/i,
       /WAITFOR DELAY/i,
       /<script/i,
-      /{\s*\$gt\s*: ""}/i // Common NoSQL injection
+      /{\s*\$gt\s*: ""}/i, // Common NoSQL injection
+      /javascript:/i,      // XSS
+      /onerror=/i,         // XSS
+      /\.\.\//i            // Path traversal
     ];
 
     const input = values.voterId + " " + values.password;
@@ -104,7 +107,7 @@ export default function LoginPage() {
 
   const logThreat = async (type: string, payload: string) => {
     try {
-      // Get public IP for demonstration
+      // Capture the IP (simulation in this prototype environment)
       const ipResponse = await fetch('https://api.ipify.org?format=json');
       const ipData = await ipResponse.json();
       const ip = ipData.ip || 'Unknown';
@@ -124,11 +127,11 @@ export default function LoginPage() {
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     // Check for attacks
     if (detectAttacks(values)) {
-      logThreat("SQLi / Injection Attempt", values.voterId + " | [REDACTED]");
+      logThreat("Injection / Script Attack Attempt", values.voterId + " | [REDACTED]");
       toast({
         variant: "destructive",
         title: "Security Alert",
-        description: "Suspicious activity detected. Your IP has been logged for review.",
+        description: "Suspicious activity detected. Your origin IP and payload have been logged for forensic analysis.",
       });
       return;
     }
