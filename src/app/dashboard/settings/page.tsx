@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldCheck } from 'lucide-react';
 import React from 'react';
 
 const profileSchema = z.object({
@@ -63,6 +63,19 @@ export default function SettingsPage() {
         description: 'Your changes have been saved.',
     });
   };
+
+  const handlePromoteToAdmin = () => {
+    if (!userDocRef) return;
+    
+    updateDocumentNonBlocking(userDocRef, {
+        isAdmin: true,
+    });
+
+    toast({
+        title: 'Admin Access Granted',
+        description: 'You are now an administrator. The Admin Panel is now visible in your sidebar.',
+    });
+  };
   
   const isLoading = isUserLoading || isProfileLoading;
 
@@ -71,20 +84,20 @@ export default function SettingsPage() {
   }
   
   if (!userProfile) {
-     return (
-        <div className="flex flex-col gap-8">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-                <p className="text-muted-foreground">Could not load your profile.</p>
-            </div>
-        </div>
-     )
+    return (
+      <div className="flex flex-col gap-8">
+          <div>
+              <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+              <p className="text-muted-foreground">Could not load your profile.</p>
+          </div>
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">User Profile</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">Manage your account and personal details.</p>
       </div>
       
@@ -135,11 +148,18 @@ export default function SettingsPage() {
                     <p className="text-sm text-muted-foreground">This is your unique identifier in the system.</p>
                 </div>
             </CardContent>
-            <CardFooter className="border-t px-6 py-4">
+            <CardFooter className="border-t px-6 py-4 flex justify-between items-center">
                 <Button type="submit" disabled={formState.isSubmitting}>
                    {formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Changes
                 </Button>
+
+                {!userProfile.isAdmin && (
+                  <Button variant="outline" type="button" onClick={handlePromoteToAdmin} className="text-primary border-primary hover:bg-primary/10">
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                    Become Admin (Prototype Only)
+                  </Button>
+                )}
             </CardFooter>
           </Card>
         </form>
