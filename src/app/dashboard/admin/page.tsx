@@ -86,7 +86,7 @@ export default function AdminPage() {
   // Threats Collection
   const threatsQuery = useMemoFirebase(() => {
     if (!firestore || !userProfile?.isAdmin) return null;
-    return query(collection(firestore, 'threats'), orderBy('timestamp', 'desc'), limit(10));
+    return query(collection(firestore, 'threats'), orderBy('timestamp', 'desc'), limit(15));
   }, [firestore, userProfile]);
   const { data: threats, isLoading: areThreatsLoading } = useCollection<Threat>(threatsQuery);
 
@@ -104,7 +104,7 @@ export default function AdminPage() {
   
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-8 p-6">
         <Skeleton className="h-10 w-1/2" />
         <Card>
           <CardHeader>
@@ -124,7 +124,7 @@ export default function AdminPage() {
   
   if (!userProfile?.isAdmin) {
      return (
-       <div className="flex flex-col gap-8">
+       <div className="flex flex-col gap-8 p-6">
         <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
         <Alert variant="destructive">
           <ShieldAlert className="h-4 w-4" />
@@ -145,7 +145,7 @@ export default function AdminPage() {
       status: "Active"
     },
     {
-      title: "NoSQL Injection",
+      title: "Injection Prevention",
       description: "Strict Zod schema validation and Firestore parameterization active.",
       icon: Database,
       status: "Active"
