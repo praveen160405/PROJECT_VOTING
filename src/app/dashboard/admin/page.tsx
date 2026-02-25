@@ -18,7 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 
 function UserRow({ user }: { user: Voter }) {
   const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
+    return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
   };
 
   return (
@@ -132,8 +132,6 @@ export default function AdminPage() {
 
   const handleBlockIp = (ip: string) => {
     if (!firestore || !userProfile?.isAdmin) return;
-    
-    // Use IP as ID for easy lookup, but replace dots with underscores for valid Firestore path
     const ipId = ip.replace(/\./g, '_');
     const blockRef = doc(firestore, 'blockedIps', ipId);
     

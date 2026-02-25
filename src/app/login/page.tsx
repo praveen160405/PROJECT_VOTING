@@ -82,7 +82,7 @@ export default function LoginPage() {
       const ipData = await ipResponse.json();
       const ip = ipData.ip;
       
-      if (ip) {
+      if (ip && firestore) {
         const blockDoc = await getDoc(doc(firestore, 'blockedIps', ip.replace(/\./g, '_')));
         if (blockDoc.exists()) {
           setIsBlocked(true);
@@ -119,26 +119,26 @@ export default function LoginPage() {
       const ipData = await ipResponse.json();
       const ip = ipData.ip || 'Unknown';
 
-      const threatsRef = collection(firestore, 'threats');
-      addDocumentNonBlocking(threatsRef, {
-        ipAddress: ip,
-        type: type,
-        payload: payload,
-        timestamp: serverTimestamp()
-      });
+      if (firestore) {
+        const threatsRef = collection(firestore, 'threats');
+        addDocumentNonBlocking(threatsRef, {
+          ipAddress: ip,
+          type: type,
+          payload: payload,
+          timestamp: serverTimestamp()
+        });
+      }
     } catch (e) {
       console.error("Failed to log threat:", e);
     }
   };
 
   const detectAttacks = (values: z.infer<typeof loginSchema>) => {
-    // 1. Honeypot check (Bot detection)
     if (values.username_hp) {
       logThreat("Bot/Honeypot Triggered", "Automated form submission detected.");
       return true;
     }
 
-    // 2. Injection patterns
     const patterns = [
       /' OR '1'='1/i,
       /--/i,
@@ -160,7 +160,7 @@ export default function LoginPage() {
 
   const checkRateLimit = () => {
     const now = Date.now();
-    const recentAttempts = [...attempts, now].filter(t => now - t < 30000); // 30 second window
+    const recentAttempts = [...attempts, now].filter(t => now - t < 30000); 
     setAttempts(recentAttempts);
 
     if (recentAttempts.length > 5) {
@@ -170,7 +170,7 @@ export default function LoginPage() {
       coolDownTimer.current = setTimeout(() => {
         setIsRateLimited(false);
         setAttempts([]);
-      }, 30000); // 30 second lockout
+      }, 30000); 
 
       return false;
     }
@@ -198,7 +198,6 @@ export default function LoginPage() {
 
     if (!checkRateLimit()) return;
 
-    // Check for attacks
     if (detectAttacks(values)) {
       logThreat("Malicious Payload Detected", values.voterId + " | [REDACTED]");
       toast({
@@ -308,9 +307,9 @@ export default function LoginPage() {
         className="w-full max-w-md"
       >
         {isBlocked && (
-          <Alert variant="destructive" className="mb-6 animate-bounce">
+          <Alert variant="destructive" className="mb-6 animate-pulse">
             <ShieldAlert className="h-4 w-4" />
-            <AlertTitle>Banned</AlertTitle>
+            <AlertTitle>Access Blocked</AlertTitle>
             <AlertDescription>
               This IP address has been blacklisted for malicious activity.
             </AlertDescription>
@@ -340,7 +339,6 @@ export default function LoginPage() {
           <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Honeypot field (hidden from users) */}
                 <div className="absolute opacity-0 -z-50 pointer-events-none h-0 w-0 overflow-hidden">
                    <FormField
                     control={form.control}
