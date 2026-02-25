@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Key, Loader2, Mail, Phone, Hash, ShieldAlert } from "lucide-react";
+import { User, Key, Loader2, Mail, Phone, Hash, ShieldAlert, ZapOff } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { collection, serverTimestamp, doc, getDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const loginSchema = z.object({
   voterId: z.string().trim().min(1, "Voter ID is required."),
   password: z.string().min(1, "Password is required."),
+  username_hp: z.string().max(0).optional(), // Honeypot field (must be empty)
 });
 
 const forgotPasswordSchema = z.object({
@@ -61,10 +62,18 @@ export default function LoginPage() {
   const [showOtpField, setShowOtpField] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  
+  // DDoS / Rate Limiting State
+  const [attempts, setAttempts] = useState<number[]>([]);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const coolDownTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
     checkIpBlock();
+    return () => {
+      if (coolDownTimer.current) clearTimeout(coolDownTimer.current);
+    };
   }, []);
 
   const checkIpBlock = async () => {
@@ -89,6 +98,7 @@ export default function LoginPage() {
     defaultValues: {
       voterId: "",
       password: "",
+      username_hp: "",
     },
   });
 
@@ -102,27 +112,6 @@ export default function LoginPage() {
   });
 
   const { formState } = form;
-
-  // Attack detection patterns
-  const detectAttacks = (values: z.infer<typeof loginSchema>) => {
-    const patterns = [
-      /' OR '1'='1/i,
-      /--/i,
-      /\/\*/i,
-      /UNION SELECT/i,
-      /DROP TABLE/i,
-      /SLEEP\(/i,
-      /WAITFOR DELAY/i,
-      /<script/i,
-      /{\s*\$gt\s*: ""}/i, // Common NoSQL injection
-      /javascript:/i,      // XSS
-      /onerror=/i,         // XSS
-      /\.\.\//i            // Path traversal
-    ];
-
-    const input = values.voterId + " " + values.password;
-    return patterns.some(pattern => pattern.test(input));
-  };
 
   const logThreat = async (type: string, payload: string) => {
     try {
@@ -142,6 +131,52 @@ export default function LoginPage() {
     }
   };
 
+  const detectAttacks = (values: z.infer<typeof loginSchema>) => {
+    // 1. Honeypot check (Bot detection)
+    if (values.username_hp) {
+      logThreat("Bot/Honeypot Triggered", "Automated form submission detected.");
+      return true;
+    }
+
+    // 2. Injection patterns
+    const patterns = [
+      /' OR '1'='1/i,
+      /--/i,
+      /\/\*/i,
+      /UNION SELECT/i,
+      /DROP TABLE/i,
+      /SLEEP\(/i,
+      /WAITFOR DELAY/i,
+      /<script/i,
+      /{\s*\$gt\s*: ""}/i,
+      /javascript:/i,
+      /onerror=/i,
+      /\.\.\//i
+    ];
+
+    const input = values.voterId + " " + values.password;
+    return patterns.some(pattern => pattern.test(input));
+  };
+
+  const checkRateLimit = () => {
+    const now = Date.now();
+    const recentAttempts = [...attempts, now].filter(t => now - t < 30000); // 30 second window
+    setAttempts(recentAttempts);
+
+    if (recentAttempts.length > 5) {
+      setIsRateLimited(true);
+      logThreat("DDoS / Brute Force Attempt", `High frequency login attempts: ${recentAttempts.length} in 30s`);
+      
+      coolDownTimer.current = setTimeout(() => {
+        setIsRateLimited(false);
+        setAttempts([]);
+      }, 30000); // 30 second lockout
+
+      return false;
+    }
+    return true;
+  };
+
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
     if (isBlocked) {
        toast({
@@ -152,9 +187,20 @@ export default function LoginPage() {
       return;
     }
 
+    if (isRateLimited) {
+      toast({
+        variant: "destructive",
+        title: "Too Many Requests",
+        description: "Security protocol triggered. Please wait 30 seconds before trying again.",
+      });
+      return;
+    }
+
+    if (!checkRateLimit()) return;
+
     // Check for attacks
     if (detectAttacks(values)) {
-      logThreat("Injection / Script Attack Attempt", values.voterId + " | [REDACTED]");
+      logThreat("Malicious Payload Detected", values.voterId + " | [REDACTED]");
       toast({
         variant: "destructive",
         title: "Security Alert",
@@ -270,6 +316,15 @@ export default function LoginPage() {
             </AlertDescription>
           </Alert>
         )}
+        {isRateLimited && (
+          <Alert variant="destructive" className="mb-6">
+            <ZapOff className="h-4 w-4" />
+            <AlertTitle>DDoS Protection Active</AlertTitle>
+            <AlertDescription>
+              Too many requests detected. Access temporarily throttled for 30 seconds.
+            </AlertDescription>
+          </Alert>
+        )}
         <Card className="glassmorphic-card shadow-2xl">
           <CardHeader className="items-center text-center p-6">
             <Link href="/" className="mb-4">
@@ -285,6 +340,19 @@ export default function LoginPage() {
           <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Honeypot field (hidden from users) */}
+                <div className="absolute opacity-0 -z-50 pointer-events-none h-0 w-0 overflow-hidden">
+                   <FormField
+                    control={form.control}
+                    name="username_hp"
+                    render={({ field }) => (
+                      <FormControl>
+                        <Input tabIndex={-1} autoComplete="off" {...field} />
+                      </FormControl>
+                    )}
+                  />
+                </div>
+
                 <FormField
                   control={form.control}
                   name="voterId"
@@ -294,7 +362,7 @@ export default function LoginPage() {
                       <div className="relative">
                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" maxLength={20} disabled={isBlocked} />
+                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" maxLength={20} disabled={isBlocked || isRateLimited} />
                         </FormControl>
                       </div>
                       <FormMessage />
@@ -313,7 +381,7 @@ export default function LoginPage() {
                           type="button"
                           onClick={() => setIsResetDialogOpen(true)}
                           className="h-auto p-0 text-sm font-medium text-primary hover:underline"
-                          disabled={isBlocked}
+                          disabled={isBlocked || isRateLimited}
                         >
                           Forgot password?
                         </Button>
@@ -321,14 +389,14 @@ export default function LoginPage() {
                       <div className="relative">
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input id="password" type="password" placeholder="••••••••" {...field} className="pl-10" disabled={isBlocked} />
+                          <Input id="password" type="password" placeholder="••••••••" {...field} className="pl-10" disabled={isBlocked || isRateLimited} />
                         </FormControl>
                       </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={formState.isSubmitting || isBlocked}>
+                <Button type="submit" className="w-full" disabled={formState.isSubmitting || isBlocked || isRateLimited}>
                    {formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign In
                 </Button>

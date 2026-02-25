@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ShieldAlert, ShieldCheck, Lock, Fingerprint, Database, Globe, AlertTriangle, Terminal, Activity, Zap, Ban, Unlock } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Lock, Fingerprint, Database, Globe, AlertTriangle, Terminal, Activity, Zap, Ban, Unlock, Server } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -200,6 +200,14 @@ export default function AdminPage() {
 
   const securityMeasures = [
     {
+      title: "DDoS Mitigation",
+      description: "Active rate limiting and honeypot bot detection enabled.",
+      icon: Server,
+      status: "Resilient",
+      color: "text-blue-500",
+      bg: "bg-blue-500"
+    },
+    {
       title: "Attack Monitoring",
       description: "Heuristic pattern matching active for SQLi and NoSQLi detection.",
       icon: Terminal,
@@ -222,14 +230,6 @@ export default function AdminPage() {
       status: "Secured",
       color: "text-green-500",
       bg: "bg-green-500"
-    },
-    {
-      title: "Identity Verification",
-      description: "Voter ID formatting and Biometric checks active.",
-      icon: Fingerprint,
-      status: "Active",
-      color: "text-purple-500",
-      bg: "bg-purple-500"
     }
   ];
 
