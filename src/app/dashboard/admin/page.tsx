@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirebase, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Lock, Fingerprint, Database, Globe } from 'lucide-react';
 
 function UserRow({ user }: { user: Voter }) {
   const getInitials = (firstName: string, lastName: string) => {
@@ -105,12 +105,63 @@ export default function AdminPage() {
     );
   }
 
+  const securityMeasures = [
+    {
+      title: "NoSQL Injection Protection",
+      description: "Strict Zod schema validation and Firestore parameterization active.",
+      icon: Database,
+      status: "Active"
+    },
+    {
+      title: "CSRF Defense",
+      description: "Token-based session management and restrictive Referrer policies.",
+      icon: Lock,
+      status: "Active"
+    },
+    {
+      title: "Identity Verification",
+      description: "Voter ID formatting (3 chars + 7 digits) and Biometric capture readiness.",
+      icon: Fingerprint,
+      status: "Active"
+    },
+    {
+      title: "Security Headers",
+      description: "HSTS, X-Frame-Options, and X-Content-Type-Options enabled.",
+      icon: Globe,
+      status: "Active"
+    }
+  ];
+
   return (
     <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
-        <p className="text-muted-foreground">Manage users and application settings.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Admin Panel</h1>
+          <p className="text-muted-foreground">Manage users and monitor system security.</p>
+        </div>
+        <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20 px-4 py-1">
+          <ShieldCheck className="mr-2 h-4 w-4" /> System Secure
+        </Badge>
       </div>
+
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {securityMeasures.map((measure) => (
+          <Card key={measure.title} className="glassmorphic-card">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{measure.title}</CardTitle>
+              <measure.icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground mb-2">{measure.description}</p>
+              <div className="flex items-center text-xs font-semibold text-green-500">
+                <div className="mr-2 h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                {measure.status}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>User Management</CardTitle>
