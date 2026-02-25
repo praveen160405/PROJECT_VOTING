@@ -88,7 +88,6 @@ export default function LoginPage() {
     });
 
     try {
-      // Use structured email for Auth
       const emailForAuth = `${values.voterId.toLowerCase()}@ootu.app`;
       await signInWithEmailAndPassword(auth, emailForAuth, values.password);
       toast({
@@ -123,7 +122,6 @@ export default function LoginPage() {
     }
 
     setIsResetLoading(true);
-    // Simulate sending OTP (Backend verification would happen here in a real scenario)
     setTimeout(() => {
       setIsResetLoading(false);
       setShowOtpField(true);
@@ -206,7 +204,7 @@ export default function LoginPage() {
                       <div className="relative">
                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" />
+                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" maxLength={10} />
                         </FormControl>
                       </div>
                       <FormMessage />
@@ -282,7 +280,7 @@ export default function LoginPage() {
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <FormControl>
-                        <Input id="resetVoterId" placeholder="ABC1234567" {...field} className="pl-9" disabled={showOtpField} />
+                        <Input id="resetVoterId" placeholder="ABC1234567" {...field} className="pl-9" disabled={showOtpField} maxLength={10} />
                       </FormControl>
                     </div>
                     <FormMessage />
