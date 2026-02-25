@@ -3,17 +3,19 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useFirebase, useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, orderBy, limit } from 'firebase/firestore';
-import type { Voter, Threat } from '@/lib/types';
+import { useFirebase, useDoc, useCollection, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase';
+import { doc, collection, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
+import type { Voter, Threat, BlockedIp } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ShieldAlert, ShieldCheck, Lock, Fingerprint, Database, Globe, AlertTriangle, Terminal, Activity, Zap } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Lock, Fingerprint, Database, Globe, AlertTriangle, Terminal, Activity, Zap, Ban, Unlock } from 'lucide-react';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 function UserRow({ user }: { user: Voter }) {
   const getInitials = (firstName: string, lastName: string) => {
@@ -46,7 +48,7 @@ function UserRow({ user }: { user: Voter }) {
   );
 }
 
-function ThreatRow({ threat }: { threat: Threat }) {
+function ThreatRow({ threat, onBlock }: { threat: Threat, onBlock: (ip: string) => void }) {
   return (
     <TableRow className="border-red-500/10 hover:bg-red-500/5">
       <TableCell className="font-mono text-xs">{threat.ipAddress}</TableCell>
@@ -55,11 +57,32 @@ function ThreatRow({ threat }: { threat: Threat }) {
           {threat.type}
         </Badge>
       </TableCell>
-      <TableCell className="max-w-[200px] truncate font-mono text-[10px] text-muted-foreground">
+      <TableCell className="max-w-[150px] truncate font-mono text-[10px] text-muted-foreground">
         {threat.payload}
       </TableCell>
-      <TableCell className="text-right text-xs">
+      <TableCell className="text-xs">
         {threat.timestamp?.toDate ? format(threat.timestamp.toDate(), 'PPp') : 'Just now'}
+      </TableCell>
+      <TableCell className="text-right">
+        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={() => onBlock(threat.ipAddress)}>
+          <Ban className="h-4 w-4" />
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function BlockedIpRow({ item, onUnblock }: { item: BlockedIp, onUnblock: (ip: string) => void }) {
+  return (
+    <TableRow>
+      <TableCell className="font-mono text-xs">{item.ip}</TableCell>
+      <TableCell className="text-xs text-muted-foreground">
+        {item.timestamp?.toDate ? format(item.timestamp.toDate(), 'PPp') : 'Unknown'}
+      </TableCell>
+      <TableCell className="text-right">
+        <Button size="sm" variant="outline" className="h-8 gap-2" onClick={() => onUnblock(item.ip)}>
+          <Unlock className="h-3.5 w-3.5" /> Unblock
+        </Button>
       </TableCell>
     </TableRow>
   );
@@ -67,6 +90,7 @@ function ThreatRow({ threat }: { threat: Threat }) {
 
 export default function AdminPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const { user, firestore, isUserLoading } = useFirebase();
 
   const userDocRef = useMemoFirebase(() => {
@@ -90,6 +114,13 @@ export default function AdminPage() {
   }, [firestore, userProfile]);
   const { data: threats, isLoading: areThreatsLoading } = useCollection<Threat>(threatsQuery);
 
+  // Blocked IPs Collection
+  const blockedIpsRef = useMemoFirebase(() => {
+    if (!firestore || !userProfile?.isAdmin) return null;
+    return collection(firestore, 'blockedIps');
+  }, [firestore, userProfile]);
+  const { data: blockedIps, isLoading: areBlockedIpsLoading } = useCollection<BlockedIp>(blockedIpsRef);
+
   useEffect(() => {
     if (!isUserLoading && !isProfileLoading) {
       if (!user) {
@@ -99,6 +130,37 @@ export default function AdminPage() {
       }
     }
   }, [user, userProfile, isUserLoading, isProfileLoading, router]);
+
+  const handleBlockIp = (ip: string) => {
+    if (!firestore || !userProfile?.isAdmin) return;
+    
+    // Use IP as ID for easy lookup, but replace dots with underscores for valid Firestore path
+    const ipId = ip.replace(/\./g, '_');
+    const blockRef = doc(firestore, 'blockedIps', ipId);
+    
+    setDocumentNonBlocking(blockRef, {
+      ip,
+      reason: 'Security threat detected via Intelligence Panel',
+      timestamp: serverTimestamp()
+    }, { merge: true });
+
+    toast({
+      title: "IP Blocked",
+      description: `${ip} has been added to the blacklist.`,
+    });
+  };
+
+  const handleUnblockIp = (ip: string) => {
+    if (!firestore || !userProfile?.isAdmin) return;
+    const ipId = ip.replace(/\./g, '_');
+    const blockRef = doc(firestore, 'blockedIps', ipId);
+    deleteDocumentNonBlocking(blockRef);
+
+    toast({
+      title: "IP Unblocked",
+      description: `${ip} has been removed from the blacklist.`,
+    });
+  };
 
   const isLoading = isUserLoading || isProfileLoading;
   
@@ -147,12 +209,12 @@ export default function AdminPage() {
       bg: "bg-green-500"
     },
     {
-      title: "Immutable Ledger",
-      description: "On-chain verification for votes active via OOTU Protocol.",
-      icon: Database,
+      title: "IP Blacklisting",
+      description: "Real-time edge blocking active for malicious origin addresses.",
+      icon: Ban,
       status: "Active",
-      color: "text-blue-500",
-      bg: "bg-blue-500"
+      color: "text-red-500",
+      bg: "bg-red-500"
     },
     {
       title: "CSRF Defense",
@@ -175,7 +237,7 @@ export default function AdminPage() {
   const systemStats = [
     { label: "Active Nodes", value: "128", icon: Zap },
     { label: "Network Health", value: "99.9%", icon: Activity },
-    { label: "Total Voters", value: users?.length || "0", icon: Globe },
+    { label: "Banned IPs", value: blockedIps?.length || "0", icon: Ban },
     { label: "Recent Attacks", value: threats?.length || "0", icon: AlertTriangle },
   ];
 
@@ -223,11 +285,11 @@ export default function AdminPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>User Management</CardTitle>
-            <CardDescription>A list of all registered users in the system.</CardDescription>
+            <CardDescription>All registered users in the system.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -235,18 +297,17 @@ export default function AdminPage() {
                 <TableRow>
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
-                  <TableHead className="text-right">User ID</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {areUsersLoading && <UserRowSkeleton />}
-                {users && users.map(u => <UserRow key={u.id} user={u} />)}
+                {users && users.slice(0, 8).map(u => <UserRow key={u.id} user={u} />)}
               </TableBody>
             </Table>
           </CardContent>
         </Card>
 
-        <Card className="border-red-500/20">
+        <Card className="lg:col-span-2 border-red-500/20">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
@@ -261,27 +322,66 @@ export default function AdminPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>IP Address</TableHead>
-                  <TableHead>Attack Type</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Payload</TableHead>
-                  <TableHead className="text-right">Timestamp</TableHead>
+                  <TableHead>Time</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {areThreatsLoading && (
                    <TableRow>
-                      <TableCell colSpan={4}><Skeleton className="h-10 w-full" /></TableCell>
+                      <TableCell colSpan={5}><Skeleton className="h-10 w-full" /></TableCell>
                    </TableRow>
                 )}
-                {threats && threats.map(t => <ThreatRow key={t.id} threat={t} />)}
+                {threats && threats.map(t => <ThreatRow key={t.id} threat={t} onBlock={handleBlockIp} />)}
                 {!areThreatsLoading && (!threats || threats.length === 0) && (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground italic">
+                    <TableCell colSpan={5} className="h-24 text-center text-muted-foreground italic">
                       No security incidents reported.
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6">
+        <Card className="border-orange-500/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Ban className="h-5 w-5 text-orange-500" />
+              Blacklisted IP Addresses
+            </CardTitle>
+            <CardDescription>Currently banned origins that are denied access to the login portal.</CardDescription>
+          </CardHeader>
+          <CardContent>
+             <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>IP Address</TableHead>
+                    <TableHead>Banned At</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {areBlockedIpsLoading && (
+                    <TableRow>
+                       <TableCell colSpan={3}><Skeleton className="h-10 w-full" /></TableCell>
+                    </TableRow>
+                  )}
+                  {blockedIps && blockedIps.map(item => <BlockedIpRow key={item.id} item={item} onUnblock={handleUnblockIp} />)}
+                  {!areBlockedIpsLoading && (!blockedIps || blockedIps.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="h-24 text-center text-muted-foreground italic">
+                        No IP addresses are currently blacklisted.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
           </CardContent>
         </Card>
       </div>
@@ -299,7 +399,6 @@ function UserRowSkeleton() {
         </div>
       </TableCell>
       <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
-       <TableCell className="text-right"><Skeleton className="h-4 w-40 ml-auto" /></TableCell>
     </TableRow>
   )
 }

@@ -47,6 +47,12 @@ service cloud.firestore {
       allow get, list: if isAdmin();
     }
 
+    // Blocked IPs - Anyone can check a specific IP (for login blocks), but only admins can manage.
+    match /blockedIps/{ipId} {
+      allow get: if true;
+      allow list, create, update, delete: if isAdmin();
+    }
+
     // Public collections
     match /elections/{electionId} {
       allow get, list: if true;

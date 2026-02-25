@@ -4,13 +4,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Key, Loader2, Mail, Phone, Hash } from "lucide-react";
+import { User, Key, Loader2, Mail, Phone, Hash, ShieldAlert } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { useState, useEffect } from "react";
-import { collection, serverTimestamp } from "firebase/firestore";
+import { collection, serverTimestamp, doc, getDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +34,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
 import { useAuth, useFirestore, addDocumentNonBlocking } from "@/firebase";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   voterId: z.string().trim().min(1, "Voter ID is required."),
@@ -60,10 +61,29 @@ export default function LoginPage() {
   const [isResetLoading, setIsResetLoading] = useState(false);
   const [showOtpField, setShowOtpField] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+    checkIpBlock();
   }, []);
+
+  const checkIpBlock = async () => {
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      const ip = ipData.ip;
+      
+      if (ip) {
+        const blockDoc = await getDoc(doc(firestore, 'blockedIps', ip.replace(/\./g, '_')));
+        if (blockDoc.exists()) {
+          setIsBlocked(true);
+        }
+      }
+    } catch (e) {
+      console.error("IP check failed:", e);
+    }
+  };
   
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -107,7 +127,6 @@ export default function LoginPage() {
 
   const logThreat = async (type: string, payload: string) => {
     try {
-      // Capture the IP (simulation in this prototype environment)
       const ipResponse = await fetch('https://api.ipify.org?format=json');
       const ipData = await ipResponse.json();
       const ip = ipData.ip || 'Unknown';
@@ -125,6 +144,15 @@ export default function LoginPage() {
   };
 
   const onSubmit = async (values: z.infer<typeof loginSchema>) => {
+    if (isBlocked) {
+       toast({
+        variant: "destructive",
+        title: "Access Denied",
+        description: "Your IP address has been permanently blocked due to security violations.",
+      });
+      return;
+    }
+
     // Check for attacks
     if (detectAttacks(values)) {
       logThreat("Injection / Script Attack Attempt", values.voterId + " | [REDACTED]");
@@ -234,6 +262,15 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-md"
       >
+        {isBlocked && (
+          <Alert variant="destructive" className="mb-6 animate-bounce">
+            <ShieldAlert className="h-4 w-4" />
+            <AlertTitle>Banned</AlertTitle>
+            <AlertDescription>
+              This IP address has been blacklisted for malicious activity.
+            </AlertDescription>
+          </Alert>
+        )}
         <Card className="glassmorphic-card shadow-2xl">
           <CardHeader className="items-center text-center p-6">
             <Link href="/" className="mb-4">
@@ -258,7 +295,7 @@ export default function LoginPage() {
                       <div className="relative">
                          <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" maxLength={20} />
+                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" maxLength={20} disabled={isBlocked} />
                         </FormControl>
                       </div>
                       <FormMessage />
@@ -277,6 +314,7 @@ export default function LoginPage() {
                           type="button"
                           onClick={() => setIsResetDialogOpen(true)}
                           className="h-auto p-0 text-sm font-medium text-primary hover:underline"
+                          disabled={isBlocked}
                         >
                           Forgot password?
                         </Button>
@@ -284,14 +322,14 @@ export default function LoginPage() {
                       <div className="relative">
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input id="password" type="password" placeholder="••••••••" {...field} className="pl-10" />
+                          <Input id="password" type="password" placeholder="••••••••" {...field} className="pl-10" disabled={isBlocked} />
                         </FormControl>
                       </div>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={formState.isSubmitting}>
+                <Button type="submit" className="w-full" disabled={formState.isSubmitting || isBlocked}>
                    {formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign In
                 </Button>

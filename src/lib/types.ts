@@ -41,3 +41,10 @@ export type Threat = {
   timestamp: any;
   payload: string;
 };
+
+export type BlockedIp = {
+  id: string;
+  ip: string;
+  reason: string;
+  timestamp: any;
+};

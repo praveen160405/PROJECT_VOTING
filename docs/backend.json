@@ -186,6 +186,30 @@
         "type",
         "timestamp"
       ]
+    },
+    "BlockedIp": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BlockedIp",
+      "type": "object",
+      "description": "Represents a banned IP address.",
+      "properties": {
+        "ip": {
+          "type": "string",
+          "description": "The IP address that is blocked."
+        },
+        "reason": {
+          "type": "string",
+          "description": "Reason for the block."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "ip",
+        "timestamp"
+      ]
     }
   },
   "auth": {
@@ -279,8 +303,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/blockedIps/{ipId}",
+        "definition": {
+          "entityName": "BlockedIp",
+          "schema": {
+            "$ref": "#/backend/entities/BlockedIp"
+          },
+          "description": "List of blocked IP addresses.",
+          "params": [
+            {
+              "name": "ipId",
+              "description": "The ID of the blocked IP (usually the IP itself)."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is optimized for security and real-time monitoring. The 'threats' collection allows for centralized logging of suspicious activity, while existing user and voting structures maintain high isolation."
+    "reasoning": "The Firestore data structure is optimized for security and real-time monitoring. The 'threats' collection allows for centralized logging of suspicious activity, while 'blockedIps' provides a scalable way to ban malicious clients."
   }
 }
