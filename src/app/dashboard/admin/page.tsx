@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirebase, useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { doc, collection } from 'firebase/firestore';
@@ -52,6 +53,7 @@ export default function AdminPage() {
     if (!firestore || !user) return null;
     return doc(firestore, "users", user.uid);
   }, [firestore, user]);
+  
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<Voter>(userDocRef);
 
   const usersCollectionRef = useMemoFirebase(() => {
@@ -62,10 +64,17 @@ export default function AdminPage() {
   const { data: users, isLoading: areUsersLoading } = useCollection<Voter>(usersCollectionRef);
 
   useEffect(() => {
-    if (!isUserLoading && !isProfileLoading && !userProfile?.isAdmin) {
-      router.replace('/dashboard');
+    // Only evaluate the redirect logic once both auth and profile loading states are definitively finished.
+    if (!isUserLoading && !isProfileLoading) {
+      if (!user) {
+        // Not logged in at all, send to login
+        router.replace('/login');
+      } else if (!userProfile?.isAdmin) {
+        // Logged in but not an admin, send back to dashboard
+        router.replace('/dashboard');
+      }
     }
-  }, [userProfile, isUserLoading, isProfileLoading, router]);
+  }, [user, userProfile, isUserLoading, isProfileLoading, router]);
 
   const isLoading = isUserLoading || isProfileLoading;
   
