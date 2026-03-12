@@ -165,7 +165,7 @@ export default function LoginPage() {
     const recentAttempts = [...attempts, now].filter(t => now - t < 15000); 
     setAttempts(recentAttempts);
 
-    // Trigger after only 2 attempts (3rd click blocks)
+    // Trigger after only 2 attempts (3rd click triggers lockout)
     if (recentAttempts.length > 2) {
       setIsRateLimited(true);
       logThreat("DDoS / Brute Force Attempt", `High frequency login attempts: ${recentAttempts.length} in 15s`);
@@ -199,7 +199,14 @@ export default function LoginPage() {
       return;
     }
 
-    if (!checkRateLimit()) return;
+    if (!checkRateLimit()) {
+       toast({
+        variant: "destructive",
+        title: "Too Many Requests",
+        description: "Security protocol triggered. Please wait 15 seconds before trying again.",
+      });
+      return;
+    }
 
     if (detectAttacks(values)) {
       logThreat("Malicious Payload Detected", values.voterId + " | [REDACTED]");
@@ -222,7 +229,7 @@ export default function LoginPage() {
     } catch (error: any) {
       let description = "An unexpected error occurred.";
       
-      // Handle standard auth errors gracefully without console logging
+      // Handle standard auth errors gracefully without console logging or throwing
       if (['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password', 'auth/invalid-email', 'auth/user-disabled'].includes(error.code)) {
         description = "Invalid Voter ID or password. Please try again.";
       } else {
