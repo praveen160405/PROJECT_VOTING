@@ -1,10 +1,10 @@
-
 "use client"
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { motion } from "framer-motion";
-import { Star, ArrowRight, ShieldAlert, Loader2, Wallet } from 'lucide-react';
+import { Star, ArrowRight, ShieldAlert, Loader2, Wallet, CheckCircle2 } from 'lucide-react';
 import { collection, serverTimestamp } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,69 +26,42 @@ import type { Candidate, Vote } from "@/lib/types";
 import { useFirebase, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
 import { useWeb3 } from "@/app/providers";
 
-const partySymbols: { [key: string]: React.FC<React.SVGProps<SVGSVGElement>> } = {
-  DMK: (props) => (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 18.2152C8.74249 16.2913 15.2575 16.2913 20 18.2152" stroke="hsl(var(--foreground))" />
-      <path d="M6.33398 18.2152C6.33398 15.7099 8.81592 14.1552 12 14.1552C15.1841 14.1552 17.666 15.7099 17.666 18.2152" stroke="hsl(var(--foreground))" />
-      <path d="M12 14.1552V10.0776" stroke="hsl(var(--foreground))" />
-      <path d="M12 5.21521L12.01 5.2041" stroke="hsl(var(--foreground))" strokeWidth="2.5" />
-      <path d="M5.33398 8.4442L5.3431 8.43509" stroke="hsl(var(--foreground))" strokeWidth="2.5" />
-      <path d="M18.667 8.4442L18.6579 8.43509" stroke="hsl(var(--foreground))" strokeWidth="2.5" />
-      <path d="M8.66602 5.21521L8.67513 5.2061" stroke="hsl(var(--foreground))" strokeWidth="2.5" />
-      <path d="M15.334 5.21521L15.3249 5.2061" stroke="hsl(var(--foreground))" strokeWidth="2.5" />
-      <path d="M12 10.0776C14.7614 10.0776 17 7.83904 17 5.07764C17 2.31623 14.7614 0.0776367 12 0.0776367C9.23858 0.0776367 7 2.31623 7 5.07764C7 7.83904 9.23858 10.0776 12 10.0776Z" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" />
-    </svg>
-  ),
-  ADMK: (props) => (
-     <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M14 12c-2.667 2.667-6 4-6 8" fill="none" stroke="hsl(var(--chart-2))" strokeWidth="2"/>
-        <path d="M10 12c2.667 2.667 6 4 6 8" fill="none" stroke="hsl(var(--chart-2))" strokeWidth="2"/>
-        <path d="M12 22V12" stroke="hsl(var(--foreground))" strokeWidth="1.5"/>
-        <path d="M14 2s-2.667 4-6 4" stroke="hsl(var(--foreground))"/>
-        <path d="M10 2s2.667 4 6 4" stroke="hsl(var(--foreground))"/>
-    </svg>
-  ),
-  TVK: (props) => <Star {...props} className="text-yellow-500 fill-yellow-500" />,
-  NTK: (props) => (
-    <svg {...props} viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M22 59V10C22 7.79086 23.7909 6 26 6H38C40.2091 6 42 7.79086 42 10V59" stroke="hsl(var(--foreground))" strokeWidth="4"/>
-      <path d="M22 14H42" stroke="hsl(var(--foreground))" strokeWidth="4" strokeLinecap="round"/>
-      <path d="M22 22H42" stroke="hsl(var(--foreground))" strokeWidth="4" strokeLinecap="round"/>
-      <path d="M22 30H42" stroke="hsl(var(--foreground))" strokeWidth="4" strokeLinecap="round"/>
-      <path d="M22 38H42" stroke="hsl(var(--foreground))" strokeWidth="4" strokeLinecap="round"/>
-      <path d="M22 46H42" stroke="hsl(var(--foreground))" strokeWidth="4" strokeLinecap="round"/>
-      <path d="M32 59V6" stroke="hsl(var(--foreground))" strokeWidth="4"/>
-    </svg>
-  ),
-  BJP: (props) => (
-    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="hsl(var(--primary))" stroke="hsl(var(--primary))"/>
-      <path d="M2 8.5C2 7 2.5 5.5 3.5 4.5" stroke="hsl(var(--foreground))" />
-      <path d="M22 8.5C22 7 21.5 5.5 20.5 4.5" stroke="hsl(var(--foreground))" />
-      <path d="M7.5 3C9 3 10.5 4 12 5.5" stroke="hsl(var(--foreground))" />
-      <path d="M16.5 3C15 3 13.5 4 12 5.5" stroke="hsl(var(--foreground))" />
-      <path d="M12 21.35V12" stroke="hsl(var(--foreground))"/>
-    </svg>
-  ),
-};
-
 function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean, disabled: boolean }) {
-  const Symbol = partySymbols[candidate.name] || (() => null);
   const isDisabled = isVoted || disabled;
 
   return (
     <Card 
       onClick={() => !isDisabled && onVote(candidate)}
-      className="group/card relative flex h-full cursor-pointer flex-col items-center justify-center overflow-hidden p-6 text-center transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60"
+      className="group/card relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60"
       data-disabled={isDisabled ? true : undefined}
     >
-      <Symbol className="h-28 w-28 text-muted-foreground transition-colors group-hover/card:text-primary" />
-      <CardTitle className="mt-4 text-2xl font-bold">{candidate.name}</CardTitle>
-      <CardDescription className="mt-1 text-sm">{candidate.party}</CardDescription>
-      <div className="absolute inset-0 bg-primary/90 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover/card:opacity-100 data-[disabled]:hidden">
-        <span className="text-xl font-semibold text-primary-foreground">Vote</span>
+      <div className="relative w-full aspect-[4/5] bg-muted overflow-hidden">
+        {candidate.imageUrl && (
+          <Image 
+            src={candidate.imageUrl} 
+            alt={candidate.name} 
+            fill 
+            className="object-cover transition-transform duration-500 group-hover/card:scale-110"
+            data-ai-hint={candidate.imageHint}
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+          <p className="text-xs font-bold uppercase tracking-widest text-primary-foreground/80">{candidate.party}</p>
+          <h3 className="text-xl font-bold">{candidate.name}</h3>
+        </div>
       </div>
+      <CardContent className="p-4 w-full bg-card">
+        <Button 
+          variant={isVoted ? "secondary" : "default"} 
+          className="w-full gap-2" 
+          disabled={isDisabled}
+        >
+          {isVoted ? <CheckCircle2 className="h-4 w-4" /> : null}
+          {isVoted ? "Vote Cast" : "Select Candidate"}
+        </Button>
+      </CardContent>
+      <div className="absolute inset-0 bg-primary/20 pointer-events-none opacity-0 transition-opacity group-hover/card:opacity-100 data-[disabled]:hidden" />
     </Card>
   );
 }
@@ -154,9 +127,7 @@ export default function VotePage() {
     }
 
     try {
-      // Map candidate string ID to numeric ID (c1 -> 1, c2 -> 2...)
       const numericId = parseInt(candidate.id.replace('c', ''));
-      
       const tx = await contract.vote(numericId);
       setTxHash(tx.hash);
       
@@ -166,7 +137,6 @@ export default function VotePage() {
       });
 
       await tx.wait();
-      
       return true;
     } catch (error: any) {
       console.error("Blockchain Vote Error:", error);
@@ -233,20 +203,23 @@ export default function VotePage() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="w-full max-w-md"
         >
-          <Card className="text-center">
+          <Card className="text-center shadow-2xl border-primary/20">
             <CardHeader>
-              <CardTitle className="text-3xl font-bold tracking-tight">Transaction Confirmed!</CardTitle>
-              <CardDescription>
-                Your vote for <strong>{votedCandidate?.name}</strong> has been etched into the blockchain.
+              <div className="mx-auto bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4">
+                <CheckCircle2 className="h-10 w-10 text-primary" />
+              </div>
+              <CardTitle className="text-3xl font-bold tracking-tight">Vote Confirmed</CardTitle>
+              <CardDescription className="pt-2">
+                Your choice for <strong>{votedCandidate?.name}</strong> has been etched into the blockchain.
                 <br/>
-                <span className="mt-2 block text-xs font-mono text-muted-foreground break-all">
-                  Hash: {txHash}
+                <span className="mt-4 block text-xs font-mono text-muted-foreground p-3 bg-muted rounded border overflow-hidden text-ellipsis">
+                  TX: {txHash}
                 </span>
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Link href="/dashboard/results">
-                <Button>
+                <Button className="w-full">
                   Go to Results
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -261,35 +234,32 @@ export default function VotePage() {
   const isVoted = hasAlreadyVoted;
   const pageDisabled = !isMounted || isCheckingVote || isSubmitting || isWeb3Loading;
 
-  const getPageDescription = () => {
-    if (isCheckingVote) return "Verifying your eligibility...";
-    if (isVoted) return "You have already participated in this election.";
-    if (!address) return "Please connect your wallet to interact with the voting contract.";
-    return "Cast your immutable vote on the blockchain ledger.";
-  }
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Voting Booth</h1>
           <p className="text-muted-foreground">
-            {isMounted ? getPageDescription() : "Initialising..."}
+            {!isMounted ? "Initialising Secure Link..." : 
+             isCheckingVote ? "Verifying Eligibility..." : 
+             isVoted ? "Vote Recorded" : 
+             !address ? "Connect Wallet to Access Ballot" : 
+             "Cast your immutable vote on the blockchain."}
           </p>
         </div>
         {!address && isMounted && (
-          <Button onClick={connectWallet} variant="outline" className="gap-2">
+          <Button onClick={connectWallet} variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5">
             <Wallet className="h-4 w-4" /> Connect Wallet to Vote
           </Button>
         )}
       </div>
       
       {isMounted && isVoted && (
-        <Alert variant="default" className="bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-950 dark:border-yellow-800 dark:text-yellow-200">
-          <ShieldAlert className="h-4 w-4 !text-yellow-600 dark:!text-yellow-400" />
-          <AlertTitle>Vote Already Cast</AlertTitle>
+        <Alert variant="default" className="bg-primary/5 border-primary/20 text-primary">
+          <CheckCircle2 className="h-4 w-4 !text-primary" />
+          <AlertTitle>Vote Recorded</AlertTitle>
           <AlertDescription>
-            Our records show you have already submitted your choice. Participation is limited to one vote per verified voter.
+            Our records show you have already participated. To maintain protocol integrity, only one vote per verified voter is permitted.
           </AlertDescription>
         </Alert>
       )}
@@ -299,7 +269,7 @@ export default function VotePage() {
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
           <AlertTitle>Executing On-Chain Transaction</AlertTitle>
           <AlertDescription>
-            Interacting with the smart contract. Please confirm the transaction in your wallet.
+            Interacting with the smart contract ledger. Please confirm the signature request in your wallet.
           </AlertDescription>
         </Alert>
       )}
@@ -308,8 +278,8 @@ export default function VotePage() {
         {candidates.map((candidate) => (
           <motion.div
             key={candidate.id}
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
             className="h-full"
           >
@@ -325,16 +295,16 @@ export default function VotePage() {
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm On-Chain Action</AlertDialogTitle>
+            <AlertDialogTitle>Confirm Blockchain Transaction</AlertDialogTitle>
             <AlertDialogDescription>
-              You are casting a blockchain vote for <strong>{selectedCandidate?.name}</strong>. 
-              This will trigger a wallet transaction and the result will be permanent and transparent.
+              You are casting a permanent vote for <strong>{selectedCandidate?.name}</strong>. 
+              This action will be broadcast to the decentralized network and cannot be reversed or altered.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Review Choice</AlertDialogCancel>
-            <AlertDialogAction onClick={() => selectedCandidate && handleVote(selectedCandidate)}>
-              Confirm & Submit
+            <AlertDialogAction onClick={() => selectedCandidate && handleVote(selectedCandidate)} className="bg-primary">
+              Confirm & Sign
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
