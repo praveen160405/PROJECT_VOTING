@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Loader2, Camera } from "lucide-react";
+import { Loader2, Camera, ShieldAlert } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useRef, useEffect } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc } from "firebase/firestore";
+import { doc, collection, serverTimestamp } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +25,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
-import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
+import { useAuth, useFirestore, setDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase";
+
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const ACCEPTED_FILE_TYPES = ["application/pdf"];
 
 const registerSchema = z.object({
   fullName: z.string().trim().min(1, "Full name is required.").max(100, "Full name is too long."),
@@ -35,7 +38,14 @@ const registerSchema = z.object({
     .length(10, "Voter ID must be exactly 10 characters long.")
     .regex(/^[a-zA-Z]{3}[0-9]{7}$/, "Voter ID must be 3 letters followed by 7 numbers."),
   password: z.string().min(8, "Password must be at least 8 characters long.").max(72, "Password is too long."),
-  idProof: z.any().optional(),
+  idProof: z
+    .any()
+    .refine((file) => !file || (file instanceof File && file.size <= MAX_FILE_SIZE), `Max file size is 5MB.`)
+    .refine(
+      (file) => !file || (file instanceof File && ACCEPTED_FILE_TYPES.includes(file.type)),
+      "Only .pdf files are accepted."
+    )
+    .optional(),
 });
 
 export default function RegisterPage() {
@@ -59,7 +69,60 @@ export default function RegisterPage() {
 
   const { formState, control } = form;
 
+  const logThreat = async (type: string, payload: string) => {
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      const ip = ipData.ip || 'Unknown';
+
+      if (firestore) {
+        const threatsRef = collection(firestore, 'threats');
+        addDocumentNonBlocking(threatsRef, {
+          ipAddress: ip,
+          type: type,
+          payload: payload,
+          timestamp: serverTimestamp()
+        });
+      }
+    } catch (e) {
+      // Log threat silently
+    }
+  };
+
+  const detectSuspiciousFile = (file: File) => {
+    if (!file) return null;
+    
+    const fileName = file.name.toLowerCase();
+    
+    // Check for double extensions like .pdf.exe or .pdf.js
+    const doubleExtensionPattern = /\.[a-z0-9]+\.(exe|js|bat|sh|cmd|vbs|msi|scr)$/i;
+    if (doubleExtensionPattern.test(fileName)) return "Malicious Double Extension";
+
+    // Check for hidden or dangerous characters in filename
+    const dangerousCharPattern = /[<>:"/\\|?*\x00-\x1F]/;
+    if (dangerousCharPattern.test(fileName)) return "Dangerous Filename Characters";
+
+    // Check for script injections in name
+    if (fileName.includes("<script") || fileName.includes("javascript:")) return "Script Injection in Filename";
+
+    return null;
+  };
+
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
+    // Malware / Suspicious file check
+    if (values.idProof instanceof File) {
+      const threatType = detectSuspiciousFile(values.idProof);
+      if (threatType) {
+        logThreat(`Malicious File Upload: ${threatType}`, `Filename: ${values.idProof.name}`);
+        toast({
+          variant: "destructive",
+          title: "Security Threat Blocked",
+          description: "This file has been flagged as suspicious and blocked for security reasons.",
+        });
+        return;
+      }
+    }
+
     toast({
       title: "Registering Account...",
       description: "Please wait while we create your account.",
@@ -76,7 +139,7 @@ export default function RegisterPage() {
         voterId: values.voterId.toUpperCase(),
         firstName: values.fullName.split(' ')[0] || '',
         lastName: values.fullName.split(' ').slice(1).join(' ') || '',
-        voterIdProofHash: '',
+        voterIdProofHash: values.idProof ? 'uploaded_pending_verification' : '',
         faceImageHash: '',
         isAdmin: false,
       };
@@ -206,17 +269,22 @@ export default function RegisterPage() {
                       name="idProof"
                       render={({ field: { onChange, ...fieldProps } }) => (
                         <FormItem className="flex flex-col justify-end">
-                          <FormLabel>ID Proof (PDF, Optional)</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            ID Proof (PDF Only)
+                          </FormLabel>
                           <FormControl>
                             <Input
                               {...fieldProps}
                               type="file"
-                              accept="application/pdf"
+                              accept=".pdf"
                               onChange={(event) =>
                                 onChange(event.target.files && event.target.files[0])
                               }
                             />
                           </FormControl>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            Max size: 5MB. Scanned for malicious patterns.
+                          </p>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -245,7 +313,7 @@ export default function RegisterPage() {
 
                 <Button type="submit" className="w-full" disabled={formState.isSubmitting}>
                    {formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Register
+                  Register Securely
                 </Button>
               </form>
             </Form>
