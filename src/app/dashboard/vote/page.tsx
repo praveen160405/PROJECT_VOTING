@@ -2,9 +2,8 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { motion } from "framer-motion";
-import { Star, ArrowRight, ShieldAlert, Loader2, Wallet, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Loader2, Wallet, Landmark } from 'lucide-react';
 import { collection, serverTimestamp } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -35,33 +34,35 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
       className="group/card relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60"
       data-disabled={isDisabled ? true : undefined}
     >
-      <div className="relative w-full aspect-[4/5] bg-muted overflow-hidden">
-        {candidate.imageUrl && (
-          <Image 
-            src={candidate.imageUrl} 
-            alt={candidate.name} 
-            fill 
-            className="object-cover transition-transform duration-500 group-hover/card:scale-110"
-            data-ai-hint={candidate.imageHint}
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-          <p className="text-xs font-bold uppercase tracking-widest text-primary-foreground/80">{candidate.party}</p>
-          <h3 className="text-xl font-bold">{candidate.name}</h3>
+      <div className="relative w-full aspect-square bg-primary/5 flex items-center justify-center border-b p-6">
+        <div className="flex flex-col items-center gap-4">
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary border-2 border-primary/20 group-hover/card:scale-110 transition-transform duration-300">
+                <span className="text-3xl font-black tracking-tighter">{candidate.name}</span>
+            </div>
+            <div className="text-center">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Official Ballot Symbol</p>
+                <h3 className="text-xl font-bold text-foreground">{candidate.name}</h3>
+            </div>
         </div>
+        {isVoted && (
+             <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
+                <CheckCircle2 className="h-12 w-12 text-primary" />
+             </div>
+        )}
       </div>
       <CardContent className="p-4 w-full bg-card">
+        <div className="mb-4">
+             <p className="text-xs font-medium text-muted-foreground leading-relaxed h-8 line-clamp-2">{candidate.party}</p>
+        </div>
         <Button 
           variant={isVoted ? "secondary" : "default"} 
           className="w-full gap-2" 
           disabled={isDisabled}
         >
           {isVoted ? <CheckCircle2 className="h-4 w-4" /> : null}
-          {isVoted ? "Vote Cast" : "Select Candidate"}
+          {isVoted ? "Vote Cast" : "Cast Vote"}
         </Button>
       </CardContent>
-      <div className="absolute inset-0 bg-primary/20 pointer-events-none opacity-0 transition-opacity group-hover/card:opacity-100 data-[disabled]:hidden" />
     </Card>
   );
 }
