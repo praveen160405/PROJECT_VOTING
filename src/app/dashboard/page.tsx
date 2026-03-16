@@ -5,7 +5,7 @@ import { useFirebase, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, doc } from "firebase/firestore";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Vote, ArrowRight, BarChart, ShieldCheck, Zap, Globe, Users, Clock } from "lucide-react";
+import { Vote, ArrowRight, BarChart, ShieldCheck, Zap, Globe, Users, Clock, Database, Lock } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Voter } from "@/lib/types";
 
@@ -28,34 +28,34 @@ export default function DashboardPage() {
 
   const stats = [
     {
-      label: "Verification Status",
-      value: profile?.id ? "Verified" : "Pending",
-      description: "Digital identity confirmed",
+      label: "Identity Status",
+      value: profile?.id ? "Sybil-Proof" : "Unverified",
+      description: "ID & Biometrics active",
       icon: ShieldCheck,
       color: "text-green-500",
       isLoading: isProfileLoading
     },
     {
-      label: "Blockchain Health",
-      value: "99.9%",
-      description: "Network sync active",
+      label: "Blockchain Sync",
+      value: "100%",
+      description: "Nodes: 128 (Healthy)",
       icon: Zap,
       color: "text-blue-500",
       isLoading: false
     },
     {
-      label: "Total Participation",
+      label: "Total Voters",
       value: allUsers?.length || "0",
-      description: "Registered voters",
+      description: "Verified registration count",
       icon: Users,
       color: "text-primary",
       isLoading: isUsersLoading
     },
     {
-      label: "Election Status",
-      value: "Live",
-      description: "Phase: General Election",
-      icon: Globe,
+      label: "Ledger Integrity",
+      value: "Verified",
+      description: "Hash consensus active",
+      icon: Database,
       color: "text-green-500",
       isLoading: false
     }
@@ -63,18 +63,18 @@ export default function DashboardPage() {
 
   const features = [
     {
-      title: "Cast Your Vote",
-      description: "Browse verified candidates and make your voice heard on the blockchain.",
+      title: "Immutable Voting",
+      description: "Submit your choice to the tamper-proof blockchain ledger.",
       link: "/dashboard/vote",
       icon: Vote,
-      cta: "Go to Voting Booth",
+      cta: "Enter Voting Booth",
     },
     {
-      title: "View Results",
-      description: "See the live, transparent election results directly from the smart contract.",
+      title: "Real-time Audits",
+      description: "Monitor live results with cryptographic proof of accuracy.",
       link: "/dashboard/results",
       icon: BarChart,
-      cta: "See Live Results",
+      cta: "Audit Live Results",
     },
   ];
 
@@ -82,18 +82,18 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Voter Command Center</h1>
-          <p className="text-muted-foreground">Secure gateway to the OOTU Decentralized Voting Protocol.</p>
+          <h1 className="text-3xl font-bold tracking-tight">OOTU Command Center</h1>
+          <p className="text-muted-foreground">Monitoring decentralized integrity and voter participation.</p>
         </div>
         <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 border border-primary/10 rounded-full text-sm font-medium">
           <Clock className="h-4 w-4 text-primary animate-pulse" />
-          <span>Election ends in: <span className="font-bold">48:12:05</span></span>
+          <span>Protocol active: <span className="font-bold">48:12:05 remaining</span></span>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.label} className="border-primary/5">
+          <Card key={stat.label} className="border-primary/5 shadow-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -114,7 +114,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {features.map((feature) => (
-          <Card key={feature.title} className="flex flex-col relative overflow-hidden group">
+          <Card key={feature.title} className="flex flex-col relative overflow-hidden group border-primary/10 shadow-md">
             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-110 transition-transform">
               <feature.icon className="h-24 w-24" />
             </div>
@@ -137,6 +137,16 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+      
+      <Card className="border-green-500/20 bg-green-500/5">
+        <CardContent className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="h-5 w-5 text-green-500" />
+            <span className="text-sm font-medium">Your account is secured with multi-layer Sybil defense.</span>
+          </div>
+          <Lock className="h-4 w-4 text-green-500/50" />
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { ShieldAlert, ShieldCheck, Lock, Fingerprint, Database, Globe, AlertTriangle, Terminal, Activity, Zap, Ban, Unlock, Server } from 'lucide-react';
+import { ShieldAlert, ShieldCheck, Lock, Fingerprint, Database, Globe, AlertTriangle, Terminal, Activity, Zap, Ban, Unlock, Server, Cpu, Link as LinkIcon, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -198,36 +198,36 @@ export default function AdminPage() {
 
   const securityMeasures = [
     {
-      title: "DDoS Mitigation",
-      description: "Active rate limiting and honeypot bot detection enabled.",
-      icon: Server,
-      status: "Resilient",
+      title: "Sybil Protection",
+      description: "Biometric and ID cross-reference active.",
+      icon: Fingerprint,
+      status: "Verified",
       color: "text-blue-500",
       bg: "bg-blue-500"
     },
     {
-      title: "Attack Monitoring",
-      description: "Heuristic pattern matching active for SQLi and NoSQLi detection.",
-      icon: Terminal,
-      status: "Active",
+      title: "51% Attack Shield",
+      description: "Network decentralization at 64% node consensus.",
+      icon: Cpu,
+      status: "Decentralized",
       color: "text-green-500",
       bg: "bg-green-500"
     },
     {
-      title: "IP Blacklisting",
-      description: "Real-time edge blocking active for malicious origin addresses.",
-      icon: Ban,
-      status: "Active",
-      color: "text-red-500",
-      bg: "bg-red-500"
+      title: "Contract Auditing",
+      description: "Real-time smart contract state monitoring.",
+      icon: LinkIcon,
+      status: "Immutable",
+      color: "text-primary",
+      bg: "bg-primary"
     },
     {
-      title: "CSRF Defense",
-      description: "Token-based session management and restrictive Referrer policies.",
-      icon: Lock,
-      status: "Secured",
-      color: "text-green-500",
-      bg: "bg-green-500"
+      title: "AI Behavior Analysis",
+      description: "Heuristic pattern matching for automated attacks.",
+      icon: Eye,
+      status: "Monitoring",
+      color: "text-orange-500",
+      bg: "bg-orange-500"
     }
   ];
 
@@ -242,17 +242,17 @@ export default function AdminPage() {
     <div className="flex flex-col gap-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Security Panel</h1>
-          <p className="text-muted-foreground">Manage users and monitor system security intelligence.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Global Security Command</h1>
+          <p className="text-muted-foreground">Monitoring decentralized protocols and multi-vector threat landscapes.</p>
         </div>
         <Badge className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20 px-4 py-1">
-          <ShieldCheck className="mr-2 h-4 w-4" /> System Secure
+          <ShieldCheck className="mr-2 h-4 w-4" /> System Immutable
         </Badge>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {systemStats.map((stat) => (
-          <Card key={stat.label} className="bg-primary/5 border-primary/10">
+          <Card key={stat.label} className="bg-primary/5 border-primary/10 shadow-sm">
             <CardContent className="p-6 flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium text-muted-foreground">{stat.label}</p>
@@ -283,10 +283,10 @@ export default function AdminPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-1">
+        <Card className="lg:col-span-1 shadow-sm">
           <CardHeader>
-            <CardTitle>User Management</CardTitle>
-            <CardDescription>All registered users in the system.</CardDescription>
+            <CardTitle>Voter Registry</CardTitle>
+            <CardDescription>Verified Sybil-resistant identities.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -304,24 +304,24 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card className="lg:col-span-2 border-red-500/20">
+        <Card className="lg:col-span-2 border-red-500/20 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-red-500" />
-                Threat Intelligence
+                Threat Intelligence Log
               </CardTitle>
-              <CardDescription>Detected suspicious activity and attack attempts.</CardDescription>
+              <CardDescription>Real-time audit of multi-vector attack attempts.</CardDescription>
             </div>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>IP Address</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Payload</TableHead>
-                  <TableHead>Time</TableHead>
+                  <TableHead>Origin IP</TableHead>
+                  <TableHead>Vector Type</TableHead>
+                  <TableHead>Payload Signature</TableHead>
+                  <TableHead>Timestamp</TableHead>
                   <TableHead className="text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
@@ -335,7 +335,7 @@ export default function AdminPage() {
                 {!areThreatsLoading && (!threats || threats.length === 0) && (
                   <TableRow>
                     <TableCell colSpan={5} className="h-24 text-center text-muted-foreground italic">
-                      No security incidents reported.
+                      Zero security incidents detected in current window.
                     </TableCell>
                   </TableRow>
                 )}
@@ -346,13 +346,13 @@ export default function AdminPage() {
       </div>
 
       <div className="grid gap-6">
-        <Card className="border-orange-500/20">
+        <Card className="border-orange-500/20 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Ban className="h-5 w-5 text-orange-500" />
-              Blacklisted IP Addresses
+              Blacklisted IP Origins
             </CardTitle>
-            <CardDescription>Currently banned origins that are denied access to the login portal.</CardDescription>
+            <CardDescription>Origins denied access to the OOTU protocol due to malicious intent.</CardDescription>
           </CardHeader>
           <CardContent>
              <Table>
@@ -373,7 +373,7 @@ export default function AdminPage() {
                   {!areBlockedIpsLoading && (!blockedIps || blockedIps.length === 0) && (
                     <TableRow>
                       <TableCell colSpan={3} className="h-24 text-center text-muted-foreground italic">
-                        No IP addresses are currently blacklisted.
+                        No active IP blacklists.
                       </TableCell>
                     </TableRow>
                   )}

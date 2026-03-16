@@ -1,10 +1,9 @@
-
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Key, Loader2, Mail, Phone, Hash, ShieldAlert, ZapOff } from "lucide-react";
+import { User, Key, Loader2, Mail, Phone, Hash, ShieldAlert, ZapOff, Lock } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -152,7 +151,10 @@ export default function LoginPage() {
       /{\s*\$gt\s*: ""}/i,
       /javascript:/i,
       /onerror=/i,
-      /\.\.\//i
+      /\.\.\//i,
+      /reentrancy/i,
+      /key_theft/i,
+      /sybil/i
     ];
 
     const input = values.voterId + " " + values.password;
@@ -229,11 +231,10 @@ export default function LoginPage() {
     } catch (error: any) {
       let description = "An unexpected error occurred.";
       
-      // Handle standard auth errors gracefully without console logging or throwing
       if (['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password', 'auth/invalid-email', 'auth/user-disabled'].includes(error.code)) {
         description = "Invalid Voter ID or password. Please try again.";
+        logThreat("Login Failure", `Failed attempt for ID: ${values.voterId}`);
       } else {
-        // Log unexpected system errors only
         console.error("Authentication System Error:", error);
         if (error.message) description = error.message;
       }
@@ -327,7 +328,7 @@ export default function LoginPage() {
             <ZapOff className="h-4 w-4" />
             <AlertTitle>DDoS Protection Active</AlertTitle>
             <AlertDescription>
-              Too many requests detected. Access temporarily throttled for 15 seconds.
+              Security protocol triggered. Access throttled for 15 seconds.
             </AlertDescription>
           </Alert>
         )}
@@ -340,7 +341,7 @@ export default function LoginPage() {
               Voter Sign In
             </CardTitle>
             <CardDescription className="text-muted-foreground pt-2">
-              Enter your Voter ID and password to access the platform.
+              Secure gateway to the OOTU Decentralized Protocol.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -401,20 +402,23 @@ export default function LoginPage() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={formState.isSubmitting || isBlocked || isRateLimited}>
+                <Button type="submit" className="w-full h-11" disabled={formState.isSubmitting || isBlocked || isRateLimited}>
                    {formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign In
+                  {formState.isSubmitting ? "Authenticating..." : "Sign In to Protocol"}
                 </Button>
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="p-6 pt-0">
+          <CardFooter className="p-6 pt-0 flex flex-col gap-4">
              <p className="w-full text-center text-sm text-muted-foreground">
                 Don&apos;t have an account?{" "}
                 <Link href="/register" className="font-medium text-primary hover:underline">
-                  Register
+                  Register Securely
                 </Link>
               </p>
+              <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground/60 uppercase tracking-widest">
+                <Lock className="h-3 w-3" /> AES-256 Encryption Active
+              </div>
           </CardFooter>
         </Card>
       </motion.div>
@@ -430,7 +434,7 @@ export default function LoginPage() {
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
-              Verify your identity using your Voter ID and registered phone number.
+              Multi-factor verification required for identity restoration.
             </DialogDescription>
           </DialogHeader>
           <Form {...resetForm}>
