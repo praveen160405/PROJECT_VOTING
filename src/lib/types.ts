@@ -14,6 +14,7 @@ export type Vote = {
   electionId: string;
   timestamp: any;
   isVerified: boolean;
+  txHash?: string;
 };
 
 export type VoteResult = {

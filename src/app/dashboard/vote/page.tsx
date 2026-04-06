@@ -1,3 +1,4 @@
+
 "use client"
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
@@ -138,7 +139,7 @@ export default function VotePage() {
       });
 
       await tx.wait();
-      return true;
+      return { success: true, hash: tx.hash };
     } catch (error: any) {
       console.error("Blockchain Vote Error:", error);
       toast({
@@ -146,11 +147,11 @@ export default function VotePage() {
         title: "Blockchain Error",
         description: error.reason || error.message || "Failed to submit vote to blockchain.",
       });
-      return false;
+      return { success: false, hash: null };
     }
   }
 
-  const handleFirestoreVote = async (candidate: Candidate) => {
+  const handleFirestoreVote = async (candidate: Candidate, hash: string) => {
     if (!user || !userVotesCollection) return;
 
     const newVote: Omit<Vote, 'id'> = {
@@ -159,6 +160,7 @@ export default function VotePage() {
       timestamp: serverTimestamp(),
       electionId: "main_election",
       isVerified: true,
+      txHash: hash,
     };
 
     addDocumentNonBlocking(userVotesCollection, newVote);
@@ -168,10 +170,10 @@ export default function VotePage() {
     setIsConfirming(false);
     setIsSubmitting(true);
 
-    const success = await handleBlockchainVote(candidate);
+    const { success, hash } = await handleBlockchainVote(candidate);
     
-    if (success) {
-      await handleFirestoreVote(candidate);
+    if (success && hash) {
+      await handleFirestoreVote(candidate, hash);
       setVotedCandidateId(candidate.id);
       
       toast({

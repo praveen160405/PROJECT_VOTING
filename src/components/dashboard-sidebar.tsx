@@ -20,6 +20,7 @@ import {
   Settings,
   Shield,
   BarChart3,
+  ShieldCheck,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { useFirebase, useDoc, useMemoFirebase } from "@/firebase";
@@ -49,6 +50,7 @@ export function DashboardSidebar() {
   const menuItems = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/vote", label: "Vote", icon: Vote },
+    { href: "/dashboard/verify", label: "Verify Integrity", icon: ShieldCheck },
     { href: "/dashboard/results", label: "Results", icon: BarChart },
     { href: "/dashboard/insights", label: "Insights", icon: BarChart3 },
   ];

@@ -15,8 +15,9 @@ import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { useWeb3 } from "@/app/providers";
 import { Badge } from "@/components/ui/badge";
-import { Globe } from "lucide-react";
+import { Globe, ShieldCheck, Copy } from "lucide-react";
 import { votingContractAddress } from "@/lib/contract";
+import { useToast } from "@/hooks/use-toast";
 
 const chartConfig = initialCandidates.reduce((acc, candidate, index) => {
   acc[candidate.name] = {
@@ -41,6 +42,7 @@ interface ElectionResults {
 export default function ResultsPage() {
   const [electionResults, setElectionResults] = useState<ElectionResults | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   const { user, firestore, isUserLoading } = useFirebase();
   const { contract, address } = useWeb3();
@@ -51,6 +53,14 @@ export default function ResultsPage() {
   }, [firestore, user]);
 
   const { data: userVotes, isLoading: isLoadingVotes } = useCollection<Vote>(userVotesCollection);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "TX Hash Copied",
+      description: "Hash copied to clipboard for verification.",
+    });
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -218,14 +228,14 @@ export default function ResultsPage() {
             <CardHeader>
               <CardTitle>Your Activity Record</CardTitle>
               <CardDescription>
-                A local record of the choices you have submitted to the protocol.
+                A cryptographic record of your ballots. Copy your TX Hash to use the Integrity Checker.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vote Reference</TableHead>
+                    <TableHead>Vote Reference / TX Hash</TableHead>
                     <TableHead>Recipient</TableHead>
                     <TableHead className="text-right">Audit Timestamp</TableHead>
                   </TableRow>
@@ -248,9 +258,18 @@ export default function ResultsPage() {
                         formattedTimestamp = format(vote.timestamp.toDate(), "PPp");
                       }
                       
+                      const displayHash = vote.txHash || vote.id;
+
                       return (
                         <TableRow key={vote.id}>
-                          <TableCell className="font-mono text-xs truncate max-w-[100px]">{vote.id}</TableCell>
+                          <TableCell className="font-mono text-xs">
+                             <div className="flex items-center gap-2">
+                                <span className="truncate max-w-[150px]">{displayHash}</span>
+                                <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => copyToClipboard(displayHash)}>
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                             </div>
+                          </TableCell>
                           <TableCell>{candidate ? candidate.name : 'Unknown Candidate'}</TableCell>
                           <TableCell className="text-right">{formattedTimestamp}</TableCell>
                         </TableRow>
