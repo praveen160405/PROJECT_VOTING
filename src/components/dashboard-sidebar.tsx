@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -18,6 +19,7 @@ import {
   LogOut,
   Settings,
   Shield,
+  BarChart3,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { useFirebase, useDoc, useMemoFirebase } from "@/firebase";
@@ -48,6 +50,7 @@ export function DashboardSidebar() {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/vote", label: "Vote", icon: Vote },
     { href: "/dashboard/results", label: "Results", icon: BarChart },
+    { href: "/dashboard/insights", label: "Insights", icon: BarChart3 },
   ];
 
   return (
@@ -71,7 +74,7 @@ export function DashboardSidebar() {
             </SidebarMenuItem>
           ))}
           {userProfile?.isAdmin && (
-             <SidebarMenuItem>
+            <SidebarMenuItem>
               <Link href="/dashboard/admin">
                 <SidebarMenuButton
                   isActive={pathname.startsWith("/dashboard/admin")}

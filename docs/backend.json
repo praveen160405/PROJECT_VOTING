@@ -75,6 +75,15 @@
         "isAdmin": {
           "type": "boolean",
           "description": "Indicates whether the user has administrative privileges."
+        },
+        "region": {
+          "type": "string",
+          "description": "The geographic region of the voter.",
+          "enum": ["North", "South", "East", "West"]
+        },
+        "age": {
+          "type": "number",
+          "description": "The age of the voter."
         }
       },
       "required": [

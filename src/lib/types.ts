@@ -32,6 +32,8 @@ export type Voter = {
   firstName: string;
   lastName: string;
   isAdmin?: boolean;
+  region?: string;
+  age?: number;
 };
 
 export type Threat = {
