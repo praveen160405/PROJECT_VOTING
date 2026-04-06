@@ -22,6 +22,7 @@ import {
   ShieldCheck,
   Scale,
   Eye,
+  FileText,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { useFirebase, useDoc, useMemoFirebase } from "@/firebase";
@@ -55,6 +56,7 @@ export function DashboardSidebar() {
     { href: "/dashboard/results", label: "Results", icon: BarChart },
     { href: "/dashboard/insights", label: "Insights", icon: BarChart3 },
     { href: "/dashboard/deepfake-detection", label: "AI Integrity Lab", icon: Eye },
+    { href: "/dashboard/transparency-report", label: "Transparency Report", icon: FileText },
     { href: "/dashboard/compliance", label: "Compliance", icon: Scale },
   ];
 
