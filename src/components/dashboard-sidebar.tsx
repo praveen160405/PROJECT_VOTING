@@ -21,6 +21,7 @@ import {
   BarChart3,
   ShieldCheck,
   Scale,
+  Eye,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { useFirebase, useDoc, useMemoFirebase } from "@/firebase";
@@ -53,6 +54,7 @@ export function DashboardSidebar() {
     { href: "/dashboard/verify", label: "Verify Integrity", icon: ShieldCheck },
     { href: "/dashboard/results", label: "Results", icon: BarChart },
     { href: "/dashboard/insights", label: "Insights", icon: BarChart3 },
+    { href: "/dashboard/deepfake-detection", label: "AI Integrity Lab", icon: Eye },
     { href: "/dashboard/compliance", label: "Compliance", icon: Scale },
   ];
 
