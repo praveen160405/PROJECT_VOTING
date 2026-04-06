@@ -6,7 +6,6 @@ import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { 
   FileText, 
-  Download, 
   ShieldCheck, 
   AlertTriangle, 
   Users, 
@@ -24,7 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { generateTransparencyReport, type GenerateReportOutput } from '@/ai/flows/generate-report-flow';
 import { useToast } from '@/hooks/use-toast';
-import type { Voter, Vote, Threat } from '@/lib/types';
+import type { Voter, Threat } from '@/lib/types';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function TransparencyReportPage() {
@@ -39,13 +38,6 @@ export default function TransparencyReportPage() {
   }, [firestore]);
   const { data: users } = useCollection<Voter>(usersRef);
 
-  const votesRef = useMemoFirebase(() => {
-    if (!firestore) return null;
-    // Note: In a real scenario, this might be a different path or collection group.
-    return collection(firestore, 'users'); 
-  }, [firestore]);
-  const { data: votesData } = useCollection<Voter>(votesRef);
-
   const threatsRef = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'threats');
@@ -58,7 +50,7 @@ export default function TransparencyReportPage() {
       const threatList = threats?.map(t => t.type).slice(0, 5) || [];
       const totalVoters = users?.length || 0;
       // Simulation: assume average participation if no real votes found
-      const totalVotes = votesData?.length ? Math.floor(votesData.length * 0.85) : 1240; 
+      const totalVotes = users?.length ? Math.floor(users.length * 0.85) : 1240; 
       const participationRate = totalVoters > 0 ? `${((totalVotes / totalVoters) * 100).toFixed(1)}%` : "84.2%";
 
       const result = await generateTransparencyReport({
@@ -134,7 +126,6 @@ export default function TransparencyReportPage() {
                 </div>
               </CardHeader>
               <CardContent className="p-8 space-y-10">
-                {/* Metrics Grid */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Voters</p>
@@ -142,7 +133,7 @@ export default function TransparencyReportPage() {
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ballots Cast</p>
-                    <p className="text-2xl font-bold">1,240</p>
+                    <p className="text-2xl font-bold">{users?.length ? Math.floor(users.length * 0.85) : 0}</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Security Incidents</p>
@@ -156,7 +147,6 @@ export default function TransparencyReportPage() {
 
                 <Separator />
 
-                {/* AI Generated Content */}
                 <div className="space-y-8">
                   <section className="space-y-3">
                     <h3 className="text-lg font-bold flex items-center gap-2">
@@ -242,3 +232,4 @@ export default function TransparencyReportPage() {
     </div>
   );
 }
+
