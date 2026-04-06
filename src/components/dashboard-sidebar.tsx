@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -21,6 +20,7 @@ import {
   Shield,
   BarChart3,
   ShieldCheck,
+  Scale,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { useFirebase, useDoc, useMemoFirebase } from "@/firebase";
@@ -53,6 +53,7 @@ export function DashboardSidebar() {
     { href: "/dashboard/verify", label: "Verify Integrity", icon: ShieldCheck },
     { href: "/dashboard/results", label: "Results", icon: BarChart },
     { href: "/dashboard/insights", label: "Insights", icon: BarChart3 },
+    { href: "/dashboard/compliance", label: "Compliance", icon: Scale },
   ];
 
   return (
@@ -68,6 +69,7 @@ export function DashboardSidebar() {
                 <SidebarMenuButton
                   isActive={pathname === item.href}
                   tooltip={{ children: item.label }}
+                  suppressHydrationWarning
                 >
                   <item.icon />
                   <span>{item.label}</span>
@@ -81,6 +83,7 @@ export function DashboardSidebar() {
                 <SidebarMenuButton
                   isActive={pathname.startsWith("/dashboard/admin")}
                   tooltip={{ children: "Admin" }}
+                  suppressHydrationWarning
                 >
                   <Shield />
                   <span>Admin Panel</span>
@@ -97,6 +100,7 @@ export function DashboardSidebar() {
                 <SidebarMenuButton
                   isActive={pathname === "/dashboard/settings"}
                   tooltip={{ children: "Settings" }}
+                  suppressHydrationWarning
                 >
                   <Settings />
                   <span>Settings</span>
@@ -104,7 +108,7 @@ export function DashboardSidebar() {
               </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-             <SidebarMenuButton onClick={handleLogout} tooltip={{children: "Logout"}}>
+             <SidebarMenuButton onClick={handleLogout} tooltip={{children: "Logout"}} suppressHydrationWarning>
                 <LogOut />
                 <span>Logout</span>
              </SidebarMenuButton>
