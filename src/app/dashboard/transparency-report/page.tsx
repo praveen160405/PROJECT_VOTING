@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useFirebase, useCollection } from '@/firebase';
+import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
 import { collection } from 'firebase/firestore';
 import { 
   FileText, 
@@ -31,9 +31,24 @@ export default function TransparencyReportPage() {
   const { firestore } = useFirebase();
   const { toast } = useToast();
 
-  const { data: users } = useCollection<Voter>(firestore ? collection(firestore, 'users') : null);
-  const { data: votes } = useCollection<Vote>(firestore ? collection(firestore, 'users/all/votes') : null); // Simulating collection group
-  const { data: threats } = useCollection<Threat>(firestore ? collection(firestore, 'threats') : null);
+  const usersRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'users');
+  }, [firestore]);
+  const { data: users } = useCollection<Voter>(usersRef);
+
+  const votesRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    // Note: This path is a placeholder for simulation purposes.
+    return collection(firestore, 'users/all/votes');
+  }, [firestore]);
+  const { data: votes } = useCollection<Vote>(votesRef);
+
+  const threatsRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'threats');
+  }, [firestore]);
+  const { data: threats } = useCollection<Threat>(threatsRef);
 
   const handleGenerateReport = async () => {
     setIsGenerating(true);
