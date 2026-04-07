@@ -16,7 +16,8 @@ import {
   Info,
   Search,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Zap
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -93,6 +94,7 @@ export default function DeepfakeDetectionPage() {
             });
           }
         } catch (error) {
+          console.error(error);
           toast({
             variant: "destructive",
             title: "Analysis Failed",
@@ -195,7 +197,7 @@ export default function DeepfakeDetectionPage() {
                   </>
                 ) : (
                   <>
-                    <Activity className="mr-2 h-4 w-4" />
+                    <Zap className="mr-2 h-4 w-4" />
                     Execute Forensic Audit
                   </>
                 )}

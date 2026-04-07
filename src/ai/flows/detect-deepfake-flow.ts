@@ -39,12 +39,12 @@ Analyze the provided media for any signs of manipulation, including:
 - Inconsistent lighting or shadows on faces.
 - Unnatural blinking patterns or lip-sync errors.
 - Smoothing or blurring around the jawline and neck (AI blending artifacts).
-- Metadata inconsistencies.
+- Metadata inconsistencies or absence of camera noise.
 - Neural rendering signatures (GAN or Diffusion artifacts).
 
 Context: {{{context}}}
 
-Analyze this media and provide a structured report on its integrity.
+Analyze this media and provide a structured report on its integrity. If you detect manipulation, explain exactly what artifacts were found.
 
 Media: {{media url=mediaDataUri}}`,
 });
