@@ -1,4 +1,3 @@
-
 "use client"
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
@@ -338,4 +337,3 @@ export default function VotePage() {
     </div>
   );
 }
-
