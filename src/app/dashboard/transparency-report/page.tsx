@@ -14,7 +14,8 @@ import {
   Globe,
   Fingerprint,
   CheckCircle2,
-  Zap
+  Zap,
+  RefreshCcw
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -64,12 +65,17 @@ export default function TransparencyReportPage() {
         title: "Report Generated",
         description: "The OOTU transparency audit is ready for review.",
       });
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error("Report Generation Error:", error);
+      
+      const isHighDemand = error.message?.includes("503") || error.message?.includes("high demand");
+      
       toast({
         variant: "destructive",
-        title: "Generation Failed",
-        description: "Could not synthesize report data. Please try again.",
+        title: isHighDemand ? "AI Model High Demand" : "Generation Failed",
+        description: isHighDemand 
+          ? "The AI node is currently experiencing high traffic. Please try again in 30 seconds." 
+          : "Could not synthesize report data. Please check your network and try again.",
       });
     } finally {
       setIsGenerating(false);
@@ -225,8 +231,14 @@ export default function TransparencyReportPage() {
             </div>
             <Button onClick={handleGenerateReport} disabled={isGenerating} size="lg" className="gap-2">
               {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-              Synthesize Live Report
+              {isGenerating ? "Synthesizing..." : "Synthesize Live Report"}
             </Button>
+            {isGenerating && (
+              <p className="text-xs text-muted-foreground animate-pulse flex items-center gap-2">
+                <RefreshCcw className="h-3 w-3 animate-spin" />
+                Interacting with AI Node...
+              </p>
+            )}
           </div>
         )}
       </AnimatePresence>
