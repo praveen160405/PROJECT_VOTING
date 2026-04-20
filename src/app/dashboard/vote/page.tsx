@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Loader2, Wallet, Landmark } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Loader2, Wallet, Quote } from 'lucide-react';
 import { collection, serverTimestamp } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -25,6 +25,15 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Candidate, Vote } from "@/lib/types";
 import { useFirebase, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
 import { useWeb3 } from "@/app/providers";
+
+const PROVERBS = [
+  "The ballot is stronger than the bullet. — Abraham Lincoln",
+  "Voting is not only our right—it is our power. — Loung Ung",
+  "Bad officials are elected by good citizens who do not vote. — George Jean Nathan",
+  "The ignorance of one voter in a democracy impairs the security of all. — John F. Kennedy",
+  "A citizen’s greatest tool for change is the vote. — OOTU Protocol",
+  "Voting is the expression of our commitment to ourselves and one another. — Sharon Salzberg"
+];
 
 function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean, disabled: boolean }) {
   const isDisabled = isVoted || disabled;
@@ -76,6 +85,7 @@ export default function VotePage() {
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [currentProverb, setCurrentProverb] = useState<string>("");
   
   const { toast } = useToast();
   const router = useRouter();
@@ -96,6 +106,8 @@ export default function VotePage() {
 
   useEffect(() => {
     setIsMounted(true);
+    // Pick a random proverb only once on mount to avoid hydration mismatch
+    setCurrentProverb(PROVERBS[Math.floor(Math.random() * PROVERBS.length)]);
   }, []);
 
   const isCheckingVote = isUserLoading || isLoadingVotes;
@@ -190,7 +202,7 @@ export default function VotePage() {
     if (votedCandidateId) {
       const timer = setTimeout(() => {
         router.push('/dashboard/results');
-      }, 4000); 
+      }, 6000); 
 
       return () => clearTimeout(timer);
     }
@@ -206,7 +218,8 @@ export default function VotePage() {
           transition={{ duration: 0.5, ease: "easeOut" }}
           className="w-full max-w-md"
         >
-          <Card className="text-center shadow-2xl border-primary/20">
+          <Card className="text-center shadow-2xl border-primary/20 overflow-hidden">
+            <div className="h-1.5 w-full bg-primary" />
             <CardHeader>
               <div className="mx-auto bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle2 className="h-10 w-10 text-primary" />
@@ -214,14 +227,24 @@ export default function VotePage() {
               <CardTitle className="text-3xl font-bold tracking-tight">Vote Confirmed</CardTitle>
               <CardDescription className="pt-2">
                 Your choice for <strong>{votedCandidate?.name}</strong> has been etched into the blockchain.
-                <br/>
-                <span className="mt-4 block text-xs font-mono text-muted-foreground p-3 bg-muted rounded border overflow-hidden text-ellipsis">
-                  TX: {txHash}
-                </span>
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Link href="/dashboard/results">
+            <CardContent className="space-y-6">
+              <div className="p-4 bg-muted/50 rounded-lg border border-dashed relative">
+                <Quote className="absolute -top-3 -left-1 h-6 w-6 text-primary/20" />
+                <p className="text-sm italic text-muted-foreground leading-relaxed">
+                  "{currentProverb}"
+                </p>
+              </div>
+
+              <div className="text-left space-y-1">
+                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Blockchain Signature</p>
+                 <p className="text-[10px] font-mono text-muted-foreground p-3 bg-muted rounded border overflow-hidden text-ellipsis whitespace-nowrap">
+                  {txHash}
+                 </p>
+              </div>
+
+              <Link href="/dashboard/results" className="block">
                 <Button className="w-full">
                   Go to Results
                   <ArrowRight className="ml-2 h-4 w-4" />
@@ -315,3 +338,4 @@ export default function VotePage() {
     </div>
   );
 }
+
