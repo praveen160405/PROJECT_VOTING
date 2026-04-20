@@ -8,14 +8,12 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <SidebarProvider>
+    <SidebarProvider className="print:block">
       <DashboardSidebar />
-      <SidebarInset>
+      <SidebarInset className="print:block print:min-h-0 print:bg-white">
         <DashboardHeader />
-        <main className="p-4 lg:p-6">{children}</main>
+        <main className="p-4 lg:p-6 print:p-0 print:m-0">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );
 }
-
-    

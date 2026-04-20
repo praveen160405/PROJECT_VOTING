@@ -68,7 +68,7 @@ export default function TransparencyReportPage() {
     } catch (error: any) {
       console.error("Report Generation Error:", error);
       
-      const isHighDemand = error.message?.includes("503") || error.message?.includes("high demand");
+      const isHighDemand = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("Unavailable");
       
       toast({
         variant: "destructive",
@@ -83,11 +83,13 @@ export default function TransparencyReportPage() {
   };
 
   const handlePrint = () => {
-    window.print();
+    if (typeof window !== 'undefined') {
+      window.print();
+    }
   };
 
   return (
-    <div className="flex flex-col gap-8 max-w-5xl mx-auto print:p-0 print:m-0 print:block">
+    <div className="flex flex-col gap-8 max-w-5xl mx-auto print:max-w-none print:w-full print:gap-4 print:p-0">
       {/* Header section - Hidden when printing */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div>
@@ -113,9 +115,9 @@ export default function TransparencyReportPage() {
             key="report"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-8 print:space-y-4 print:block"
+            className="space-y-8 print:space-y-4 print:block print:opacity-100"
           >
-            <Card className="border-2 shadow-xl print:shadow-none print:border-none print:bg-white overflow-hidden">
+            <Card className="border-2 shadow-xl print:shadow-none print:border-none print:bg-white print:overflow-visible">
               <CardHeader className="text-center space-y-4 pb-8 border-b bg-muted/30 print:bg-transparent print:pb-4">
                 <div className="flex justify-center print:hidden">
                   <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary border-4 border-background shadow-sm">
@@ -123,96 +125,96 @@ export default function TransparencyReportPage() {
                   </div>
                 </div>
                 <div>
-                  <CardTitle className="text-3xl font-black uppercase tracking-tighter print:text-2xl">OOTU Protocol Audit Report</CardTitle>
-                  <CardDescription className="text-base print:text-sm">Official Transparency Document - Cycle 2024-A</CardDescription>
+                  <CardTitle className="text-3xl font-black uppercase tracking-tighter print:text-2xl print:text-black">OOTU Protocol Audit Report</CardTitle>
+                  <CardDescription className="text-base print:text-sm print:text-gray-600">Official Transparency Document - Cycle 2024-A</CardDescription>
                 </div>
                 <div className="flex flex-wrap justify-center gap-4 pt-2">
-                  <Badge variant="outline" className="px-3 py-1 font-mono text-[10px]">REPORT_ID: {report.auditHash.substring(0, 12)}</Badge>
-                  <Badge variant="outline" className="px-3 py-1 font-mono text-[10px]">ISSUED: {new Date().toLocaleString()}</Badge>
-                  <Badge className="bg-green-500 text-white border-none">STATUS: VERIFIED</Badge>
+                  <Badge variant="outline" className="px-3 py-1 font-mono text-[10px] print:border-black print:text-black">REPORT_ID: {report.auditHash.substring(0, 12)}</Badge>
+                  <Badge variant="outline" className="px-3 py-1 font-mono text-[10px] print:border-black print:text-black">ISSUED: {new Date().toLocaleString()}</Badge>
+                  <Badge className="bg-green-500 text-white border-none print:bg-black">STATUS: VERIFIED</Badge>
                 </div>
               </CardHeader>
-              <CardContent className="p-8 space-y-10 print:p-4 print:space-y-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 print:gap-4">
+              <CardContent className="p-8 space-y-10 print:p-0 print:pt-6 print:space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 print:gap-4 print:grid-cols-4">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Voters</p>
-                    <p className="text-2xl font-bold">{users?.length || 0}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest print:text-gray-500">Total Voters</p>
+                    <p className="text-2xl font-bold print:text-black">{users?.length || 0}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ballots Cast</p>
-                    <p className="text-2xl font-bold">{users?.length ? Math.floor(users.length * 0.85) : 0}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest print:text-gray-500">Ballots Cast</p>
+                    <p className="text-2xl font-bold print:text-black">{users?.length ? Math.floor(users.length * 0.85) : 0}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Security Incidents</p>
-                    <p className="text-2xl font-bold text-red-500">{threats?.length || 0}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest print:text-gray-500">Security Incidents</p>
+                    <p className="text-2xl font-bold text-red-500 print:text-red-700">{threats?.length || 0}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Integrity Score</p>
-                    <p className="text-2xl font-bold text-green-600">99.9%</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest print:text-gray-500">Integrity Score</p>
+                    <p className="text-2xl font-bold text-green-600 print:text-green-800">99.9%</p>
                   </div>
                 </div>
 
-                <Separator />
+                <Separator className="print:bg-black" />
 
                 <div className="space-y-8 print:space-y-4">
                   <section className="space-y-3 print:space-y-1">
-                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base">
-                      <FileText className="h-5 w-5 text-primary print:h-4 print:w-4" />
+                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
+                      <FileText className="h-5 w-5 text-primary print:hidden" />
                       Executive Summary
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed print:text-xs">
+                    <p className="text-sm text-muted-foreground leading-relaxed print:text-xs print:text-black">
                       {report.executiveSummary}
                     </p>
                   </section>
 
                   <section className="space-y-3 print:space-y-1">
-                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base">
-                      <Fingerprint className="h-5 w-5 text-primary print:h-4 print:w-4" />
+                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
+                      <Fingerprint className="h-5 w-5 text-primary print:hidden" />
                       Security Assessment
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed print:text-xs">
+                    <p className="text-sm text-muted-foreground leading-relaxed print:text-xs print:text-black">
                       {report.securityAssessment}
                     </p>
                   </section>
 
                   <section className="space-y-3 print:space-y-1">
-                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base">
-                      <AlertTriangle className="h-5 w-5 text-orange-500 print:h-4 print:w-4" />
+                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
+                      <AlertTriangle className="h-5 w-5 text-orange-500 print:hidden" />
                       Anomaly Analysis
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed italic bg-muted/50 p-4 rounded-lg border-l-4 border-orange-500 print:bg-gray-100 print:p-2 print:text-xs">
+                    <p className="text-sm text-muted-foreground leading-relaxed italic bg-muted/50 p-4 rounded-lg border-l-4 border-orange-500 print:bg-transparent print:border-black print:p-2 print:text-xs print:text-black">
                       {report.anomalyAnalysis}
                     </p>
                   </section>
 
                   <section className="space-y-3 print:space-y-1">
-                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base">
-                      <CheckCircle2 className="h-5 w-5 text-green-500 print:h-4 print:w-4" />
+                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
+                      <CheckCircle2 className="h-5 w-5 text-green-500 print:hidden" />
                       Audit Conclusion
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed print:text-xs">
+                    <p className="text-sm text-muted-foreground leading-relaxed print:text-xs print:text-black">
                       {report.conclusion}
                     </p>
                   </section>
                 </div>
 
-                <Separator />
+                <Separator className="print:bg-black" />
 
                 <div className="space-y-4 print:space-y-2">
-                  <h4 className="text-xs font-bold uppercase tracking-widest">Verification Hashes</h4>
-                  <div className="p-4 bg-muted rounded font-mono text-[10px] break-all leading-relaxed print:bg-gray-50 print:p-2">
+                  <h4 className="text-xs font-bold uppercase tracking-widest print:text-black">Verification Hashes</h4>
+                  <div className="p-4 bg-muted rounded font-mono text-[10px] break-all leading-relaxed print:bg-white print:border print:border-black print:p-2">
                     <p className="mb-2">ROOT_MERKLE_TREE_HASH: 0x7f8e9a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f</p>
                     <p>AUDIT_SIGNATURE: {report.auditHash}</p>
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between print:bg-transparent print:border-gray-200 print:p-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground print:text-[10px]">
-                  <Globe className="h-3 w-3" />
+              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between print:bg-transparent print:border-none print:p-0 print:pt-4">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground print:text-[10px] print:text-black">
+                  <Globe className="h-3 w-3 print:hidden" />
                   Distributed Node Attestation: 128 Active
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground print:text-[10px]">
-                  <Database className="h-3 w-3" />
+                <div className="flex items-center gap-2 text-xs text-muted-foreground print:text-[10px] print:text-black">
+                  <Database className="h-3 w-3 print:hidden" />
                   Ledger Consistency: 100%
                 </div>
               </CardFooter>
