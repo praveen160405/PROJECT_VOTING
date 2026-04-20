@@ -45,19 +45,19 @@ Metrics:
 The report must be technical yet accessible, emphasizing transparency and cryptographic integrity. Use a formal, objective tone. Include an executive summary, a security assessment, an anomaly analysis, and a conclusion.`,
 });
 
-export async function generateTransparencyReport(input: GenerateReportInput): Promise<GenerateReportOutput> {
-  const generateReportFlow = ai.defineFlow(
-    {
-      name: 'generateReportFlow',
-      inputSchema: GenerateReportInputSchema,
-      outputSchema: GenerateReportOutputSchema,
-    },
-    async (input) => {
-      const { output } = await generateReportPrompt(input);
-      if (!output) throw new Error("AI failed to synthesize the audit report.");
-      return output;
-    }
-  );
+const generateReportFlow = ai.defineFlow(
+  {
+    name: 'generateReportFlow',
+    inputSchema: GenerateReportInputSchema,
+    outputSchema: GenerateReportOutputSchema,
+  },
+  async (input) => {
+    const { output } = await generateReportPrompt(input);
+    if (!output) throw new Error("AI failed to synthesize the audit report.");
+    return output;
+  }
+);
 
+export async function generateTransparencyReport(input: GenerateReportInput): Promise<GenerateReportOutput> {
   return generateReportFlow(input);
 }

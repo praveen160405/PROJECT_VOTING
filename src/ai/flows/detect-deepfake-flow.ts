@@ -49,19 +49,19 @@ Analyze this media and provide a structured report on its integrity. If you dete
 Media: {{media url=mediaDataUri}}`,
 });
 
-export async function detectDeepfake(input: DetectDeepfakeInput): Promise<DetectDeepfakeOutput> {
-  const detectDeepfakeFlow = ai.defineFlow(
-    {
-      name: 'detectDeepfakeFlow',
-      inputSchema: DetectDeepfakeInputSchema,
-      outputSchema: DetectDeepfakeOutputSchema,
-    },
-    async (input) => {
-      const { output } = await detectDeepfakePrompt(input);
-      if (!output) throw new Error("AI failed to return detection results.");
-      return output;
-    }
-  );
+const detectDeepfakeFlow = ai.defineFlow(
+  {
+    name: 'detectDeepfakeFlow',
+    inputSchema: DetectDeepfakeInputSchema,
+    outputSchema: DetectDeepfakeOutputSchema,
+  },
+  async (input) => {
+    const { output } = await detectDeepfakePrompt(input);
+    if (!output) throw new Error("AI failed to return detection results.");
+    return output;
+  }
+);
 
+export async function detectDeepfake(input: DetectDeepfakeInput): Promise<DetectDeepfakeOutput> {
   return detectDeepfakeFlow(input);
 }

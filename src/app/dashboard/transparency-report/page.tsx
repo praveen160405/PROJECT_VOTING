@@ -65,6 +65,7 @@ export default function TransparencyReportPage() {
         description: "The OOTU transparency audit is ready for review.",
       });
     } catch (error) {
+      console.error(error);
       toast({
         variant: "destructive",
         title: "Generation Failed",
