@@ -10,7 +10,6 @@ import {
   Users, 
   Database, 
   Loader2, 
-  Printer, 
   Globe,
   Fingerprint,
   CheckCircle2,
@@ -80,25 +79,14 @@ export default function TransparencyReportPage() {
     }
   };
 
-  const handlePrint = () => {
-    if (typeof window !== 'undefined') {
-      window.print();
-    }
-  };
-
   return (
-    <div className="flex flex-col gap-8 max-w-5xl mx-auto print:max-w-none print:w-full print:p-0">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
+    <div className="flex flex-col gap-8 max-w-5xl mx-auto">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Transparency & Audit</h1>
           <p className="text-muted-foreground">Generate verifiable reports on election integrity and protocol health.</p>
         </div>
         <div className="flex gap-2">
-          {report && (
-            <Button variant="outline" onClick={handlePrint} className="gap-2">
-              <Printer className="h-4 w-4" /> Print / Save PDF
-            </Button>
-          )}
           <Button onClick={handleGenerateReport} disabled={isGenerating} className="gap-2">
             {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
             {report ? "Regenerate Report" : "Generate Audit Report"}
@@ -112,115 +100,115 @@ export default function TransparencyReportPage() {
             key="report"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-8 print:space-y-4"
+            className="space-y-8"
           >
-            <Card className="border-2 shadow-xl print:shadow-none print:border-none print:bg-white print:overflow-visible">
-              <CardHeader className="text-center space-y-4 pb-8 border-b bg-muted/30 print:bg-transparent print:pb-4">
-                <div className="flex justify-center print:hidden">
+            <Card className="border-2 shadow-xl">
+              <CardHeader className="text-center space-y-4 pb-8 border-b bg-muted/30">
+                <div className="flex justify-center">
                   <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary border-4 border-background shadow-sm">
                     <ShieldCheck className="h-8 w-8" />
                   </div>
                 </div>
                 <div>
-                  <CardTitle className="text-3xl font-black uppercase tracking-tighter print:text-2xl">OOTU Protocol Audit Report</CardTitle>
-                  <CardDescription className="text-base print:text-sm">Official Transparency Document - Cycle 2024-A</CardDescription>
+                  <CardTitle className="text-3xl font-black uppercase tracking-tighter">OOTU Protocol Audit Report</CardTitle>
+                  <CardDescription className="text-base">Official Transparency Document - Cycle 2024-A</CardDescription>
                 </div>
                 <div className="flex flex-wrap justify-center gap-4 pt-2">
-                  <Badge variant="outline" className="px-3 py-1 font-mono text-[10px] print:border-black print:text-black">REPORT_ID: {report.auditHash.substring(0, 12)}</Badge>
-                  <Badge variant="outline" className="px-3 py-1 font-mono text-[10px] print:border-black print:text-black">ISSUED: {new Date().toLocaleString()}</Badge>
-                  <Badge className="bg-green-500 text-white border-none print:bg-black">STATUS: VERIFIED</Badge>
+                  <Badge variant="outline" className="px-3 py-1 font-mono text-[10px]">REPORT_ID: {report.auditHash.substring(0, 12)}</Badge>
+                  <Badge variant="outline" className="px-3 py-1 font-mono text-[10px]">ISSUED: {new Date().toLocaleString()}</Badge>
+                  <Badge className="bg-green-500 text-white border-none">STATUS: VERIFIED</Badge>
                 </div>
               </CardHeader>
-              <CardContent className="p-8 space-y-10 print:p-0 print:pt-6 print:space-y-6">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 print:gap-4 print:grid-cols-4">
+              <CardContent className="p-8 space-y-10">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest print:text-gray-500">Total Voters</p>
-                    <p className="text-2xl font-bold print:text-black">{users?.length || 0}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Voters</p>
+                    <p className="text-2xl font-bold">{users?.length || 0}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest print:text-gray-500">Ballots Cast</p>
-                    <p className="text-2xl font-bold print:text-black">{users?.length ? Math.floor(users.length * 0.85) : 0}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ballots Cast</p>
+                    <p className="text-2xl font-bold">{users?.length ? Math.floor(users.length * 0.85) : 0}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest print:text-gray-500">Security Incidents</p>
-                    <p className="text-2xl font-bold text-red-500 print:text-red-700">{threats?.length || 0}</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Security Incidents</p>
+                    <p className="text-2xl font-bold text-red-500">{threats?.length || 0}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest print:text-gray-500">Integrity Score</p>
-                    <p className="text-2xl font-bold text-green-600 print:text-green-800">99.9%</p>
+                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Integrity Score</p>
+                    <p className="text-2xl font-bold text-green-600">99.9%</p>
                   </div>
                 </div>
 
-                <Separator className="print:bg-black" />
+                <Separator />
 
-                <div className="space-y-8 print:space-y-6">
+                <div className="space-y-8">
                   <section className="space-y-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
-                      <FileText className="h-5 w-5 text-primary print:hidden" />
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <FileText className="h-5 w-5 text-primary" />
                       Executive Summary
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed print:text-xs print:text-black">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {report.executiveSummary}
                     </p>
                   </section>
 
                   <section className="space-y-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
-                      <Fingerprint className="h-5 w-5 text-primary print:hidden" />
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <Fingerprint className="h-5 w-5 text-primary" />
                       Security Assessment
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed print:text-xs print:text-black">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {report.securityAssessment}
                     </p>
                   </section>
 
                   <section className="space-y-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
-                      <AlertTriangle className="h-5 w-5 text-orange-500 print:hidden" />
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <AlertTriangle className="h-5 w-5 text-orange-500" />
                       Anomaly Analysis
                     </h3>
-                    <div className="p-4 bg-muted/50 rounded-lg border-l-4 border-orange-500 print:bg-transparent print:border-l-2 print:border-black print:p-3">
-                      <p className="text-sm text-muted-foreground leading-relaxed italic print:text-xs print:text-black">
+                    <div className="p-4 bg-muted/50 rounded-lg border-l-4 border-orange-500">
+                      <p className="text-sm text-muted-foreground leading-relaxed italic">
                         {report.anomalyAnalysis}
                       </p>
                     </div>
                   </section>
 
                   <section className="space-y-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
-                      <CheckCircle2 className="h-5 w-5 text-green-500 print:hidden" />
+                    <h3 className="text-lg font-bold flex items-center gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-500" />
                       Audit Conclusion
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed print:text-xs print:text-black">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {report.conclusion}
                     </p>
                   </section>
                 </div>
 
-                <Separator className="print:bg-black" />
+                <Separator />
 
                 <div className="space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-widest print:text-black">Verification Hashes</h4>
-                  <div className="p-4 bg-muted rounded font-mono text-[10px] break-all leading-relaxed print:bg-white print:border print:border-black print:p-2">
+                  <h4 className="text-xs font-bold uppercase tracking-widest">Verification Hashes</h4>
+                  <div className="p-4 bg-muted rounded font-mono text-[10px] break-all leading-relaxed">
                     <p className="mb-2">ROOT_MERKLE_TREE_HASH: 0x7f8e9a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f</p>
                     <p>AUDIT_SIGNATURE: {report.auditHash}</p>
                   </div>
                 </div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between print:bg-transparent print:border-none print:p-0 print:pt-4">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground print:text-[10px] print:text-black">
-                  <Globe className="h-3 w-3 print:hidden" />
+              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Globe className="h-3 w-3" />
                   Distributed Node Attestation: 128 Active
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground print:text-[10px] print:text-black">
-                  <Database className="h-3 w-3 print:hidden" />
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Database className="h-3 w-3" />
                   Ledger Consistency: 100%
                 </div>
               </CardFooter>
             </Card>
           </motion.div>
         ) : (
-          <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed rounded-xl bg-muted/10 text-center gap-6 print:hidden">
+          <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed rounded-xl bg-muted/10 text-center gap-6">
             <div className="w-20 h-20 rounded-full bg-primary/5 flex items-center justify-center text-primary/40">
               <Database className="h-10 w-10" />
             </div>
