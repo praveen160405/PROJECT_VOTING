@@ -100,3 +100,52 @@
     @apply bg-card/60 backdrop-blur-xl border border-border/20;
   }
 }
+
+@media print {
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Reset layout containers for print */
+  [data-sidebar-wrapper], 
+  main, 
+  div[class*="SidebarInset"],
+  div[class*="SidebarProvider"] {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    background: white !important;
+  }
+
+  /* Hide navigation elements */
+  nav, 
+  aside, 
+  header, 
+  button:not(.print-only),
+  footer,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Ensure cards and text are readable */
+  .border, .Card {
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: none !important;
+  }
+  
+  .text-muted-foreground {
+    color: #4b5563 !important;
+  }
+
+  @page {
+    margin: 2cm;
+    size: auto;
+  }
+}

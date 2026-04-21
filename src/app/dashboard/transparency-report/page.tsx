@@ -49,7 +49,6 @@ export default function TransparencyReportPage() {
     try {
       const threatList = threats?.map(t => t.type).slice(0, 5) || [];
       const totalVoters = users?.length || 0;
-      // Simulation: assume average participation if no real votes found
       const totalVotes = users?.length ? Math.floor(users.length * 0.85) : 1240; 
       const participationRate = totalVoters > 0 ? `${((totalVotes / totalVoters) * 100).toFixed(1)}%` : "84.2%";
 
@@ -67,7 +66,6 @@ export default function TransparencyReportPage() {
       });
     } catch (error: any) {
       console.error("Report Generation Error:", error);
-      
       const isHighDemand = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("Unavailable");
       
       toast({
@@ -89,8 +87,7 @@ export default function TransparencyReportPage() {
   };
 
   return (
-    <div className="flex flex-col gap-8 max-w-5xl mx-auto print:max-w-none print:w-full print:gap-4 print:p-0">
-      {/* Header section - Hidden when printing */}
+    <div className="flex flex-col gap-8 max-w-5xl mx-auto print:max-w-none print:w-full print:p-0">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Transparency & Audit</h1>
@@ -115,7 +112,7 @@ export default function TransparencyReportPage() {
             key="report"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="space-y-8 print:space-y-4 print:block print:opacity-100"
+            className="space-y-8 print:space-y-4"
           >
             <Card className="border-2 shadow-xl print:shadow-none print:border-none print:bg-white print:overflow-visible">
               <CardHeader className="text-center space-y-4 pb-8 border-b bg-muted/30 print:bg-transparent print:pb-4">
@@ -125,8 +122,8 @@ export default function TransparencyReportPage() {
                   </div>
                 </div>
                 <div>
-                  <CardTitle className="text-3xl font-black uppercase tracking-tighter print:text-2xl print:text-black">OOTU Protocol Audit Report</CardTitle>
-                  <CardDescription className="text-base print:text-sm print:text-gray-600">Official Transparency Document - Cycle 2024-A</CardDescription>
+                  <CardTitle className="text-3xl font-black uppercase tracking-tighter print:text-2xl">OOTU Protocol Audit Report</CardTitle>
+                  <CardDescription className="text-base print:text-sm">Official Transparency Document - Cycle 2024-A</CardDescription>
                 </div>
                 <div className="flex flex-wrap justify-center gap-4 pt-2">
                   <Badge variant="outline" className="px-3 py-1 font-mono text-[10px] print:border-black print:text-black">REPORT_ID: {report.auditHash.substring(0, 12)}</Badge>
@@ -156,8 +153,8 @@ export default function TransparencyReportPage() {
 
                 <Separator className="print:bg-black" />
 
-                <div className="space-y-8 print:space-y-4">
-                  <section className="space-y-3 print:space-y-1">
+                <div className="space-y-8 print:space-y-6">
+                  <section className="space-y-3">
                     <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
                       <FileText className="h-5 w-5 text-primary print:hidden" />
                       Executive Summary
@@ -167,7 +164,7 @@ export default function TransparencyReportPage() {
                     </p>
                   </section>
 
-                  <section className="space-y-3 print:space-y-1">
+                  <section className="space-y-3">
                     <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
                       <Fingerprint className="h-5 w-5 text-primary print:hidden" />
                       Security Assessment
@@ -177,17 +174,19 @@ export default function TransparencyReportPage() {
                     </p>
                   </section>
 
-                  <section className="space-y-3 print:space-y-1">
+                  <section className="space-y-3">
                     <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
                       <AlertTriangle className="h-5 w-5 text-orange-500 print:hidden" />
                       Anomaly Analysis
                     </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed italic bg-muted/50 p-4 rounded-lg border-l-4 border-orange-500 print:bg-transparent print:border-black print:p-2 print:text-xs print:text-black">
-                      {report.anomalyAnalysis}
-                    </p>
+                    <div className="p-4 bg-muted/50 rounded-lg border-l-4 border-orange-500 print:bg-transparent print:border-l-2 print:border-black print:p-3">
+                      <p className="text-sm text-muted-foreground leading-relaxed italic print:text-xs print:text-black">
+                        {report.anomalyAnalysis}
+                      </p>
+                    </div>
                   </section>
 
-                  <section className="space-y-3 print:space-y-1">
+                  <section className="space-y-3">
                     <h3 className="text-lg font-bold flex items-center gap-2 print:text-base print:text-black">
                       <CheckCircle2 className="h-5 w-5 text-green-500 print:hidden" />
                       Audit Conclusion
@@ -200,7 +199,7 @@ export default function TransparencyReportPage() {
 
                 <Separator className="print:bg-black" />
 
-                <div className="space-y-4 print:space-y-2">
+                <div className="space-y-4">
                   <h4 className="text-xs font-bold uppercase tracking-widest print:text-black">Verification Hashes</h4>
                   <div className="p-4 bg-muted rounded font-mono text-[10px] break-all leading-relaxed print:bg-white print:border print:border-black print:p-2">
                     <p className="mb-2">ROOT_MERKLE_TREE_HASH: 0x7f8e9a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f</p>

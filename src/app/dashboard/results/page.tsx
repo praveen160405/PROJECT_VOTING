@@ -15,7 +15,7 @@ import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { useWeb3 } from "@/app/providers";
 import { Badge } from "@/components/ui/badge";
-import { Globe, ShieldCheck, Copy } from "lucide-react";
+import { Globe, Copy } from "lucide-react";
 import { votingContractAddress } from "@/lib/contract";
 import { useToast } from "@/hooks/use-toast";
 
@@ -45,7 +45,7 @@ export default function ResultsPage() {
   const { toast } = useToast();
 
   const { user, firestore, isUserLoading } = useFirebase();
-  const { contract, address } = useWeb3();
+  const { contract, provider } = useWeb3();
 
   const userVotesCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -65,12 +65,10 @@ export default function ResultsPage() {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      
       const isZeroAddress = votingContractAddress === "0x0000000000000000000000000000000000000000";
       
       try {
         if (contract && !isZeroAddress) {
-          // Fetch real data from the blockchain
           const results: VoteResult[] = await Promise.all(
             initialCandidates.map(async (c) => {
               const numericId = parseInt(c.id.replace('c', ''));
@@ -89,7 +87,6 @@ export default function ResultsPage() {
 
           setElectionResults({ voteResults: results, partyVotes, totalVotes, isLiveBlockchain: true });
         } else {
-          // Fallback to mock data if no wallet connected, contract not available, or zero address
           const voteResults: VoteResult[] = initialCandidates.map(c => ({
             name: c.name,
             votes: Math.floor(Math.random() * 5000) + 1000
@@ -100,7 +97,6 @@ export default function ResultsPage() {
         }
       } catch (err) {
         console.error("Error fetching blockchain results:", err);
-        // Ensure we still show something in case of unexpected error
         const mockResults: VoteResult[] = initialCandidates.map(c => ({
           name: c.name,
           votes: 0
@@ -142,7 +138,7 @@ export default function ResultsPage() {
           <p className="text-muted-foreground">Auditing the decentralized voting ledger in real-time.</p>
         </div>
         {isLiveBlockchain ? (
-          <Badge variant="secondary" className="gap-1 bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">
+          <Badge variant="secondary" className="gap-1 bg-green-500/10 text-green-500 border-green-500/20">
             <Globe className="h-3 w-3" /> Live Blockchain Data
           </Badge>
         ) : (

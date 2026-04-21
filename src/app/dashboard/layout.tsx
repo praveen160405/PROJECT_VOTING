@@ -12,7 +12,7 @@ export default function DashboardLayout({
       <DashboardSidebar />
       <SidebarInset className="print:block print:min-h-0 print:bg-white">
         <DashboardHeader />
-        <main className="p-4 lg:p-6 print:p-0 print:m-0">{children}</main>
+        <main className="p-4 lg:p-6 print:p-0 print:m-0 print:overflow-visible">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

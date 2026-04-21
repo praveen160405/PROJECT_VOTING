@@ -136,7 +136,7 @@ export default function VotePage() {
   const handleBlockchainVote = async (candidate: Candidate) => {
     if (!contract) {
       toast({ variant: "destructive", title: "Web3 Error", description: "Smart contract not initialized." });
-      return;
+      return { success: false, hash: null };
     }
 
     try {
