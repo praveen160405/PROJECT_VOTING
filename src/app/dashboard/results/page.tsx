@@ -45,7 +45,7 @@ export default function ResultsPage() {
   const { toast } = useToast();
 
   const { user, firestore, isUserLoading } = useFirebase();
-  const { contract, provider } = useWeb3();
+  const { contract } = useWeb3();
 
   const userVotesCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
