@@ -93,12 +93,16 @@ export default function DeepfakeDetectionPage() {
               description: "No signs of AI manipulation were found in this sample.",
             });
           }
-        } catch (error) {
-          console.error(error);
+        } catch (error: any) {
+          console.error("Deepfake Analysis Error:", error);
+          const isHighDemand = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("Unavailable");
+          
           toast({
             variant: "destructive",
-            title: "Analysis Failed",
-            description: "The AI node could not process this media format.",
+            title: isHighDemand ? "AI Node High Demand" : "Analysis Failed",
+            description: isHighDemand 
+              ? "The AI node is currently experiencing high traffic. Please try again in 30 seconds." 
+              : "The AI node could not process this media format.",
           });
         } finally {
           setIsScanning(false);
