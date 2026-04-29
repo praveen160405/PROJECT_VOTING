@@ -69,7 +69,7 @@ export default function TransparencyReportPage() {
       
       toast({
         variant: "destructive",
-        title: isHighDemand ? "AI Model High Demand" : "Generation Failed",
+        title: isHighDemand ? "AI Node High Demand" : "Generation Failed",
         description: isHighDemand 
           ? "The AI node is currently experiencing high traffic. Please try again in 30 seconds." 
           : "Could not synthesize report data. Please check your network and try again.",

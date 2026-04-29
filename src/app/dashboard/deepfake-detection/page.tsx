@@ -102,7 +102,7 @@ export default function DeepfakeDetectionPage() {
             title: isHighDemand ? "AI Node High Demand" : "Analysis Failed",
             description: isHighDemand 
               ? "The AI node is currently experiencing high traffic. Please try again in 30 seconds." 
-              : "The AI node could not process this media format.",
+              : "The AI node could not process this media format or returned an error.",
           });
         } finally {
           setIsScanning(false);
