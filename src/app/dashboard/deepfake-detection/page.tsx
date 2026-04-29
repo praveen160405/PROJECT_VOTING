@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -68,54 +69,46 @@ export default function DeepfakeDetectionPage() {
     setIsScanning(true);
     setResult(null);
 
-    try {
-      const reader = new FileReader();
-      reader.readAsDataURL(mediaFile);
-      reader.onload = async () => {
-        const base64 = reader.result as string;
-        try {
-          const analysis = await detectDeepfake({
-            mediaDataUri: base64,
-            contentType: mediaFile.type,
-            context: "Election campaign monitoring",
-          });
-          setResult(analysis);
-          
-          if (analysis.isManipulated) {
-            toast({
-              variant: "destructive",
-              title: "Security Threat Flagged",
-              description: "AI analysis has detected high-confidence manipulation artifacts.",
-            });
-          } else {
-            toast({
-              title: "Media Integrity Verified",
-              description: "No signs of AI manipulation were found in this sample.",
-            });
-          }
-        } catch (error: any) {
-          console.error("Deepfake Analysis Error:", error);
-          const isHighDemand = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("Unavailable");
-          
+    const reader = new FileReader();
+    reader.readAsDataURL(mediaFile);
+    reader.onload = async () => {
+      const base64 = reader.result as string;
+      try {
+        const analysis = await detectDeepfake({
+          mediaDataUri: base64,
+          contentType: mediaFile.type,
+          context: "Election campaign monitoring",
+        });
+        setResult(analysis);
+        
+        if (analysis.isManipulated) {
           toast({
             variant: "destructive",
-            title: isHighDemand ? "AI Node High Demand" : "Analysis Failed",
-            description: isHighDemand 
-              ? "The AI node is currently experiencing high traffic. Please try again in 30 seconds." 
-              : "The AI node could not process this media format or returned an error.",
+            title: "Security Threat Flagged",
+            description: "AI analysis has detected high-confidence manipulation artifacts.",
           });
-        } finally {
-          setIsScanning(false);
+        } else {
+          toast({
+            title: "Media Integrity Verified",
+            description: "No signs of AI manipulation were found in this sample.",
+          });
         }
-      };
-    } catch (err) {
-      setIsScanning(false);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to read local media file.",
-      });
-    }
+      } catch (error: any) {
+        console.error("Deepfake Analysis Error:", error);
+        const errorMsg = error.message || "";
+        const isHighDemand = errorMsg.includes("503") || errorMsg.includes("high demand") || errorMsg.includes("Unavailable");
+        
+        toast({
+          variant: "destructive",
+          title: isHighDemand ? "AI Node High Demand" : "Analysis Failed",
+          description: isHighDemand 
+            ? "The forensic AI node is currently experiencing high traffic. Please try again in 30 seconds." 
+            : "The AI node could not process this media or returned an error.",
+        });
+      } finally {
+        setIsScanning(false);
+      }
+    };
   };
 
   return (

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -65,13 +66,14 @@ export default function TransparencyReportPage() {
       });
     } catch (error: any) {
       console.error("Report Generation Error:", error);
-      const isHighDemand = error.message?.includes("503") || error.message?.includes("high demand") || error.message?.includes("Unavailable");
+      const errorMsg = error.message || "";
+      const isHighDemand = errorMsg.includes("503") || errorMsg.includes("high demand") || errorMsg.includes("Unavailable");
       
       toast({
         variant: "destructive",
         title: isHighDemand ? "AI Node High Demand" : "Generation Failed",
         description: isHighDemand 
-          ? "The AI node is currently experiencing high traffic. Please try again in 30 seconds." 
+          ? "The transparency AI node is currently experiencing high traffic. Please try again in 30 seconds." 
           : "Could not synthesize report data. Please check your network and try again.",
       });
     } finally {
