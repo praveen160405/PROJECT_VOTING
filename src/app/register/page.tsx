@@ -10,7 +10,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useRef, useEffect } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, collection, serverTimestamp } from "firebase/firestore";
+import { doc, collection } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,8 +26,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
-import { useAuth, useFirestore, setDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase";
-import Image from "next/image";
+import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
 
 const registerSchema = z.object({
   fullName: z.string().trim().min(1, "Full name is required.").max(100, "Full name is too long."),
@@ -100,11 +99,6 @@ export default function RegisterPage() {
       return;
     }
 
-    toast({
-      title: "Registering Account...",
-      description: "Please wait while we create your account and verify your Aadhar.",
-    });
-
     try {
       const emailForAuth = `${values.voterId.toLowerCase()}@ootu.app`;
       const userCredential = await createUserWithEmailAndPassword(auth, emailForAuth, values.password);
@@ -116,7 +110,7 @@ export default function RegisterPage() {
         firstName: values.fullName.split(' ')[0] || '',
         lastName: values.fullName.split(' ').slice(1).join(' ') || '',
         aadharNumber: values.aadharNumber,
-        faceImageHash: capturedImage.substring(0, 100), // Simple simulation of a hash
+        faceImageHash: capturedImage.substring(0, 100), 
         isAdmin: false,
       };
 
@@ -350,7 +344,6 @@ export default function RegisterPage() {
               </div>
           </CardFooter>
         </Card>
-      </Form>
       </motion.div>
     </main>
   );

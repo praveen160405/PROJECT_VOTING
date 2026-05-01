@@ -8,14 +8,13 @@ import {
   FileText, 
   ShieldCheck, 
   AlertTriangle, 
-  Users, 
-  Database, 
   Loader2, 
   Globe,
   Fingerprint,
   CheckCircle2,
   Zap,
-  RefreshCcw
+  RefreshCcw,
+  Database
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,14 +31,12 @@ export default function TransparencyReportPage() {
   const { firestore, user } = useFirebase();
   const { toast } = useToast();
 
-  // Get current user profile to check for admin status
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return doc(firestore, 'users', user.uid);
   }, [firestore, user]);
   const { data: profile } = useDoc<Voter>(userDocRef);
 
-  // Restricted fetches - only for admins
   const usersRef = useMemoFirebase(() => {
     if (!firestore || !profile?.isAdmin) return null;
     return collection(firestore, 'users');
@@ -56,7 +53,7 @@ export default function TransparencyReportPage() {
     setIsGenerating(true);
     try {
       const threatList = threats?.map(t => t.type).slice(0, 5) || [];
-      const totalVoters = users?.length || 1540; // Fallback for simulation
+      const totalVoters = users?.length || 1540; 
       const totalVotes = users?.length ? Math.floor(users.length * 0.85) : 1240; 
       const participationRate = users?.length ? `${((totalVotes / totalVoters) * 100).toFixed(1)}%` : "84.2%";
 
