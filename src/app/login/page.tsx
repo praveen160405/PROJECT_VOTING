@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Key, Loader2, Mail, Phone, Hash, ShieldAlert, ZapOff, Lock } from "lucide-react";
+import { User, Key, Loader2, Mail, ShieldAlert, ZapOff, Lock } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,13 +37,13 @@ import { useAuth, useFirestore, addDocumentNonBlocking } from "@/firebase";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const loginSchema = z.object({
-  voterId: z.string().trim().min(1, "Voter ID is required."),
+  email: z.string().trim().email("Invalid email address."),
   password: z.string().min(1, "Password is required."),
   username_hp: z.string().max(0).optional(), 
 });
 
 const forgotPasswordSchema = z.object({
-  voterId: z.string().trim().min(1, "Voter ID is required."),
+  email: z.string().trim().email("Invalid email address."),
 });
 
 export default function LoginPage() {
@@ -87,7 +87,7 @@ export default function LoginPage() {
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      voterId: "",
+      email: "",
       password: "",
       username_hp: "",
     },
@@ -96,7 +96,7 @@ export default function LoginPage() {
   const resetForm = useForm<z.infer<typeof forgotPasswordSchema>>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: {
-      voterId: "",
+      email: "",
     },
   });
 
@@ -139,13 +139,10 @@ export default function LoginPage() {
       /{\s*\$gt\s*: ""}/i,
       /javascript:/i,
       /onerror=/i,
-      /\.\.\//i,
-      /reentrancy/i,
-      /key_theft/i,
-      /sybil/i
+      /\.\.\//i
     ];
 
-    const input = values.voterId + " " + values.password;
+    const input = values.email + " " + values.password;
     return patterns.some(pattern => pattern.test(input));
   };
 
@@ -182,7 +179,7 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Too Many Requests",
-        description: "Security protocol triggered. Please wait 15 seconds before trying again.",
+        description: "Security protocol triggered. Please wait 15 seconds.",
       });
       return;
     }
@@ -191,38 +188,34 @@ export default function LoginPage() {
        toast({
         variant: "destructive",
         title: "Too Many Requests",
-        description: "Security protocol triggered. Please wait 15 seconds before trying again.",
+        description: "Security protocol triggered. Please wait 15 seconds.",
       });
       return;
     }
 
     if (detectAttacks(values)) {
-      logThreat("Malicious Payload Detected", values.voterId + " | [REDACTED]");
+      logThreat("Malicious Payload Detected", values.email + " | [REDACTED]");
       toast({
         variant: "destructive",
         title: "Security Alert",
-        description: "Suspicious activity detected. Your origin IP and payload have been logged for forensic analysis.",
+        description: "Suspicious activity detected and logged.",
       });
       return;
     }
 
     try {
-      const emailForAuth = `${values.voterId.toLowerCase()}@ootu.app`;
-      await signInWithEmailAndPassword(auth, emailForAuth, values.password);
+      await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({
         title: "Login Successful!",
-        description: "Redirecting you to the dashboard.",
+        description: "Redirecting to your dashboard.",
       });
       router.push("/dashboard");
     } catch (error: any) {
-      let description = "An unexpected error occurred.";
-      
-      if (['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password', 'auth/invalid-email', 'auth/user-disabled'].includes(error.code)) {
-        description = "Invalid Voter ID or password. Please try again.";
-        logThreat("Login Failure", `Failed attempt for ID: ${values.voterId}`);
+      let description = "Invalid email or password. Please try again.";
+      if (['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(error.code)) {
+        logThreat("Login Failure", `Failed attempt for: ${values.email}`);
       } else {
-        console.error("Authentication System Error:", error);
-        if (error.message) description = error.message;
+        description = error.message || description;
       }
       
       toast({
@@ -236,11 +229,10 @@ export default function LoginPage() {
   const onResetPassword = async (values: z.infer<typeof forgotPasswordSchema>) => {
     setIsResetLoading(true);
     try {
-      const emailForAuth = `${values.voterId.toLowerCase()}@ootu.app`;
-      await sendPasswordResetEmail(auth, emailForAuth);
+      await sendPasswordResetEmail(auth, values.email);
       toast({
         title: "Reset Link Sent",
-        description: `A secure password reset link has been sent to the email associated with Voter ID: ${values.voterId}. This service is provided free of charge by the OOTU protocol.`,
+        description: `A secure password reset link has been sent to ${values.email}. This service is free of charge.`,
       });
       setIsResetDialogOpen(false);
       resetForm.reset();
@@ -248,7 +240,7 @@ export default function LoginPage() {
       toast({
         variant: "destructive",
         title: "Reset Failed",
-        description: "Could not find a registered account with this Voter ID.",
+        description: "No account found with this email address.",
       });
     } finally {
       setIsResetLoading(false);
@@ -263,14 +255,14 @@ export default function LoginPage() {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-md"
+        className="w-full max-md"
       >
         {isBlocked && (
           <Alert variant="destructive" className="mb-6 animate-pulse">
             <ShieldAlert className="h-4 w-4" />
             <AlertTitle>Access Blocked</AlertTitle>
             <AlertDescription>
-              This IP address has been blacklisted for malicious activity.
+              This IP address has been blacklisted.
             </AlertDescription>
           </Alert>
         )}
@@ -279,7 +271,7 @@ export default function LoginPage() {
             <ZapOff className="h-4 w-4" />
             <AlertTitle>DDoS Protection Active</AlertTitle>
             <AlertDescription>
-              Security protocol triggered. Access throttled for 15 seconds.
+              Access throttled for 15 seconds.
             </AlertDescription>
           </Alert>
         )}
@@ -312,14 +304,14 @@ export default function LoginPage() {
 
                 <FormField
                   control={form.control}
-                  name="voterId"
+                  name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Voter ID</FormLabel>
+                      <FormLabel>Registered Email</FormLabel>
                       <div className="relative">
-                         <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input id="voterId" placeholder="ABC1234567" {...field} className="pl-10" maxLength={20} disabled={isBlocked || isRateLimited} />
+                          <Input type="email" placeholder="john@example.com" {...field} className="pl-10" disabled={isBlocked || isRateLimited} />
                         </FormControl>
                       </div>
                       <FormMessage />
@@ -384,21 +376,21 @@ export default function LoginPage() {
           <DialogHeader>
             <DialogTitle>Reset Password</DialogTitle>
             <DialogDescription>
-              A secure reset link will be sent to the email registered with your Voter ID.
+              A secure reset link will be sent to your registered email address.
             </DialogDescription>
           </DialogHeader>
           <Form {...resetForm}>
             <form onSubmit={resetForm.handleSubmit(onResetPassword)} className="space-y-4 py-2">
               <FormField
                 control={resetForm.control}
-                name="voterId"
+                name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Voter ID</FormLabel>
+                    <FormLabel>Registered Email</FormLabel>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <FormControl>
-                        <Input id="resetVoterId" placeholder="ABC1234567" {...field} className="pl-9" maxLength={10} />
+                        <Input type="email" placeholder="john@example.com" {...field} className="pl-9" />
                       </FormControl>
                     </div>
                     <FormMessage />

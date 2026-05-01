@@ -54,7 +54,12 @@
         },
         "voterId": {
           "type": "string",
-          "description": "The voter's unique identification string used for login."
+          "description": "The voter's unique identification string."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Registered email for account recovery."
         },
         "firstName": {
           "type": "string",
@@ -66,7 +71,7 @@
         },
         "aadharNumber": {
           "type": "string",
-          "description": "The 12-digit Aadhar number of the voter for identity verification."
+          "description": "The 12-digit Aadhar number of the voter."
         },
         "faceImageHash": {
           "type": "string",
@@ -89,6 +94,7 @@
       "required": [
         "id",
         "voterId",
+        "email",
         "firstName",
         "lastName",
         "aadharNumber"
@@ -151,7 +157,7 @@
         },
         "candidateIds": {
           "type": "array",
-          "description": "References to Candidates participating in this election. (Relationship: Election 1:N Candidate)",
+          "description": "References to Candidates participating in this election.",
           "items": {
             "type": "string"
           }
@@ -180,7 +186,7 @@
         },
         "type": {
           "type": "string",
-          "description": "The type of attack (e.g., SQL Injection, Brute Force)."
+          "description": "The type of attack."
         },
         "timestamp": {
           "type": "string",
@@ -188,7 +194,7 @@
         },
         "payload": {
           "type": "string",
-          "description": "The suspicious input or payload detected."
+          "description": "The suspicious input detected."
         }
       },
       "required": [
@@ -237,17 +243,7 @@
           "schema": {
             "$ref": "#/backend/entities/Vote"
           },
-          "description": "Stores individual votes cast by a voter.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the voter."
-            },
-            {
-              "name": "voteId",
-              "description": "The ID of the vote."
-            }
-          ]
+          "description": "Stores individual votes cast by a voter."
         }
       },
       {
@@ -257,13 +253,7 @@
           "schema": {
             "$ref": "#/backend/entities/Voter"
           },
-          "description": "Stores the details of the user.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The ID of the user."
-            }
-          ]
+          "description": "Stores the details of the user."
         }
       },
       {
@@ -273,13 +263,7 @@
           "schema": {
             "$ref": "#/backend/entities/Election"
           },
-          "description": "Stores information about an election.",
-          "params": [
-            {
-              "name": "electionId",
-              "description": "The ID of the election."
-            }
-          ]
+          "description": "Stores information about an election."
         }
       },
       {
@@ -289,13 +273,7 @@
           "schema": {
             "$ref": "#/backend/entities/Candidate"
           },
-          "description": "Stores information about a candidate.",
-          "params": [
-            {
-              "name": "candidateId",
-              "description": "The ID of the candidate."
-            }
-          ]
+          "description": "Stores information about a candidate."
         }
       },
       {
@@ -305,13 +283,7 @@
           "schema": {
             "$ref": "#/backend/entities/Threat"
           },
-          "description": "Logged security incidents and attack attempts.",
-          "params": [
-            {
-              "name": "threatId",
-              "description": "Unique ID for the threat record."
-            }
-          ]
+          "description": "Logged security incidents and attack attempts."
         }
       },
       {
@@ -321,16 +293,10 @@
           "schema": {
             "$ref": "#/backend/entities/BlockedIp"
           },
-          "description": "List of blocked IP addresses.",
-          "params": [
-            {
-              "name": "ipId",
-              "description": "The ID of the blocked IP (usually the IP itself)."
-            }
-          ]
+          "description": "List of blocked IP addresses."
         }
       }
     ],
-    "reasoning": "The Firestore data structure is optimized for security and real-time monitoring. The 'threats' collection allows for centralized logging of suspicious activity, while 'blockedIps' provides a scalable way to ban malicious clients."
+    "reasoning": "Standard decentralized data structure for election integrity."
   }
 }

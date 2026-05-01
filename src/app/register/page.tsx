@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Camera, ShieldCheck, Fingerprint, RefreshCcw, CheckCircle2 } from "lucide-react";
+import { Loader2, Camera, ShieldCheck, Fingerprint, RefreshCcw, CheckCircle2, Mail } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,6 +30,7 @@ import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
 
 const registerSchema = z.object({
   fullName: z.string().trim().min(1, "Full name is required.").max(100, "Full name is too long."),
+  email: z.string().trim().email("Invalid email address."),
   voterId: z
     .string()
     .trim()
@@ -58,6 +59,7 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
     defaultValues: {
       fullName: "",
+      email: "",
       voterId: "",
       aadharNumber: "",
       password: "",
@@ -100,13 +102,13 @@ export default function RegisterPage() {
     }
 
     try {
-      const emailForAuth = `${values.voterId.toLowerCase()}@ootu.app`;
-      const userCredential = await createUserWithEmailAndPassword(auth, emailForAuth, values.password);
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       const user = userCredential.user;
 
       const userProfile = {
         id: user.uid,
         voterId: values.voterId.toUpperCase(),
+        email: values.email,
         firstName: values.fullName.split(' ')[0] || '',
         lastName: values.fullName.split(' ').slice(1).join(' ') || '',
         aadharNumber: values.aadharNumber,
@@ -129,7 +131,7 @@ export default function RegisterPage() {
       
       let description = "An unexpected error occurred.";
       if (error.code === 'auth/email-already-in-use') {
-        description = "This Voter ID is already registered. Please choose another or log in.";
+        description = "This email is already registered. Please use another or log in.";
       } else if (error.message) {
         description = error.message;
       }
@@ -212,6 +214,22 @@ export default function RegisterPage() {
                     />
                     <FormField
                       control={control}
+                      name="email"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                             <Mail className="h-3 w-3 text-primary" />
+                             Recovery Email
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="email" placeholder="john@example.com" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
                       name="voterId"
                       render={({ field }) => (
                         <FormItem>
@@ -243,7 +261,7 @@ export default function RegisterPage() {
                       control={control}
                       name="password"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="md:col-span-2">
                           <FormLabel>Password</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="••••••••" {...field} />

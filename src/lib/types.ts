@@ -30,6 +30,7 @@ export type PartyVote = {
 export type Voter = {
   id: string;
   voterId: string;
+  email: string;
   firstName: string;
   lastName: string;
   aadharNumber: string;
