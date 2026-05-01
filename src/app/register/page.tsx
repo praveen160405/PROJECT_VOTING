@@ -10,7 +10,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useRef, useEffect } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, collection } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -75,7 +75,7 @@ export default function RegisterPage() {
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg');
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
         setCapturedImage(dataUrl);
         toast({
           title: "Biometric Data Captured",
@@ -110,7 +110,7 @@ export default function RegisterPage() {
         firstName: values.fullName.split(' ')[0] || '',
         lastName: values.fullName.split(' ').slice(1).join(' ') || '',
         aadharNumber: values.aadharNumber,
-        faceImageHash: capturedImage.substring(0, 100), 
+        faceImageHash: capturedImage, 
         isAdmin: false,
       };
 
