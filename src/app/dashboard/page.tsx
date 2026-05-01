@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -19,11 +20,11 @@ export default function DashboardPage() {
   }, [firestore, user]);
   const { data: profile, isLoading: isProfileLoading } = useDoc<Voter>(userDocRef);
 
-  // Fetch total voters count for system participation stat
+  // Fetch total voters count - RESTRICTED TO ADMINS to avoid Permission Denied for regular users
   const usersCollectionRef = useMemoFirebase(() => {
-    if (!firestore) return null;
+    if (!firestore || !profile?.isAdmin) return null;
     return collection(firestore, "users");
-  }, [firestore]);
+  }, [firestore, profile?.isAdmin]);
   const { data: allUsers, isLoading: isUsersLoading } = useCollection<Voter>(usersCollectionRef);
 
   const stats = [
@@ -45,11 +46,11 @@ export default function DashboardPage() {
     },
     {
       label: "Total Voters",
-      value: allUsers?.length || "0",
-      description: "Verified registration count",
+      value: profile?.isAdmin ? (allUsers?.length || "0") : "Verified",
+      description: profile?.isAdmin ? "Verified registration count" : "Participation active",
       icon: Users,
       color: "text-primary",
-      isLoading: isUsersLoading
+      isLoading: profile?.isAdmin ? isUsersLoading : false
     },
     {
       label: "Ledger Integrity",
