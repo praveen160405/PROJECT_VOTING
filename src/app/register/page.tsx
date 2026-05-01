@@ -3,8 +3,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { Loader2, Camera, ShieldCheck, Fingerprint } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, Camera, ShieldCheck, Fingerprint, RefreshCcw, CheckCircle2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,6 +27,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
 import { useAuth, useFirestore, setDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase";
+import Image from "next/image";
 
 const registerSchema = z.object({
   fullName: z.string().trim().min(1, "Full name is required.").max(100, "Full name is too long."),
@@ -50,7 +51,9 @@ export default function RegisterPage() {
   const firestore = useFirestore();
   
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
   
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -64,34 +67,45 @@ export default function RegisterPage() {
 
   const { formState, control } = form;
 
-  const logThreat = async (type: string, payload: string) => {
-    try {
-      const ipResponse = await fetch('https://api.ipify.org?format=json');
-      const ipData = await ipResponse.json();
-      const ip = ipData.ip || 'Unknown';
-
-      if (firestore) {
-        const threatsRef = collection(firestore, 'threats');
-        addDocumentNonBlocking(threatsRef, {
-          ipAddress: ip,
-          type: type,
-          payload: payload,
-          timestamp: serverTimestamp()
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg');
+        setCapturedImage(dataUrl);
+        toast({
+          title: "Biometric Data Captured",
+          description: "Your facial features have been mapped for identity verification.",
         });
       }
-    } catch (e) {
-      // Log threat silently
     }
   };
 
+  const retakePhoto = () => {
+    setCapturedImage(null);
+  };
+
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
+    if (!capturedImage) {
+      toast({
+        variant: "destructive",
+        title: "Biometric Required",
+        description: "Please capture your biometric ID photo to proceed.",
+      });
+      return;
+    }
+
     toast({
       title: "Registering Account...",
       description: "Please wait while we create your account and verify your Aadhar.",
     });
 
     try {
-      // Use structured email for Auth, mapped to Voter ID
       const emailForAuth = `${values.voterId.toLowerCase()}@ootu.app`;
       const userCredential = await createUserWithEmailAndPassword(auth, emailForAuth, values.password);
       const user = userCredential.user;
@@ -102,7 +116,7 @@ export default function RegisterPage() {
         firstName: values.fullName.split(' ')[0] || '',
         lastName: values.fullName.split(' ').slice(1).join(' ') || '',
         aadharNumber: values.aadharNumber,
-        faceImageHash: '',
+        faceImageHash: capturedImage.substring(0, 100), // Simple simulation of a hash
         isAdmin: false,
       };
 
@@ -153,7 +167,9 @@ export default function RegisterPage() {
       }
     };
 
-    getCameraPermission();
+    if (!capturedImage) {
+      getCameraPermission();
+    }
     
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
@@ -161,7 +177,7 @@ export default function RegisterPage() {
         stream.getTracks().forEach(track => track.stop());
       }
     }
-  }, []);
+  }, [capturedImage]);
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center p-4">
@@ -180,7 +196,7 @@ export default function RegisterPage() {
               Create a Voter Account
             </CardTitle>
             <CardDescription className="text-muted-foreground pt-2">
-              Identity verification is powered by the national Aadhar database.
+              Identity verification is powered by the national Aadhar database and live biometrics.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -245,25 +261,76 @@ export default function RegisterPage() {
                 </div>
                 
                 <div className="space-y-4">
-                  <Label>Live Biometric Link (Optional)</Label>
-                   <div className="w-full aspect-video rounded-md border bg-muted overflow-hidden relative">
-                    <video ref={videoRef} className="h-full w-full object-cover" autoPlay muted playsInline />
-                    {!hasCameraPermission && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                  <Label>Live Biometric Mapping</Label>
+                   <div className="w-full aspect-video rounded-md border bg-black overflow-hidden relative">
+                    <AnimatePresence mode="wait">
+                      {capturedImage ? (
+                        <motion.div 
+                          key="captured"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="absolute inset-0"
+                        >
+                          <img 
+                            src={capturedImage} 
+                            alt="Captured Biometric" 
+                            className="h-full w-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
+                            <CheckCircle2 className="h-12 w-12 text-white" />
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.video 
+                          key="video"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          ref={videoRef} 
+                          className="h-full w-full object-cover" 
+                          autoPlay 
+                          muted 
+                          playsInline 
+                        />
+                      )}
+                    </AnimatePresence>
+                    
+                    {!hasCameraPermission && !capturedImage && (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-muted">
                         <Camera className="h-12 w-12 text-muted-foreground mb-4"/>
                         <p className="text-muted-foreground">Camera access is required for biometric mapping.</p>
                       </div>
                     )}
                   </div>
-                  {hasCameraPermission && (
-                     <Button type="button" variant="secondary" className="w-full">
-                       <Camera className="mr-2 h-4 w-4" />
-                       Map Biometric ID
-                     </Button>
-                  )}
+
+                  <canvas ref={canvasRef} className="hidden" />
+
+                  <div className="flex gap-2">
+                    {!capturedImage ? (
+                      <Button 
+                        type="button" 
+                        variant="secondary" 
+                        className="w-full gap-2"
+                        onClick={capturePhoto}
+                        disabled={!hasCameraPermission}
+                      >
+                        <Camera className="h-4 w-4" />
+                        Capture Biometric ID
+                      </Button>
+                    ) : (
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        className="w-full gap-2"
+                        onClick={retakePhoto}
+                      >
+                        <RefreshCcw className="h-4 w-4" />
+                        Retake Photo
+                      </Button>
+                    )}
+                  </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={formState.isSubmitting}>
+                <Button type="submit" className="w-full h-11" disabled={formState.isSubmitting}>
                    {formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Register Securely
                 </Button>
@@ -283,6 +350,7 @@ export default function RegisterPage() {
               </div>
           </CardFooter>
         </Card>
+      </Form>
       </motion.div>
     </main>
   );

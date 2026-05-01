@@ -22,9 +22,11 @@ export default function DashboardPage() {
 
   // Fetch total voters count - RESTRICTED TO ADMINS to avoid Permission Denied for regular users
   const usersCollectionRef = useMemoFirebase(() => {
+    // Only attempt to list /users if we are absolutely sure the user is an admin
     if (!firestore || !profile?.isAdmin) return null;
     return collection(firestore, "users");
   }, [firestore, profile?.isAdmin]);
+  
   const { data: allUsers, isLoading: isUsersLoading } = useCollection<Voter>(usersCollectionRef);
 
   const stats = [
