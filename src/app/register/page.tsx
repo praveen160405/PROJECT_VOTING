@@ -331,7 +331,7 @@ export default function RegisterPage() {
                         <FormItem>
                           <FormLabel>Voter ID</FormLabel>
                           <FormControl>
-                            <Input placeholder="ABC1234567" {...field} maxLength={10} />
+                            <Input placeholder="ABC1234567" {...field} maxLength={10} className="uppercase" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

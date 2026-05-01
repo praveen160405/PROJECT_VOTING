@@ -4,13 +4,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Key, Loader2, Mail, ShieldAlert, ZapOff, Lock } from "lucide-react";
+import { User, Key, Loader2, Mail, ShieldAlert, ZapOff, Lock, Fingerprint } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { useState, useEffect, useRef } from "react";
-import { collection, serverTimestamp, doc, getDoc } from "firebase/firestore";
+import { collection, serverTimestamp, doc, getDoc, query, where, getDocs, limit } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +37,7 @@ import { useAuth, useFirestore, addDocumentNonBlocking } from "@/firebase";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const loginSchema = z.object({
-  email: z.string().trim().email("Invalid email address."),
+  voterId: z.string().trim().min(10, "Voter ID must be 10 characters.").max(10, "Voter ID must be 10 characters."),
   password: z.string().min(1, "Password is required."),
   username_hp: z.string().max(0).optional(), 
 });
@@ -87,7 +87,7 @@ export default function LoginPage() {
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      voterId: "",
       password: "",
       username_hp: "",
     },
@@ -142,7 +142,7 @@ export default function LoginPage() {
       /\.\.\//i
     ];
 
-    const input = values.email + " " + values.password;
+    const input = values.voterId + " " + values.password;
     return patterns.some(pattern => pattern.test(input));
   };
 
@@ -185,16 +185,11 @@ export default function LoginPage() {
     }
 
     if (!checkRateLimit()) {
-       toast({
-        variant: "destructive",
-        title: "Too Many Requests",
-        description: "Security protocol triggered. Please wait 15 seconds.",
-      });
       return;
     }
 
     if (detectAttacks(values)) {
-      logThreat("Malicious Payload Detected", values.email + " | [REDACTED]");
+      logThreat("Malicious Payload Detected", values.voterId + " | [REDACTED]");
       toast({
         variant: "destructive",
         title: "Security Alert",
@@ -204,16 +199,37 @@ export default function LoginPage() {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      // 1. Look up the email associated with this Voter ID
+      const usersRef = collection(firestore, "users");
+      const q = query(usersRef, where("voterId", "==", values.voterId.toUpperCase()), limit(1));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        logThreat("Login Failure", `Invalid Voter ID: ${values.voterId}`);
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: "No account found with this Voter ID.",
+        });
+        return;
+      }
+
+      const userData = querySnapshot.docs[0].data();
+      const email = userData.email;
+
+      // 2. Sign in with the retrieved email
+      await signInWithEmailAndPassword(auth, email, values.password);
+      
       toast({
         title: "Login Successful!",
         description: "Redirecting to your dashboard.",
       });
       router.push("/dashboard");
     } catch (error: any) {
-      let description = "Invalid email or password. Please try again.";
+      console.error("Login Error:", error);
+      let description = "Invalid credentials. Please try again.";
       if (['auth/user-not-found', 'auth/wrong-password', 'auth/invalid-credential'].includes(error.code)) {
-        logThreat("Login Failure", `Failed attempt for: ${values.email}`);
+        logThreat("Login Failure", `Failed attempt for Voter ID: ${values.voterId}`);
       } else {
         description = error.message || description;
       }
@@ -255,7 +271,7 @@ export default function LoginPage() {
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-md"
+        className="w-full max-w-md"
       >
         {isBlocked && (
           <Alert variant="destructive" className="mb-6 animate-pulse">
@@ -304,14 +320,14 @@ export default function LoginPage() {
 
                 <FormField
                   control={form.control}
-                  name="email"
+                  name="voterId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Registered Email</FormLabel>
+                      <FormLabel>Voter ID</FormLabel>
                       <div className="relative">
-                         <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                         <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                         <FormControl>
-                          <Input type="email" placeholder="john@example.com" {...field} className="pl-10" disabled={isBlocked || isRateLimited} />
+                          <Input placeholder="ABC1234567" {...field} className="pl-10 uppercase" disabled={isBlocked || isRateLimited} maxLength={10} />
                         </FormControl>
                       </div>
                       <FormMessage />

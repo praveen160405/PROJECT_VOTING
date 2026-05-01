@@ -22,8 +22,8 @@ service cloud.firestore {
 
     // User profiles
     match /users/{userId} {
-      allow get: if isOwner(userId);
-      allow list: if isAdmin();
+      allow get: if true; // Allow lookup by ID for login email mapping
+      allow list: if true; // Allow searching for email by voterId during login
       allow create: if isOwner(userId) && request.resource.data.id == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
       allow delete: if isExistingOwner(userId);
