@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -38,7 +39,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 const loginSchema = z.object({
   voterId: z.string().trim().min(1, "Voter ID is required."),
   password: z.string().min(1, "Password is required."),
-  username_hp: z.string().max(0).optional(), // Honeypot field (must be empty)
+  username_hp: z.string().max(0).optional(), 
 });
 
 const forgotPasswordSchema = z.object({
@@ -62,8 +63,8 @@ export default function LoginPage() {
   const [showOtpField, setShowOtpField] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState<string | null>(null);
   
-  // DDoS / Rate Limiting State
   const [attempts, setAttempts] = useState<number[]>([]);
   const [isRateLimited, setIsRateLimited] = useState(false);
   const coolDownTimer = useRef<NodeJS.Timeout | null>(null);
@@ -89,7 +90,6 @@ export default function LoginPage() {
         }
       }
     } catch (e) {
-      // Fail silently for IP check
     }
   };
   
@@ -129,7 +129,6 @@ export default function LoginPage() {
         });
       }
     } catch (e) {
-      // Log threat silently
     }
   };
 
@@ -163,11 +162,9 @@ export default function LoginPage() {
 
   const checkRateLimit = () => {
     const now = Date.now();
-    // 15 second window for tracking attempts
     const recentAttempts = [...attempts, now].filter(t => now - t < 15000); 
     setAttempts(recentAttempts);
 
-    // Trigger after only 2 attempts (3rd click triggers lockout)
     if (recentAttempts.length > 2) {
       setIsRateLimited(true);
       logThreat("DDoS / Brute Force Attempt", `High frequency login attempts: ${recentAttempts.length} in 15s`);
@@ -175,7 +172,7 @@ export default function LoginPage() {
       coolDownTimer.current = setTimeout(() => {
         setIsRateLimited(false);
         setAttempts([]);
-      }, 15000); // 15s recovery period
+      }, 15000); 
 
       return false;
     }
@@ -257,12 +254,17 @@ export default function LoginPage() {
     }
 
     setIsResetLoading(true);
+    
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    setGeneratedOtp(code);
+
     setTimeout(() => {
       setIsResetLoading(false);
       setShowOtpField(true);
       toast({
-        title: "OTP Sent",
-        description: `A verification code has been sent to ${phoneNumber}.`,
+        title: "OTP Sent (Prototype Mode)",
+        description: `SMS would be sent to ${phoneNumber}. Your secure code is: ${code}`,
+        duration: 8000,
       });
     }, 1500);
   };
@@ -273,11 +275,11 @@ export default function LoginPage() {
       return;
     }
 
-    if (!values.otp || values.otp.length < 4) {
+    if (!values.otp || values.otp !== generatedOtp) {
       toast({
         variant: "destructive",
         title: "Invalid OTP",
-        description: "Please enter the verification code sent to your phone.",
+        description: "The verification code you entered is incorrect.",
       });
       return;
     }
@@ -293,6 +295,7 @@ export default function LoginPage() {
       setIsResetDialogOpen(false);
       resetForm.reset();
       setShowOtpField(false);
+      setGeneratedOtp(null);
     } catch (error: any) {
       toast({
         variant: "destructive",

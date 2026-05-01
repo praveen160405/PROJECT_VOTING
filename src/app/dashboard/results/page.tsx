@@ -308,7 +308,6 @@ function LedgerRowSkeleton() {
   );
 }
 
-
 function ResultsSkeleton() {
   return (
     <div className="flex flex-col gap-6">
