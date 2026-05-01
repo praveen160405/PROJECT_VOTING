@@ -126,17 +126,16 @@ export default function RegisterPage() {
 
       toast({
         title: "Registration Successful!",
-        description: "Your identity has been verified via the Aadhar network.",
+        description: "Your identity has been verified.",
       });
       
       router.push("/login");
 
     } catch (error: any) {
       console.error("Registration Error:", error);
-      
       let description = "An unexpected error occurred.";
       if (error.code === 'auth/email-already-in-use') {
-        description = "This email is already registered. Please use another or log in.";
+        description = "This email is already registered.";
       } else if (error.message) {
         description = error.message;
       }
@@ -158,7 +157,6 @@ export default function RegisterPage() {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         setHasCameraPermission(true);
-
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -199,7 +197,7 @@ export default function RegisterPage() {
               Create a Voter Account
             </CardTitle>
             <CardDescription className="text-muted-foreground pt-2">
-              Identity verification is powered by the national Aadhar database and live biometrics.
+              Identity verification is powered by biometrics and system encryption.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -286,17 +284,14 @@ export default function RegisterPage() {
                         />
                       )}
                     </AnimatePresence>
-                    
                     {!hasCameraPermission && !capturedImage && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-muted">
                         <Camera className="h-12 w-12 text-muted-foreground mb-4"/>
-                        <p className="text-muted-foreground">Camera access is required for biometric mapping.</p>
+                        <p className="text-muted-foreground">Camera access required.</p>
                       </div>
                     )}
                   </div>
-
                   <canvas ref={canvasRef} className="hidden" />
-
                   <div className="flex gap-2">
                     {!capturedImage ? (
                       <Button 
@@ -371,7 +366,7 @@ export default function RegisterPage() {
               </p>
               <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
                 <ShieldCheck className="h-3 w-3 text-green-500" />
-                Data is encrypted and anonymized on the OOTU protocol.
+                Data is encrypted on the OOTU protocol.
               </div>
           </CardFooter>
         </Card>

@@ -222,8 +222,8 @@ export default function LoginPage() {
       if (!email) {
         toast({
           variant: "destructive",
-          title: "Configuration Error",
-          description: "This Voter ID is not associated with an email address. Please contact the protocol administrator.",
+          title: "Account Error",
+          description: "No email address found for this account. Contact the administrator.",
         });
         return;
       }
@@ -259,7 +259,7 @@ export default function LoginPage() {
       await sendPasswordResetEmail(auth, values.email);
       toast({
         title: "Reset Link Sent",
-        description: `A secure password reset link has been sent to ${values.email}. This service is free of charge.`,
+        description: `A secure password reset link has been sent to ${values.email}.`,
       });
       setIsResetDialogOpen(false);
       resetForm.reset();
@@ -428,7 +428,7 @@ export default function LoginPage() {
               <DialogFooter className="sm:justify-end gap-2">
                 <Button type="submit" disabled={isResetLoading}>
                   {isResetLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Send Free Reset Link
+                  Send Reset Link
                 </Button>
                 <Button type="button" variant="secondary" onClick={() => setIsResetDialogOpen(false)}>
                   Cancel

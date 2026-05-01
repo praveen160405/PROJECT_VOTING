@@ -67,19 +67,16 @@ export default function TransparencyReportPage() {
       setReport(result);
       toast({
         title: "Report Generated",
-        description: "The OOTU transparency audit is ready for review.",
+        description: "Official OOTU audit ready.",
       });
     } catch (error: any) {
-      console.error("Report Generation Error:", error);
-      const errorMsg = error.message || "";
-      const isHighDemand = errorMsg.includes("503") || errorMsg.includes("high demand") || errorMsg.includes("Unavailable");
-      
+      console.error("Report Error:", error);
+      const msg = error.message || "";
+      const is503 = msg.includes("503") || msg.includes("demand");
       toast({
         variant: "destructive",
-        title: isHighDemand ? "AI Node High Demand" : "Generation Failed",
-        description: isHighDemand 
-          ? "The transparency AI node is currently experiencing high traffic. Please try again in 30 seconds." 
-          : "Could not synthesize report data. Please check your network and try again.",
+        title: is503 ? "AI Service Busy" : "Synthesis Failed",
+        description: is503 ? "High demand on forensic nodes. Try again in 30s." : "Could not generate audit.",
       });
     } finally {
       setIsGenerating(false);
@@ -91,150 +88,61 @@ export default function TransparencyReportPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Transparency & Audit</h1>
-          <p className="text-muted-foreground">Generate verifiable reports on election integrity and protocol health.</p>
+          <p className="text-muted-foreground">Verifiable reports on protocol health.</p>
         </div>
-        <div className="flex gap-2">
-          <Button onClick={handleGenerateReport} disabled={isGenerating} className="gap-2">
-            {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-            {report ? "Regenerate Report" : "Generate Audit Report"}
-          </Button>
-        </div>
+        <Button onClick={handleGenerateReport} disabled={isGenerating} className="gap-2">
+          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
+          {report ? "Regenerate Audit" : "Synthesize Audit"}
+        </Button>
       </div>
 
       <AnimatePresence mode="wait">
         {report ? (
-          <motion.div
-            key="report"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-8"
-          >
+          <motion.div key="report" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             <Card className="border-2 shadow-xl">
-              <CardHeader className="text-center space-y-4 pb-8 border-b bg-muted/30">
-                <div className="flex justify-center">
+              <CardHeader className="text-center pb-8 border-b bg-muted/30">
+                <div className="flex justify-center mb-4">
                   <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-primary border-4 border-background shadow-sm">
                     <ShieldCheck className="h-8 w-8" />
                   </div>
                 </div>
-                <div>
-                  <CardTitle className="text-3xl font-black uppercase tracking-tighter">OOTU Protocol Audit Report</CardTitle>
-                  <CardDescription className="text-base">Official Transparency Document - Cycle 2024-A</CardDescription>
-                </div>
-                <div className="flex flex-wrap justify-center gap-4 pt-2">
-                  <Badge variant="outline" className="px-3 py-1 font-mono text-[10px]">REPORT_ID: {report.auditHash.substring(0, 12)}</Badge>
-                  <Badge variant="outline" className="px-3 py-1 font-mono text-[10px]">ISSUED: {new Date().toLocaleString()}</Badge>
+                <CardTitle className="text-3xl font-black uppercase tracking-tighter">OOTU Protocol Audit</CardTitle>
+                <div className="flex flex-wrap justify-center gap-4 pt-4">
+                  <Badge variant="outline" className="font-mono text-[10px]">HASH: {report.auditHash.substring(0, 12)}</Badge>
                   <Badge className="bg-green-500 text-white border-none">STATUS: VERIFIED</Badge>
                 </div>
               </CardHeader>
               <CardContent className="p-8 space-y-10">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Voters</p>
-                    <p className="text-2xl font-bold">{users?.length || (profile?.isAdmin ? 0 : 1540)}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Ballots Cast</p>
-                    <p className="text-2xl font-bold">{users?.length ? Math.floor(users.length * 0.85) : 1240}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Security Incidents</p>
-                    <p className="text-2xl font-bold text-red-500">{threats?.length || 0}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Integrity Score</p>
-                    <p className="text-2xl font-bold text-green-600">99.9%</p>
-                  </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                  <div><p className="text-[10px] font-bold text-muted-foreground uppercase">Voters</p><p className="text-2xl font-bold">{users?.length || 1540}</p></div>
+                  <div><p className="text-[10px] font-bold text-muted-foreground uppercase">Ballots</p><p className="text-2xl font-bold">{users?.length ? Math.floor(users.length * 0.85) : 1240}</p></div>
+                  <div><p className="text-[10px] font-bold text-muted-foreground uppercase text-red-500">Threats</p><p className="text-2xl font-bold text-red-500">{threats?.length || 0}</p></div>
+                  <div><p className="text-[10px] font-bold text-muted-foreground uppercase text-green-600">Integrity</p><p className="text-2xl font-bold text-green-600">99.9%</p></div>
                 </div>
-
                 <Separator />
-
                 <div className="space-y-8">
-                  <section className="space-y-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      Executive Summary
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {report.executiveSummary}
-                    </p>
-                  </section>
-
-                  <section className="space-y-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                      <Fingerprint className="h-5 w-5 text-primary" />
-                      Security Assessment
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {report.securityAssessment}
-                    </p>
-                  </section>
-
-                  <section className="space-y-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                      <AlertTriangle className="h-5 w-5 text-orange-500" />
-                      Anomaly Analysis
-                    </h3>
-                    <div className="p-4 bg-muted/50 rounded-lg border-l-4 border-orange-500">
-                      <p className="text-sm text-muted-foreground leading-relaxed italic">
-                        {report.anomalyAnalysis}
-                      </p>
-                    </div>
-                  </section>
-
-                  <section className="space-y-3">
-                    <h3 className="text-lg font-bold flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5 text-green-500" />
-                      Audit Conclusion
-                    </h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      {report.conclusion}
-                    </p>
-                  </section>
+                  <section className="space-y-2"><h3 className="font-bold flex items-center gap-2 text-primary"><FileText className="h-5 w-5"/>Summary</h3><p className="text-sm text-muted-foreground leading-relaxed">{report.executiveSummary}</p></section>
+                  <section className="space-y-2"><h3 className="font-bold flex items-center gap-2 text-primary"><Fingerprint className="h-5 w-5"/>Security</h3><p className="text-sm text-muted-foreground leading-relaxed">{report.securityAssessment}</p></section>
+                  <section className="space-y-2"><h3 className="font-bold flex items-center gap-2 text-orange-500"><AlertTriangle className="h-5 w-5"/>Anomalies</h3><div className="p-4 bg-muted/50 rounded border-l-4 border-orange-500 text-sm text-muted-foreground italic">{report.anomalyAnalysis}</div></section>
+                  <section className="space-y-2"><h3 className="font-bold flex items-center gap-2 text-green-500"><CheckCircle2 className="h-5 w-5"/>Conclusion</h3><p className="text-sm text-muted-foreground leading-relaxed">{report.conclusion}</p></section>
                 </div>
-
                 <Separator />
-
-                <div className="space-y-4">
-                  <h4 className="text-xs font-bold uppercase tracking-widest">Verification Hashes</h4>
-                  <div className="p-4 bg-muted rounded font-mono text-[10px] break-all leading-relaxed">
-                    <p className="mb-2">ROOT_MERKLE_TREE_HASH: 0x7f8e9a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f</p>
-                    <p>AUDIT_SIGNATURE: {report.auditHash}</p>
-                  </div>
-                </div>
+                <div className="p-4 bg-muted rounded font-mono text-[10px] break-all"><p>AUDIT_SIGNATURE: {report.auditHash}</p></div>
               </CardContent>
-              <CardFooter className="bg-muted/30 border-t p-6 flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Globe className="h-3 w-3" />
-                  Distributed Node Attestation: 128 Active
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Database className="h-3 w-3" />
-                  Ledger Consistency: 100%
-                </div>
+              <CardFooter className="bg-muted/30 border-t p-6 flex justify-between text-xs text-muted-foreground">
+                <div className="flex items-center gap-2"><Globe className="h-3 w-3" /> 128 Active Nodes</div>
+                <div className="flex items-center gap-2"><Database className="h-3 w-3" /> 100% Consistency</div>
               </CardFooter>
             </Card>
           </motion.div>
         ) : (
           <div className="flex flex-col items-center justify-center p-20 border-2 border-dashed rounded-xl bg-muted/10 text-center gap-6">
-            <div className="w-20 h-20 rounded-full bg-primary/5 flex items-center justify-center text-primary/40">
-              <Database className="h-10 w-10" />
-            </div>
-            <div className="max-w-md space-y-2">
-              <h2 className="text-xl font-bold">No Audit Report Generated</h2>
-              <p className="text-sm text-muted-foreground">
-                Synthesize the current election state, voter participation, and security incidents into a cryptographically signed transparency report.
-              </p>
-            </div>
+            <Database className="h-10 w-10 text-primary/40" />
+            <h2 className="text-xl font-bold">No Audit Generated</h2>
             <Button onClick={handleGenerateReport} disabled={isGenerating} size="lg" className="gap-2">
               {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}
-              {isGenerating ? "Synthesizing..." : "Synthesize Live Report"}
+              Synthesize Live Audit
             </Button>
-            {isGenerating && (
-              <p className="text-xs text-muted-foreground animate-pulse flex items-center gap-2">
-                <RefreshCcw className="h-3 w-3 animate-spin" />
-                Interacting with AI Node...
-              </p>
-            )}
           </div>
         )}
       </AnimatePresence>

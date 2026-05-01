@@ -1,3 +1,4 @@
+
 "use client"
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
@@ -105,7 +106,6 @@ export default function VotePage() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Pick a random proverb only once on mount to avoid hydration mismatch
     setCurrentProverb(PROVERBS[Math.floor(Math.random() * PROVERBS.length)]);
   }, []);
 
@@ -113,20 +113,12 @@ export default function VotePage() {
 
   const handleInitiateVote = (candidate: Candidate) => {
     if (!user) {
-        toast({
-            variant: "destructive",
-            title: "Not Logged In",
-            description: "Please log in to your OOTU account to vote.",
-        });
+        toast({ variant: "destructive", title: "Not Logged In", description: "Please log in to vote." });
         router.push('/login');
         return;
     }
     if (!address) {
-        toast({
-            variant: "destructive",
-            title: "Wallet Not Connected",
-            description: "Please connect your Web3 wallet to vote on the blockchain.",
-        });
+        toast({ variant: "destructive", title: "Wallet Required", description: "Connect your wallet to sign the ballot." });
         return;
     }
     setSelectedCandidate(candidate);
@@ -144,19 +136,27 @@ export default function VotePage() {
       const tx = await contract.vote(numericId);
       setTxHash(tx.hash);
       
-      toast({
-        title: "Transaction Sent",
-        description: "Your vote is being broadcast to the blockchain ledger.",
-      });
+      toast({ title: "Transaction Sent", description: "Your vote is being broadcast to the ledger." });
 
       await tx.wait();
       return { success: true, hash: tx.hash };
     } catch (error: any) {
       console.error("Blockchain Vote Error:", error);
+      
+      // Handle User Rejection (Error Code 4001)
+      if (error.code === 4001 || error.code === "ACTION_REJECTED" || error.message?.includes('rejected')) {
+        toast({
+          variant: "destructive",
+          title: "Transaction Cancelled",
+          description: "You rejected the signature request in your wallet.",
+        });
+        return { success: false, hash: null };
+      }
+
       toast({
         variant: "destructive",
         title: "Blockchain Error",
-        description: error.reason || error.message || "Failed to submit vote to blockchain.",
+        description: error.reason || error.message || "Failed to submit vote.",
       });
       return { success: false, hash: null };
     }
@@ -189,7 +189,7 @@ export default function VotePage() {
       
       toast({
         title: "Vote Confirmed!",
-        description: `Your vote for ${candidate.name} is now immutable on the blockchain.`,
+        description: `Your vote for ${candidate.name} is now immutable.`,
         duration: 5000,
       });
     }
@@ -202,7 +202,6 @@ export default function VotePage() {
       const timer = setTimeout(() => {
         router.push('/dashboard/results');
       }, 6000); 
-
       return () => clearTimeout(timer);
     }
   }, [votedCandidateId, router]);
@@ -225,7 +224,7 @@ export default function VotePage() {
               </div>
               <CardTitle className="text-3xl font-bold tracking-tight">Vote Confirmed</CardTitle>
               <CardDescription className="pt-2">
-                Your choice for <strong>{votedCandidate?.name}</strong> has been etched into the blockchain.
+                Your choice for <strong>{votedCandidate?.name}</strong> is etched into the blockchain.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -235,14 +234,12 @@ export default function VotePage() {
                   "{currentProverb}"
                 </p>
               </div>
-
               <div className="text-left space-y-1">
-                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Blockchain Signature</p>
+                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Signature</p>
                  <p className="text-[10px] font-mono text-muted-foreground p-3 bg-muted rounded border overflow-hidden text-ellipsis whitespace-nowrap">
                   {txHash}
                  </p>
               </div>
-
               <Link href="/dashboard/results" className="block">
                 <Button className="w-full">
                   Go to Results
@@ -284,7 +281,7 @@ export default function VotePage() {
           <CheckCircle2 className="h-4 w-4 !text-primary" />
           <AlertTitle>Vote Recorded</AlertTitle>
           <AlertDescription>
-            Our records show you have already participated. To maintain protocol integrity, only one vote per verified voter is permitted.
+            Participation complete. Protocol integrity allows only one vote per verified voter.
           </AlertDescription>
         </Alert>
       )}
@@ -294,7 +291,7 @@ export default function VotePage() {
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
           <AlertTitle>Executing On-Chain Transaction</AlertTitle>
           <AlertDescription>
-            Interacting with the smart contract ledger. Please confirm the signature request in your wallet.
+            Interacting with the ledger. Confirm the signature in your wallet.
           </AlertDescription>
         </Alert>
       )}
@@ -320,10 +317,10 @@ export default function VotePage() {
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Blockchain Transaction</AlertDialogTitle>
+            <AlertDialogTitle>Confirm Transaction</AlertDialogTitle>
             <AlertDialogDescription>
-              You are casting a permanent vote for <strong>{selectedCandidate?.name}</strong>. 
-              This action will be broadcast to the decentralized network and cannot be reversed or altered.
+              Casting a permanent vote for <strong>{selectedCandidate?.name}</strong>. 
+              This action is broadcast to the decentralized network and is irreversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

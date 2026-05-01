@@ -59,7 +59,7 @@ export default function ResultsPage() {
     navigator.clipboard.writeText(text);
     toast({
       title: "TX Hash Copied",
-      description: "Hash copied to clipboard for verification.",
+      description: "Hash copied for verification.",
     });
   };
 
@@ -77,15 +77,13 @@ export default function ResultsPage() {
                 const votes = await contract.getVotes(numericId);
                 return { name: c.name, votes: Number(votes) };
               } catch (e) {
-                console.error(`Failed to fetch votes for candidate ${numericId}:`, e);
+                console.error(`Failed to fetch votes:`, e);
                 return { name: c.name, votes: 0 };
               }
             })
           );
-
           const totalVotes = results.reduce((sum, r) => sum + r.votes, 0);
           const partyVotes: PartyVote[] = results.map(r => ({ party: r.name, votes: r.votes }));
-
           setElectionResults({ voteResults: results, partyVotes, totalVotes, isLiveBlockchain: true });
         } else {
           const voteResults: VoteResult[] = initialCandidates.map(c => ({
@@ -97,11 +95,8 @@ export default function ResultsPage() {
           setElectionResults({ voteResults, partyVotes, totalVotes, isLiveBlockchain: false });
         }
       } catch (err) {
-        console.error("Error fetching blockchain results:", err);
-        const mockResults: VoteResult[] = initialCandidates.map(c => ({
-          name: c.name,
-          votes: 0
-        }));
+        console.error("Error fetching results:", err);
+        const mockResults: VoteResult[] = initialCandidates.map(c => ({ name: c.name, votes: 0 }));
         setElectionResults({ 
           voteResults: mockResults, 
           partyVotes: mockResults.map(r => ({ party: r.name, votes: r.votes })), 
@@ -112,22 +107,11 @@ export default function ResultsPage() {
         setIsLoading(false);
       }
     };
-
     fetchData();
   }, [contract]);
 
-  if (isLoading) {
-    return <ResultsSkeleton />;
-  }
-  
-  if (!electionResults) {
-    return (
-        <div className="flex flex-col gap-6">
-            <h1 className="text-3xl font-bold tracking-tight">Election Results</h1>
-            <p className="text-muted-foreground">Initialising election audit tools...</p>
-        </div>
-    );
-  }
+  if (isLoading) return <ResultsSkeleton />;
+  if (!electionResults) return null;
 
   const { voteResults, partyVotes, totalVotes, isLiveBlockchain } = electionResults;
 
@@ -136,16 +120,14 @@ export default function ResultsPage() {
       <div className="flex items-end justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Election Results</h1>
-          <p className="text-muted-foreground">Auditing the decentralized voting ledger in real-time.</p>
+          <p className="text-muted-foreground">Auditing the decentralized ledger in real-time.</p>
         </div>
         {isLiveBlockchain ? (
-          <Badge variant="secondary" className="gap-1 bg-green-500/10 text-green-500 border-green-500/20">
-            <Globe className="h-3 w-3" /> Live Blockchain Data
+          <Badge variant="secondary" className="gap-1 bg-green-500/10 text-green-500">
+            <Globe className="h-3 w-3" /> Live Blockchain
           </Badge>
         ) : (
-          <Badge variant="outline" className="gap-1">
-            Simulation Mode
-          </Badge>
+          <Badge variant="outline">Simulation Mode</Badge>
         )}
       </div>
 
@@ -153,18 +135,15 @@ export default function ResultsPage() {
         <Card className="col-span-2">
           <CardHeader>
             <CardTitle>On-Chain Vote Counts</CardTitle>
-            <CardDescription>Verified tallies retrieved from the smart contract.</CardDescription>
+            <CardDescription>Verified tallies from the smart contract.</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[400px] w-full">
-              <BarChart accessibilityLayer data={voteResults}>
+              <BarChart data={voteResults}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
-                <ChartTooltip
-                  cursor={{ fill: 'hsl(var(--muted))' }}
-                  content={<ChartTooltipContent />}
-                />
+                <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
+                <YAxis fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+                <ChartTooltip content={<ChartTooltipContent />} />
                 <Bar dataKey="votes" fill="var(--color-votes)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
@@ -173,21 +152,15 @@ export default function ResultsPage() {
         <Card>
           <CardHeader>
             <CardTitle>Party Distribution</CardTitle>
-            <CardDescription>Visual breakdown of democratic representation.</CardDescription>
           </CardHeader>
           <CardContent>
              <ChartContainer config={chartConfig} className="h-[300px] w-full">
-               <PieChart accessibilityLayer>
-                 <ChartTooltip
-                   cursor={{ fill: 'hsl(var(--muted))' }}
-                   content={<ChartTooltipContent nameKey="party" />}
-                 />
+               <PieChart>
+                 <ChartTooltip content={<ChartTooltipContent nameKey="party" />} />
                  <Pie
                    data={partyVotes}
                    cx="50%"
                    cy="50%"
-                   labelLine={false}
-                   label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                    outerRadius={100}
                    dataKey="votes"
                    nameKey="party"
@@ -201,62 +174,34 @@ export default function ResultsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader>
-            <CardTitle>Ledger Statistics</CardTitle>
-             <CardDescription>Real-time metrics from the OOTU protocol.</CardDescription>
-          </CardHeader>
+          <CardHeader><CardTitle>Statistics</CardTitle></CardHeader>
           <CardContent className="grid gap-4 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Verified Votes Cast</span>
+                  <span className="text-muted-foreground">Votes Cast</span>
                   <span className="font-semibold">{totalVotes.toLocaleString()}</span>
                 </div>
-                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Protocol Status</span>
-                  <span className="font-semibold text-green-500">Active</span>
-                </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Source</span>
-                  <span className="text-xs font-mono">{isLiveBlockchain ? "Smart Contract" : "Mock Engine"}</span>
+                  <span className="text-muted-foreground">Status</span>
+                  <span className="font-semibold text-green-500">Verified</span>
                 </div>
           </CardContent>
         </Card>
-
         <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Your Activity Record</CardTitle>
-              <CardDescription>
-                A cryptographic record of your ballots. Copy your TX Hash to use the Integrity Checker.
-              </CardDescription>
-            </CardHeader>
+            <CardHeader><CardTitle>Your Record</CardTitle></CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Vote Reference / TX Hash</TableHead>
+                    <TableHead>TX Hash</TableHead>
                     <TableHead>Recipient</TableHead>
-                    <TableHead className="text-right">Audit Timestamp</TableHead>
+                    <TableHead className="text-right">Timestamp</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(isUserLoading || isLoadingVotes) && (
-                    <>
-                      <LedgerRowSkeleton />
-                      <LedgerRowSkeleton />
-                    </>
-                  )}
-                  {!isUserLoading && !isLoadingVotes && userVotes && userVotes.length > 0 && (
-                    userVotes.map((vote) => {
-                      const candidate = initialCandidates.find(
-                        (c) => c.id === vote.candidateId
-                      );
-
-                      let formattedTimestamp = 'Confirming...';
-                      if (vote.timestamp && vote.timestamp instanceof Timestamp) {
-                        formattedTimestamp = format(vote.timestamp.toDate(), "PPp");
-                      }
-                      
+                  {(isUserLoading || isLoadingVotes) && <LedgerRowSkeleton />}
+                  {!isUserLoading && !isLoadingVotes && userVotes?.map((vote) => {
+                      const candidate = initialCandidates.find(c => c.id === vote.candidateId);
                       const displayHash = vote.txHash || vote.id;
-
                       return (
                         <TableRow key={vote.id}>
                           <TableCell className="font-mono text-xs">
@@ -267,22 +212,13 @@ export default function ResultsPage() {
                                 </Button>
                              </div>
                           </TableCell>
-                          <TableCell>{candidate ? candidate.name : 'Unknown Candidate'}</TableCell>
-                          <TableCell className="text-right">{formattedTimestamp}</TableCell>
+                          <TableCell>{candidate?.name || 'Unknown'}</TableCell>
+                          <TableCell className="text-right">
+                            {vote.timestamp?.toDate ? format(vote.timestamp.toDate(), "PPp") : 'Confirming...'}
+                          </TableCell>
                         </TableRow>
                       )
-                    })
-                  )}
-                   {!isUserLoading && !isLoadingVotes && (!userVotes || userVotes.length === 0) && (
-                      <TableRow>
-                        <TableCell
-                          colSpan={3}
-                          className="h-24 text-center text-muted-foreground"
-                        >
-                          No personal voting history found on this device.
-                        </TableCell>
-                      </TableRow>
-                    )}
+                  })}
                 </TableBody>
               </Table>
             </CardContent>
@@ -295,74 +231,18 @@ export default function ResultsPage() {
 function LedgerRowSkeleton() {
   return (
     <TableRow>
-      <TableCell>
-        <Skeleton className="h-4 w-24" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-4 w-16" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-4 w-32 ml-auto" />
-      </TableCell>
+      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+      <TableCell><Skeleton className="h-4 w-32 ml-auto" /></TableCell>
     </TableRow>
   );
 }
 
 function ResultsSkeleton() {
   return (
-    <div className="flex flex-col gap-6">
-      <div>
-        <Skeleton className="h-10 w-1/2" />
-        <Skeleton className="mt-2 h-5 w-1/3" />
-      </div>
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card className="col-span-2">
-          <CardHeader>
-            <Skeleton className="h-6 w-1/4" />
-            <Skeleton className="mt-2 h-4 w-1/3" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-[400px] w-full" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/3" />
-            <Skeleton className="mt-2 h-4 w-1/2" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-[300px] w-full" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-1/4" />
-            <Skeleton className="mt-2 h-4 w-1/3" />
-          </CardHeader>
-          <CardContent className="grid gap-4 text-sm">
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-1/3" />
-              <Skeleton className="h-4 w-1/4" />
-            </div>
-            <div className="flex items-center justify-between">
-              <Skeleton className="h-4 w-1/3" />
-              <Skeleton className="h-4 w-1/4" />
-            </div>
-          </CardContent>
-        </Card>
-         <Card className="md:col-span-2">
-            <CardHeader>
-              <Skeleton className="h-6 w-1/4" />
-              <Skeleton className="mt-2 h-4 w-2/5" />
-            </CardHeader>
-            <CardContent>
-                <div className="space-y-4">
-                  <Skeleton className="h-12 w-full" />
-                  <Skeleton className="h-12 w-full" />
-                </div>
-            </CardContent>
-          </Card>
-      </div>
+    <div className="flex flex-col gap-6 p-6">
+      <Skeleton className="h-10 w-1/2" />
+      <Skeleton className="h-[400px] w-full mt-6" />
     </div>
   );
 }
