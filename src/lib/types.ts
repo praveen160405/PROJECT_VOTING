@@ -32,9 +32,11 @@ export type Voter = {
   voterId: string;
   firstName: string;
   lastName: string;
+  aadharNumber: string;
   isAdmin?: boolean;
   region?: string;
   age?: number;
+  faceImageHash?: string;
 };
 
 export type Threat = {

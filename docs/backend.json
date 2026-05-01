@@ -64,9 +64,9 @@
           "type": "string",
           "description": "The last name of the voter."
         },
-        "voterIdProofHash": {
+        "aadharNumber": {
           "type": "string",
-          "description": "Hash of the voter ID proof document."
+          "description": "The 12-digit Aadhar number of the voter for identity verification."
         },
         "faceImageHash": {
           "type": "string",
@@ -90,7 +90,8 @@
         "id",
         "voterId",
         "firstName",
-        "lastName"
+        "lastName",
+        "aadharNumber"
       ]
     },
     "Candidate": {

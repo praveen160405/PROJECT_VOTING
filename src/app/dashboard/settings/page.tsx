@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useForm } from 'react-hook-form';
@@ -12,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, ShieldCheck, Lock } from 'lucide-react';
+import { Loader2, ShieldCheck, Lock, Fingerprint } from 'lucide-react';
 import React, { useState } from 'react';
 import {
   Dialog,
@@ -123,7 +124,7 @@ export default function SettingsPage() {
     <div className="flex flex-col gap-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and personal details.</p>
+        <p className="text-muted-foreground">Manage your decentralized voter identity.</p>
       </div>
       
       <Form {...form}>
@@ -131,7 +132,7 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Personal Information</CardTitle>
-              <CardDescription>Update your first and last name here.</CardDescription>
+              <CardDescription>Update your profile details below.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -162,15 +163,22 @@ export default function SettingsPage() {
                       )}
                     />
                 </div>
-                <div className="space-y-2">
-                    <FormLabel>Voter ID</FormLabel>
-                    <Input value={userProfile.voterId} readOnly disabled />
-                    <p className="text-sm text-muted-foreground">Your Voter ID cannot be changed.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                        <FormLabel>Voter ID</FormLabel>
+                        <Input value={userProfile.voterId} readOnly disabled />
+                    </div>
+                    <div className="space-y-2">
+                        <FormLabel className="flex items-center gap-2">
+                            <Fingerprint className="h-3 w-3 text-primary" />
+                            Aadhar Number
+                        </FormLabel>
+                        <Input value={userProfile.aadharNumber} readOnly disabled />
+                    </div>
                 </div>
                  <div className="space-y-2">
-                    <FormLabel>User ID</FormLabel>
-                    <Input value={userProfile.id} readOnly disabled />
-                    <p className="text-sm text-muted-foreground">This is your unique identifier in the system.</p>
+                    <FormLabel>System User ID</FormLabel>
+                    <Input value={userProfile.id} readOnly disabled className="font-mono text-xs" />
                 </div>
             </CardContent>
             <CardFooter className="border-t px-6 py-4 flex justify-between items-center">

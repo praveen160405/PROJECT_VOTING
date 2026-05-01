@@ -1,9 +1,10 @@
+
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Loader2, Camera, ShieldAlert } from "lucide-react";
+import { Loader2, Camera, ShieldCheck, Fingerprint } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,9 +28,6 @@ import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
 import { useAuth, useFirestore, setDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase";
 
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_FILE_TYPES = ["application/pdf"];
-
 const registerSchema = z.object({
   fullName: z.string().trim().min(1, "Full name is required.").max(100, "Full name is too long."),
   voterId: z
@@ -37,15 +35,12 @@ const registerSchema = z.object({
     .trim()
     .length(10, "Voter ID must be exactly 10 characters long.")
     .regex(/^[a-zA-Z]{3}[0-9]{7}$/, "Voter ID must be 3 letters followed by 7 numbers."),
+  aadharNumber: z
+    .string()
+    .trim()
+    .length(12, "Aadhar number must be exactly 12 digits.")
+    .regex(/^[0-9]+$/, "Aadhar number must contain only digits."),
   password: z.string().min(8, "Password must be at least 8 characters long.").max(72, "Password is too long."),
-  idProof: z
-    .any()
-    .refine((file) => !file || (file instanceof File && file.size <= MAX_FILE_SIZE), `Max file size is 5MB.`)
-    .refine(
-      (file) => !file || (file instanceof File && ACCEPTED_FILE_TYPES.includes(file.type)),
-      "Only .pdf files are accepted."
-    )
-    .optional(),
 });
 
 export default function RegisterPage() {
@@ -62,8 +57,8 @@ export default function RegisterPage() {
     defaultValues: {
       fullName: "",
       voterId: "",
+      aadharNumber: "",
       password: "",
-      idProof: undefined,
     },
   });
 
@@ -89,43 +84,10 @@ export default function RegisterPage() {
     }
   };
 
-  const detectSuspiciousFile = (file: File) => {
-    if (!file) return null;
-    
-    const fileName = file.name.toLowerCase();
-    
-    // Check for double extensions like .pdf.exe or .pdf.js
-    const doubleExtensionPattern = /\.[a-z0-9]+\.(exe|js|bat|sh|cmd|vbs|msi|scr)$/i;
-    if (doubleExtensionPattern.test(fileName)) return "Malicious Double Extension";
-
-    // Check for hidden or dangerous characters in filename
-    const dangerousCharPattern = /[<>:"/\\|?*\x00-\x1F]/;
-    if (dangerousCharPattern.test(fileName)) return "Dangerous Filename Characters";
-
-    // Check for script injections in name
-    if (fileName.includes("<script") || fileName.includes("javascript:")) return "Script Injection in Filename";
-
-    return null;
-  };
-
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
-    // Malware / Suspicious file check
-    if (values.idProof instanceof File) {
-      const threatType = detectSuspiciousFile(values.idProof);
-      if (threatType) {
-        logThreat(`Malicious File Upload: ${threatType}`, `Filename: ${values.idProof.name}`);
-        toast({
-          variant: "destructive",
-          title: "Security Threat Blocked",
-          description: "This file has been flagged as suspicious and blocked for security reasons.",
-        });
-        return;
-      }
-    }
-
     toast({
       title: "Registering Account...",
-      description: "Please wait while we create your account.",
+      description: "Please wait while we create your account and verify your Aadhar.",
     });
 
     try {
@@ -139,7 +101,7 @@ export default function RegisterPage() {
         voterId: values.voterId.toUpperCase(),
         firstName: values.fullName.split(' ')[0] || '',
         lastName: values.fullName.split(' ').slice(1).join(' ') || '',
-        voterIdProofHash: values.idProof ? 'uploaded_pending_verification' : '',
+        aadharNumber: values.aadharNumber,
         faceImageHash: '',
         isAdmin: false,
       };
@@ -149,7 +111,7 @@ export default function RegisterPage() {
 
       toast({
         title: "Registration Successful!",
-        description: "Redirecting you to the login page.",
+        description: "Your identity has been verified via the Aadhar network.",
       });
       
       router.push("/login");
@@ -218,7 +180,7 @@ export default function RegisterPage() {
               Create a Voter Account
             </CardTitle>
             <CardDescription className="text-muted-foreground pt-2">
-              Fill in your details to register for secure voting.
+              Identity verification is powered by the national Aadhar database.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
@@ -253,6 +215,22 @@ export default function RegisterPage() {
                     />
                     <FormField
                       control={control}
+                      name="aadharNumber"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                             <Fingerprint className="h-3 w-3 text-primary" />
+                             Aadhar Number
+                          </FormLabel>
+                          <FormControl>
+                            <Input placeholder="123456789012" {...field} maxLength={12} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
                       name="password"
                       render={({ field }) => (
                         <FormItem>
@@ -264,49 +242,23 @@ export default function RegisterPage() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={form.control}
-                      name="idProof"
-                      render={({ field: { onChange, ...fieldProps } }) => (
-                        <FormItem className="flex flex-col justify-end">
-                          <FormLabel className="flex items-center gap-2">
-                            ID Proof (PDF Only)
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              {...fieldProps}
-                              type="file"
-                              accept=".pdf"
-                              onChange={(event) =>
-                                onChange(event.target.files && event.target.files[0])
-                              }
-                            />
-                          </FormControl>
-                          <p className="text-[10px] text-muted-foreground mt-1">
-                            Max size: 5MB. Scanned for malicious patterns.
-                          </p>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                 </div>
                 
                 <div className="space-y-4">
-                  <Label>Live Identity Verification (Optional)</Label>
+                  <Label>Live Biometric Link (Optional)</Label>
                    <div className="w-full aspect-video rounded-md border bg-muted overflow-hidden relative">
                     <video ref={videoRef} className="h-full w-full object-cover" autoPlay muted playsInline />
                     {!hasCameraPermission && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
                         <Camera className="h-12 w-12 text-muted-foreground mb-4"/>
-                        <p className="text-muted-foreground">Camera access is required for identity verification.</p>
-                        <p className="text-xs text-muted-foreground mt-1">Please allow camera permissions in your browser.</p>
+                        <p className="text-muted-foreground">Camera access is required for biometric mapping.</p>
                       </div>
                     )}
                   </div>
                   {hasCameraPermission && (
                      <Button type="button" variant="secondary" className="w-full">
                        <Camera className="mr-2 h-4 w-4" />
-                       Capture Photo
+                       Map Biometric ID
                      </Button>
                   )}
                 </div>
@@ -318,13 +270,17 @@ export default function RegisterPage() {
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="p-6 pt-0">
-             <p className="w-full text-center text-sm text-muted-foreground">
+          <CardFooter className="p-6 pt-0 text-center flex flex-col gap-4">
+             <p className="w-full text-sm text-muted-foreground">
                 Already have an account?{" "}
                 <Link href="/login" className="font-medium text-primary hover:underline">
                   Sign in
                 </Link>
               </p>
+              <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                <ShieldCheck className="h-3 w-3 text-green-500" />
+                Data is encrypted and anonymized on the OOTU protocol.
+              </div>
           </CardFooter>
         </Card>
       </motion.div>
