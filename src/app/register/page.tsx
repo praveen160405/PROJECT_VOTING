@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Camera, ShieldCheck, Fingerprint, RefreshCcw, CheckCircle2, Mail } from "lucide-react";
+import { Loader2, Camera, ShieldCheck, Fingerprint, RefreshCcw, CheckCircle2, Mail, Lock } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -31,16 +31,16 @@ import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
 const registerSchema = z.object({
   fullName: z.string().trim().min(1, "Full name is required.").max(100, "Full name is too long."),
   email: z.string().trim().email("Invalid email address."),
-  voterId: z
-    .string()
-    .trim()
-    .length(10, "Voter ID must be exactly 10 characters long.")
-    .regex(/^[a-zA-Z]{3}[0-9]{7}$/, "Voter ID must be 3 letters followed by 7 numbers."),
   aadharNumber: z
     .string()
     .trim()
     .length(12, "Aadhar number must be exactly 12 digits.")
     .regex(/^[0-9]+$/, "Aadhar number must contain only digits."),
+  voterId: z
+    .string()
+    .trim()
+    .length(10, "Voter ID must be exactly 10 characters long.")
+    .regex(/^[a-zA-Z]{3}[0-9]{7}$/, "Voter ID must be 3 letters followed by 7 numbers."),
   password: z.string().min(8, "Password must be at least 8 characters long.").max(72, "Password is too long."),
 });
 
@@ -54,14 +54,19 @@ export default function RegisterPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
   
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       fullName: "",
       email: "",
-      voterId: "",
       aadharNumber: "",
+      voterId: "",
       password: "",
     },
   });
@@ -163,7 +168,7 @@ export default function RegisterPage() {
       }
     };
 
-    if (!capturedImage) {
+    if (isMounted && !capturedImage) {
       getCameraPermission();
     }
     
@@ -173,7 +178,9 @@ export default function RegisterPage() {
         stream.getTracks().forEach(track => track.stop());
       }
     }
-  }, [capturedImage]);
+  }, [capturedImage, isMounted]);
+
+  if (!isMounted) return null;
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center p-4">
@@ -198,7 +205,7 @@ export default function RegisterPage() {
           <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                       control={control}
                       name="fullName"
@@ -219,7 +226,7 @@ export default function RegisterPage() {
                         <FormItem>
                           <FormLabel className="flex items-center gap-2">
                              <Mail className="h-3 w-3 text-primary" />
-                             Recovery Email
+                             Identity Email
                           </FormLabel>
                           <FormControl>
                             <Input type="email" placeholder="john@example.com" {...field} />
@@ -230,22 +237,9 @@ export default function RegisterPage() {
                     />
                     <FormField
                       control={control}
-                      name="voterId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Voter ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="ABC1234567" {...field} maxLength={10} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={control}
                       name="aadharNumber"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="md:col-span-2">
                           <FormLabel className="flex items-center gap-2">
                              <Fingerprint className="h-3 w-3 text-primary" />
                              Aadhar Number
@@ -257,21 +251,8 @@ export default function RegisterPage() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={control}
-                      name="password"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel>Password</FormLabel>
-                          <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
                 </div>
-                
+
                 <div className="space-y-4">
                   <Label>Live Biometric Mapping</Label>
                    <div className="w-full aspect-video rounded-md border bg-black overflow-hidden relative">
@@ -340,6 +321,38 @@ export default function RegisterPage() {
                       </Button>
                     )}
                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={control}
+                      name="voterId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Voter ID</FormLabel>
+                          <FormControl>
+                            <Input placeholder="ABC1234567" {...field} maxLength={10} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={control}
+                      name="password"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                             <Lock className="h-3 w-3 text-primary" />
+                             Secure Password
+                          </FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="••••••••" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                 </div>
 
                 <Button type="submit" className="w-full h-11" disabled={formState.isSubmitting}>
