@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { User, Key, Loader2, Mail, ShieldAlert, ZapOff, Lock, Fingerprint } from "lucide-react";
+import { Key, Loader2, Mail, ShieldAlert, ZapOff, Lock, Fingerprint } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -81,6 +81,7 @@ export default function LoginPage() {
         }
       }
     } catch (e) {
+      // Fail silent on IP fetch issues
     }
   };
   
@@ -118,6 +119,7 @@ export default function LoginPage() {
         });
       }
     } catch (e) {
+      // Fail silent on logging issues
     }
   };
 
@@ -151,7 +153,7 @@ export default function LoginPage() {
     const recentAttempts = [...attempts, now].filter(t => now - t < 15000); 
     setAttempts(recentAttempts);
 
-    if (recentAttempts.length > 2) {
+    if (recentAttempts.length > 3) {
       setIsRateLimited(true);
       logThreat("DDoS / Brute Force Attempt", `High frequency login attempts: ${recentAttempts.length} in 15s`);
       
@@ -216,6 +218,15 @@ export default function LoginPage() {
 
       const userData = querySnapshot.docs[0].data();
       const email = userData.email;
+
+      if (!email) {
+        toast({
+          variant: "destructive",
+          title: "Configuration Error",
+          description: "This Voter ID is not associated with an email address. Please contact the protocol administrator.",
+        });
+        return;
+      }
 
       // 2. Sign in with the retrieved email
       await signInWithEmailAndPassword(auth, email, values.password);

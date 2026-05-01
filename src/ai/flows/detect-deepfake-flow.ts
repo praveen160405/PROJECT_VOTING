@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview AI flow for detecting deepfakes and manipulated media.
@@ -56,9 +57,17 @@ const detectDeepfakeFlow = ai.defineFlow(
     outputSchema: DetectDeepfakeOutputSchema,
   },
   async (input) => {
-    const { output } = await detectDeepfakePrompt(input);
-    if (!output) throw new Error("AI failed to return detection results.");
-    return output;
+    try {
+      const { output } = await detectDeepfakePrompt(input);
+      if (!output) throw new Error("AI failed to return detection results.");
+      return output;
+    } catch (error: any) {
+      // Catch 503 errors and throw a meaningful message for the UI
+      if (error.message?.includes('503') || error.message?.includes('demand')) {
+        throw new Error("503: Forensic AI nodes are currently at capacity. Please retry in 30 seconds.");
+      }
+      throw error;
+    }
   }
 );
 
