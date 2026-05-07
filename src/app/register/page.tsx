@@ -1,10 +1,9 @@
-
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Camera, ShieldCheck, Fingerprint, RefreshCcw, CheckCircle2, Mail, Lock } from "lucide-react";
+import { Loader2, Camera, ShieldCheck, Fingerprint, RefreshCcw, CheckCircle2, Mail, Lock, User } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -209,7 +208,10 @@ export default function RegisterPage() {
                       name="fullName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Full Name</FormLabel>
+                          <FormLabel className="flex items-center gap-2">
+                            <User className="h-3 w-3 text-primary" />
+                            Full Name
+                          </FormLabel>
                           <FormControl>
                             <Input placeholder="John Doe" {...field} />
                           </FormControl>
