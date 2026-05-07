@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirebase, useDoc, useCollection, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { doc, collection, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
-import type { Voter, Threat, BlockedIp, Election, Candidate } from '@/lib/types';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import type { Voter, Threat, BlockedIp, Election } from '@/lib/types';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -20,57 +20,19 @@ import {
   Lock, 
   Fingerprint, 
   Database, 
-  Globe, 
   AlertTriangle, 
-  Activity, 
   Zap, 
   Ban, 
   Unlock, 
-  Cpu, 
-  Link as LinkIcon, 
-  Eye, 
-  Plus, 
-  Calendar, 
   Users, 
-  Vote as VoteIcon,
   Play,
-  Square
+  Calendar,
+  Activity
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { candidates as initialCandidates } from "@/lib/data";
-
-function UserRow({ user }: { user: Voter }) {
-  const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase();
-  };
-
-  return (
-    <TableRow>
-      <TableCell>
-        <div className="flex items-center gap-4">
-          <Avatar>
-            <AvatarImage />
-            <AvatarFallback>{getInitials(user.firstName, user.lastName)}</AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="font-medium">{user.firstName} {user.lastName}</div>
-            <div className="text-sm text-muted-foreground">{user.voterId}</div>
-          </div>
-        </div>
-      </TableCell>
-      <TableCell>
-        {user.isAdmin ? (
-          <Badge variant="destructive">Admin</Badge>
-        ) : (
-          <Badge variant="secondary">Voter</Badge>
-        )}
-      </TableCell>
-       <TableCell className="text-right font-mono text-xs">{user.id}</TableCell>
-    </TableRow>
-  );
-}
 
 function ThreatRow({ threat, onBlock }: { threat: Threat, onBlock: (ip: string) => void }) {
   return (
@@ -101,7 +63,6 @@ export default function AdminPage() {
   const { toast } = useToast();
   const { user, firestore, isUserLoading } = useFirebase();
   
-  // New Election State
   const [newElectionName, setNewElectionName] = useState("");
   const [isStartingElection, setIsStartingElection] = useState(false);
 
@@ -111,13 +72,6 @@ export default function AdminPage() {
   }, [firestore, user]);
   
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<Voter>(userDocRef);
-
-  // Collections
-  const usersCollectionRef = useMemoFirebase(() => {
-    if (!firestore || !userProfile?.isAdmin) return null;
-    return collection(firestore, 'users');
-  }, [firestore, userProfile]);
-  const { data: users, isLoading: areUsersLoading } = useCollection<Voter>(usersCollectionRef);
 
   const threatsQuery = useMemoFirebase(() => {
     if (!firestore || !userProfile?.isAdmin) return null;
@@ -129,7 +83,7 @@ export default function AdminPage() {
     if (!firestore || !userProfile?.isAdmin) return null;
     return collection(firestore, 'blockedIps');
   }, [firestore, userProfile]);
-  const { data: blockedIps, isLoading: areBlockedIpsLoading } = useCollection<BlockedIp>(blockedIpsRef);
+  const { data: blockedIps } = useCollection<BlockedIp>(blockedIpsRef);
 
   const electionsRef = useMemoFirebase(() => {
     if (!firestore || !userProfile?.isAdmin) return null;
@@ -176,7 +130,7 @@ export default function AdminPage() {
     const electionData: Omit<Election, 'id'> = {
       name: newElectionName,
       startDate: new Date().toISOString(),
-      endDate: new Date(Date.now() + 86400000).toISOString(), // 24 hours later
+      endDate: new Date(Date.now() + 86400000).toISOString(),
       candidateIds: initialCandidates.map(c => c.id),
     };
 
@@ -252,7 +206,7 @@ export default function AdminPage() {
           <div className="grid gap-6 lg:grid-cols-3">
             <Card className="lg:col-span-2 border-red-500/20">
               <CardHeader className="flex flex-row items-center justify-between">
-                <div><CardTitle className="text-red-600 flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Threat Intelligence Log</CardTitle><CardDescription>Real-time forensic audit of multi-vector attack attempts.</CardDescription></div>
+                <div><CardTitle className="text-red-600 flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Threat Intelligence Log</CardTitle></div>
               </CardHeader>
               <CardContent>
                 <Table>
@@ -262,13 +216,14 @@ export default function AdminPage() {
                   <TableBody>
                     {areThreatsLoading && <TableRow><TableCell colSpan={5}><Skeleton className="h-10 w-full" /></TableCell></TableRow>}
                     {threats?.map(t => <ThreatRow key={t.id} threat={t} onBlock={handleBlockIp} />)}
+                    {!threats?.length && !areThreatsLoading && <TableRow><TableCell colSpan={5} className="text-center italic text-muted-foreground py-8">Zero active threats detected.</TableCell></TableRow>}
                   </TableBody>
                 </Table>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader><CardTitle>Blacklisted Origins</CardTitle><CardDescription>Denied access to protocol nodes.</CardDescription></CardHeader>
+              <CardHeader><CardTitle>Blacklisted Origins</CardTitle></CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {blockedIps?.map(ip => (
@@ -309,7 +264,7 @@ export default function AdminPage() {
             </Card>
 
             <Card className="lg:col-span-2">
-              <CardHeader><CardTitle>Live Protocol Windows</CardTitle><CardDescription>Current elections being processed by the OOTU network.</CardDescription></CardHeader>
+              <CardHeader><CardTitle>Live Protocol Windows</CardTitle></CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
@@ -325,7 +280,7 @@ export default function AdminPage() {
                         <TableCell className="text-right"><Badge className="bg-green-500">Live</Badge></TableCell>
                       </TableRow>
                     ))}
-                    {!elections?.length && !areElectionsLoading && <TableRow><TableCell colSpan={4} className="text-center italic text-muted-foreground">No active election windows.</TableCell></TableRow>}
+                    {!elections?.length && !areElectionsLoading && <TableRow><TableCell colSpan={4} className="text-center italic text-muted-foreground py-8">No active election windows.</TableCell></TableRow>}
                   </TableBody>
                 </Table>
               </CardContent>
@@ -333,7 +288,7 @@ export default function AdminPage() {
           </div>
 
           <Card>
-            <CardHeader><CardTitle>Candidate Roster Status</CardTitle><CardDescription>Verified participants in current protocol cycles.</CardDescription></CardHeader>
+            <CardHeader><CardTitle>Candidate Roster Status</CardTitle></CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {initialCandidates.map(c => (
