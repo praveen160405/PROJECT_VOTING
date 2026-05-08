@@ -5,7 +5,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Vote",
       "type": "object",
-      "description": "Represents a single vote cast in an election.",
+      "description": "Represents a single vote cast in an election, linked to a blockchain transaction.",
       "properties": {
         "id": {
           "type": "string",
@@ -13,15 +13,15 @@
         },
         "voterId": {
           "type": "string",
-          "description": "Reference to Voter. (Relationship: Voter 1:N Vote)"
+          "description": "Reference to Voter UID."
         },
         "candidateId": {
           "type": "string",
-          "description": "Reference to Candidate. (Relationship: Candidate 1:N Vote)"
+          "description": "Reference to Candidate ID."
         },
         "electionId": {
           "type": "string",
-          "description": "Reference to Election. (Relationship: Election 1:N Vote)"
+          "description": "Reference to Election ID."
         },
         "timestamp": {
           "type": "string",
@@ -30,7 +30,11 @@
         },
         "isVerified": {
           "type": "boolean",
-          "description": "Indicates whether the vote has been verified."
+          "description": "Indicates whether the vote has been verified by the ledger."
+        },
+        "txHash": {
+          "type": "string",
+          "description": "The immutable blockchain transaction hash for this vote."
         }
       },
       "required": [
@@ -46,7 +50,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Voter",
       "type": "object",
-      "description": "Represents a registered voter.",
+      "description": "Represents a registered voter with biometric and identity verification.",
       "properties": {
         "id": {
           "type": "string",
@@ -75,7 +79,7 @@
         },
         "faceImageHash": {
           "type": "string",
-          "description": "Hash of the voter's facial image."
+          "description": "Base64 data URI of the voter's facial biometric capture."
         },
         "isAdmin": {
           "type": "boolean",
@@ -127,15 +131,14 @@
       "required": [
         "id",
         "name",
-        "party",
-        "imageUrl"
+        "party"
       ]
     },
     "Election": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Election",
       "type": "object",
-      "description": "Represents an election event.",
+      "description": "Represents an election event configuration.",
       "properties": {
         "id": {
           "type": "string",
@@ -230,8 +233,7 @@
   },
   "auth": {
     "providers": [
-      "password",
-      "anonymous"
+      "password"
     ]
   },
   "firestore": {
@@ -243,7 +245,7 @@
           "schema": {
             "$ref": "#/backend/entities/Vote"
           },
-          "description": "Stores individual votes cast by a voter."
+          "description": "Stores individual votes cast by a voter, including blockchain transaction hashes."
         }
       },
       {
@@ -253,7 +255,7 @@
           "schema": {
             "$ref": "#/backend/entities/Voter"
           },
-          "description": "Stores the details of the user."
+          "description": "Stores the biometric and identity profile of the voter."
         }
       },
       {
@@ -263,7 +265,7 @@
           "schema": {
             "$ref": "#/backend/entities/Election"
           },
-          "description": "Stores information about an election."
+          "description": "Stores configuration for protocol election windows."
         }
       },
       {
@@ -273,7 +275,7 @@
           "schema": {
             "$ref": "#/backend/entities/Candidate"
           },
-          "description": "Stores information about a candidate."
+          "description": "Stores information about candidate parties and symbols."
         }
       },
       {
@@ -283,7 +285,7 @@
           "schema": {
             "$ref": "#/backend/entities/Threat"
           },
-          "description": "Logged security incidents and attack attempts."
+          "description": "Logged security incidents and forensic attack data."
         }
       },
       {
@@ -293,10 +295,10 @@
           "schema": {
             "$ref": "#/backend/entities/BlockedIp"
           },
-          "description": "List of blocked IP addresses."
+          "description": "Blacklist of restricted IP origins."
         }
       }
     ],
-    "reasoning": "Standard decentralized data structure for election integrity."
+    "reasoning": "Standardized decentralized data structure for identity verification and voting auditability."
   }
 }
