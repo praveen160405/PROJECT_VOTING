@@ -27,7 +27,9 @@ import {
   Users, 
   Play,
   Calendar,
-  Activity
+  Activity,
+  StopCircle,
+  Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -142,6 +144,19 @@ export default function AdminPage() {
     });
     setNewElectionName("");
     setIsStartingElection(false);
+  };
+
+  const handleStopElection = (electionId: string, electionName: string) => {
+    if (!firestore || !userProfile?.isAdmin) return;
+    const electionDocRef = doc(firestore, 'elections', electionId);
+    
+    deleteDocumentNonBlocking(electionDocRef);
+    
+    toast({
+      variant: "destructive",
+      title: "Protocol Terminated",
+      description: `Election "${electionName}" has been removed from the ledger.`,
+    });
   };
 
   if (isUserLoading || isProfileLoading) {
@@ -268,16 +283,36 @@ export default function AdminPage() {
               <CardContent>
                 <Table>
                   <TableHeader>
-                    <TableRow><TableHead>Election Name</TableHead><TableHead>Start Window</TableHead><TableHead>End Window</TableHead><TableHead className="text-right">Status</TableHead></TableRow>
+                    <TableRow>
+                      <TableHead>Election Name</TableHead>
+                      <TableHead>Start Window</TableHead>
+                      <TableHead>End Window</TableHead>
+                      <TableHead className="text-right">Action</TableHead>
+                    </TableRow>
                   </TableHeader>
                   <TableBody>
                     {areElectionsLoading && <TableRow><TableCell colSpan={4}><Skeleton className="h-10 w-full" /></TableCell></TableRow>}
                     {elections?.map(e => (
                       <TableRow key={e.id}>
-                        <TableCell className="font-bold">{e.name}</TableCell>
+                        <TableCell className="font-bold">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            {e.name}
+                          </div>
+                        </TableCell>
                         <TableCell className="text-xs">{format(new Date(e.startDate), 'PPp')}</TableCell>
                         <TableCell className="text-xs">{format(new Date(e.endDate), 'PPp')}</TableCell>
-                        <TableCell className="text-right"><Badge className="bg-green-500">Live</Badge></TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            size="sm" 
+                            variant="destructive" 
+                            className="h-8 gap-2 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white"
+                            onClick={() => handleStopElection(e.id, e.name)}
+                          >
+                            <StopCircle className="h-4 w-4" />
+                            Stop Protocol
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                     {!elections?.length && !areElectionsLoading && <TableRow><TableCell colSpan={4} className="text-center italic text-muted-foreground py-8">No active election windows.</TableCell></TableRow>}
