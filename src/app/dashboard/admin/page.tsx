@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useFirebase, useDoc, useCollection, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
 import { doc, collection, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 import type { Voter, Threat, BlockedIp, Election } from '@/lib/types';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -29,7 +29,8 @@ import {
   Calendar,
   Activity,
   StopCircle,
-  Trash2
+  Trash2,
+  Key
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -67,6 +68,10 @@ export default function AdminPage() {
   
   const [newElectionName, setNewElectionName] = useState("");
   const [isStartingElection, setIsStartingElection] = useState(false);
+  
+  // Secondary verification state
+  const [isAdminVerified, setIsAdminVerified] = useState(false);
+  const [verificationInput, setVerificationInput] = useState("");
 
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
@@ -76,21 +81,21 @@ export default function AdminPage() {
   const { data: userProfile, isLoading: isProfileLoading } = useDoc<Voter>(userDocRef);
 
   const threatsQuery = useMemoFirebase(() => {
-    if (!firestore || !userProfile?.isAdmin) return null;
+    if (!firestore || !userProfile?.isAdmin || !isAdminVerified) return null;
     return query(collection(firestore, 'threats'), orderBy('timestamp', 'desc'), limit(15));
-  }, [firestore, userProfile]);
+  }, [firestore, userProfile, isAdminVerified]);
   const { data: threats, isLoading: areThreatsLoading } = useCollection<Threat>(threatsQuery);
 
   const blockedIpsRef = useMemoFirebase(() => {
-    if (!firestore || !userProfile?.isAdmin) return null;
+    if (!firestore || !userProfile?.isAdmin || !isAdminVerified) return null;
     return collection(firestore, 'blockedIps');
-  }, [firestore, userProfile]);
+  }, [firestore, userProfile, isAdminVerified]);
   const { data: blockedIps } = useCollection<BlockedIp>(blockedIpsRef);
 
   const electionsRef = useMemoFirebase(() => {
-    if (!firestore || !userProfile?.isAdmin) return null;
+    if (!firestore || !userProfile?.isAdmin || !isAdminVerified) return null;
     return collection(firestore, 'elections');
-  }, [firestore, userProfile]);
+  }, [firestore, userProfile, isAdminVerified]);
   const { data: elections, isLoading: areElectionsLoading } = useCollection<Election>(electionsRef);
 
   useEffect(() => {
@@ -102,6 +107,22 @@ export default function AdminPage() {
       }
     }
   }, [user, userProfile, isUserLoading, isProfileLoading, router]);
+
+  const handleVerifyAccess = () => {
+    if (verificationInput === 'admin123') {
+      setIsAdminVerified(true);
+      toast({
+        title: "Access Granted",
+        description: "Protocol Command Center unlocked.",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Verification Failed",
+        description: "Incorrect master key.",
+      });
+    }
+  };
 
   const handleBlockIp = (ip: string) => {
     if (!firestore || !userProfile?.isAdmin) return;
@@ -165,6 +186,50 @@ export default function AdminPage() {
 
   if (!userProfile?.isAdmin) {
     return <Alert variant="destructive" className="m-8"><ShieldAlert className="h-4 w-4" /><AlertTitle>Access Denied</AlertTitle></Alert>;
+  }
+
+  // Mandatory verification screen
+  if (!isAdminVerified) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+        <Card className="w-full max-w-md border-primary/20 shadow-xl">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+              <Lock className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle>Security Verification</CardTitle>
+            <CardDescription>
+              Secondary authentication is required to access global election controls.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="master-key">Protocol Master Key</Label>
+              <div className="relative">
+                <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  id="master-key" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  className="pl-9"
+                  value={verificationInput}
+                  onChange={(e) => setVerificationInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleVerifyAccess()}
+                />
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button className="w-full" onClick={handleVerifyAccess}>
+              Unlock Command Center
+            </Button>
+          </CardFooter>
+        </Card>
+        <p className="text-xs text-muted-foreground italic">
+          Tip: Use the prototype master key (admin123)
+        </p>
+      </div>
+    );
   }
 
   return (
