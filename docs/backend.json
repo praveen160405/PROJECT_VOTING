@@ -5,36 +5,36 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Vote",
       "type": "object",
-      "description": "Represents a single vote cast in an election, linked to a blockchain transaction.",
+      "description": "A cryptographic audit receipt of a vote cast on the blockchain ledger.",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the vote entity."
+          "description": "Internal OOTU reference ID."
         },
         "voterId": {
           "type": "string",
-          "description": "Reference to Voter UID."
+          "description": "Reference to the voter's decentralized identity."
         },
         "candidateId": {
           "type": "string",
-          "description": "Reference to Candidate ID."
+          "description": "The ID of the candidate who received the vote."
         },
         "electionId": {
           "type": "string",
-          "description": "Reference to Election ID."
+          "description": "The specific election protocol window."
         },
         "timestamp": {
           "type": "string",
-          "description": "The date and time when the vote was cast.",
+          "description": "Block timestamp of the transaction.",
           "format": "date-time"
         },
         "isVerified": {
           "type": "boolean",
-          "description": "Indicates whether the vote has been verified by the ledger."
+          "description": "Confirmation status on the decentralized network."
         },
         "txHash": {
           "type": "string",
-          "description": "The immutable blockchain transaction hash for this vote."
+          "description": "The immutable SHA-256 blockchain transaction hash (Primary Audit Key)."
         }
       },
       "required": [
@@ -43,56 +43,40 @@
         "candidateId",
         "electionId",
         "timestamp",
-        "isVerified"
+        "isVerified",
+        "txHash"
       ]
     },
     "Voter": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Voter",
       "type": "object",
-      "description": "Represents a registered voter with biometric and identity verification.",
+      "description": "Voter profile used for identity verification before blockchain access.",
       "properties": {
         "id": {
-          "type": "string",
-          "description": "Unique identifier for the voter entity (Firebase Auth UID)."
+          "type": "string"
         },
         "voterId": {
-          "type": "string",
-          "description": "The voter's unique identification string."
+          "type": "string"
         },
         "email": {
           "type": "string",
-          "format": "email",
-          "description": "Registered email for account recovery."
+          "format": "email"
         },
         "firstName": {
-          "type": "string",
-          "description": "The first name of the voter."
+          "type": "string"
         },
         "lastName": {
-          "type": "string",
-          "description": "The last name of the voter."
+          "type": "string"
         },
         "aadharNumber": {
-          "type": "string",
-          "description": "The 12-digit Aadhar number of the voter."
+          "type": "string"
         },
         "faceImageHash": {
-          "type": "string",
-          "description": "Base64 data URI of the voter's facial biometric capture."
+          "type": "string"
         },
         "isAdmin": {
-          "type": "boolean",
-          "description": "Indicates whether the user has administrative privileges."
-        },
-        "region": {
-          "type": "string",
-          "description": "The geographic region of the voter.",
-          "enum": ["North", "South", "East", "West"]
-        },
-        "age": {
-          "type": "number",
-          "description": "The age of the voter."
+          "type": "boolean"
         }
       },
       "required": [
@@ -100,134 +84,7 @@
         "voterId",
         "email",
         "firstName",
-        "lastName",
-        "aadharNumber"
-      ]
-    },
-    "Candidate": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Candidate",
-      "type": "object",
-      "description": "Represents a candidate in an election.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the candidate entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the candidate."
-        },
-        "party": {
-          "type": "string",
-          "description": "The political party of the candidate."
-        },
-        "imageUrl": {
-          "type": "string",
-          "description": "URL of the candidate's image.",
-          "format": "uri"
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "party"
-      ]
-    },
-    "Election": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Election",
-      "type": "object",
-      "description": "Represents an election event configuration.",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the election entity."
-        },
-        "name": {
-          "type": "string",
-          "description": "The name of the election."
-        },
-        "startDate": {
-          "type": "string",
-          "description": "The start date and time of the election.",
-          "format": "date-time"
-        },
-        "endDate": {
-          "type": "string",
-          "description": "The end date and time of the election.",
-          "format": "date-time"
-        },
-        "candidateIds": {
-          "type": "array",
-          "description": "References to Candidates participating in this election.",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "required": [
-        "id",
-        "name",
-        "startDate",
-        "endDate",
-        "candidateIds"
-      ]
-    },
-    "Threat": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Threat",
-      "type": "object",
-      "description": "Represents a detected security threat or attack attempt.",
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "ipAddress": {
-          "type": "string",
-          "description": "IP address of the origin of the attack."
-        },
-        "type": {
-          "type": "string",
-          "description": "The type of attack."
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "payload": {
-          "type": "string",
-          "description": "The suspicious input detected."
-        }
-      },
-      "required": [
-        "ipAddress",
-        "type",
-        "timestamp"
-      ]
-    },
-    "BlockedIp": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "BlockedIp",
-      "type": "object",
-      "description": "Represents a banned IP address.",
-      "properties": {
-        "ip": {
-          "type": "string",
-          "description": "The IP address that is blocked."
-        },
-        "reason": {
-          "type": "string",
-          "description": "Reason for the block."
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": [
-        "ip",
-        "timestamp"
+        "lastName"
       ]
     }
   },
@@ -245,17 +102,7 @@
           "schema": {
             "$ref": "#/backend/entities/Vote"
           },
-          "description": "Stores individual votes cast by a voter, including blockchain transaction hashes."
-        }
-      },
-      {
-        "path": "/users/{userId}",
-        "definition": {
-          "entityName": "Voter",
-          "schema": {
-            "$ref": "#/backend/entities/Voter"
-          },
-          "description": "Stores the biometric and identity profile of the voter."
+          "description": "Stores blockchain transaction receipts for voter auditing."
         }
       },
       {
@@ -265,40 +112,9 @@
           "schema": {
             "$ref": "#/backend/entities/Election"
           },
-          "description": "Stores configuration for protocol election windows."
-        }
-      },
-      {
-        "path": "/candidates/{candidateId}",
-        "definition": {
-          "entityName": "Candidate",
-          "schema": {
-            "$ref": "#/backend/entities/Candidate"
-          },
-          "description": "Stores information about candidate parties and symbols."
-        }
-      },
-      {
-        "path": "/threats/{threatId}",
-        "definition": {
-          "entityName": "Threat",
-          "schema": {
-            "$ref": "#/backend/entities/Threat"
-          },
-          "description": "Logged security incidents and forensic attack data."
-        }
-      },
-      {
-        "path": "/blockedIps/{ipId}",
-        "definition": {
-          "entityName": "BlockedIp",
-          "schema": {
-            "$ref": "#/backend/entities/BlockedIp"
-          },
-          "description": "Blacklist of restricted IP origins."
+          "description": "Configuration for active protocol windows."
         }
       }
-    ],
-    "reasoning": "Standardized decentralized data structure for identity verification and voting auditability."
+    ]
   }
 }
