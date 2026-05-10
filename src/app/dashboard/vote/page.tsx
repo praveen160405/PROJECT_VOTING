@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Loader2, Wallet, Quote } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Loader2, Wallet, Quote, AlertCircle, Timer } from 'lucide-react';
 import { collection, serverTimestamp } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -22,7 +22,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import type { Candidate, Vote } from "@/lib/types";
+import type { Candidate, Vote, Election } from "@/lib/types";
 import { useFirebase, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
 import { useWeb3 } from "@/app/providers";
 
@@ -92,6 +92,13 @@ export default function VotePage() {
   const { user, firestore, isUserLoading } = useFirebase();
   const { contract, address, connectWallet, isLoading: isWeb3Loading } = useWeb3();
 
+  // Fetch active elections
+  const electionsRef = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return collection(firestore, 'elections');
+  }, [firestore]);
+  const { data: activeElections, isLoading: areElectionsLoading } = useCollection<Election>(electionsRef);
+
   const userVotesCollection = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return collection(firestore, "users", user.uid, "votes");
@@ -104,12 +111,16 @@ export default function VotePage() {
     return false;
   }, [userVotes]);
 
+  const isElectionLive = useMemo(() => {
+    return activeElections && activeElections.length > 0;
+  }, [activeElections]);
+
   useEffect(() => {
     setIsMounted(true);
     setCurrentProverb(PROVERBS[Math.floor(Math.random() * PROVERBS.length)]);
   }, []);
 
-  const isCheckingVote = isUserLoading || isLoadingVotes;
+  const isCheckingVote = isUserLoading || isLoadingVotes || areElectionsLoading;
 
   const handleInitiateVote = (candidate: Candidate) => {
     if (!user) {
@@ -119,6 +130,10 @@ export default function VotePage() {
     }
     if (!address) {
         toast({ variant: "destructive", title: "Wallet Required", description: "Connect your wallet to sign the ballot." });
+        return;
+    }
+    if (!isElectionLive) {
+        toast({ variant: "destructive", title: "Protocol Standby", description: "No active election window found on the ledger." });
         return;
     }
     setSelectedCandidate(candidate);
@@ -143,7 +158,6 @@ export default function VotePage() {
     } catch (error: any) {
       console.error("Blockchain Vote Error:", error);
       
-      // Handle User Rejection (Error Code 4001)
       if (error.code === 4001 || error.code === "ACTION_REJECTED" || error.message?.includes('rejected')) {
         toast({
           variant: "destructive",
@@ -169,7 +183,7 @@ export default function VotePage() {
       voterId: user.uid,
       candidateId: candidate.id,
       timestamp: serverTimestamp(),
-      electionId: "main_election",
+      electionId: activeElections?.[0]?.id || "main_election",
       isVerified: true,
       txHash: hash,
     };
@@ -254,7 +268,7 @@ export default function VotePage() {
   }
 
   const isVoted = hasAlreadyVoted;
-  const pageDisabled = !isMounted || isCheckingVote || isSubmitting || isWeb3Loading;
+  const pageDisabled = !isMounted || isCheckingVote || isSubmitting || isWeb3Loading || !isElectionLive;
 
   return (
     <div className="flex flex-col gap-6">
@@ -264,12 +278,13 @@ export default function VotePage() {
           <p className="text-muted-foreground">
             {!isMounted ? "Initialising Secure Link..." : 
              isCheckingVote ? "Verifying Eligibility..." : 
+             !isElectionLive ? "System on Standby" :
              isVoted ? "Vote Recorded" : 
              !address ? "Connect Wallet to Access Ballot" : 
              "Cast your immutable vote on the blockchain."}
           </p>
         </div>
-        {!address && isMounted && (
+        {!address && isMounted && isElectionLive && (
           <Button onClick={connectWallet} variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5">
             <Wallet className="h-4 w-4" /> Connect Wallet to Vote
           </Button>
@@ -282,6 +297,16 @@ export default function VotePage() {
           <AlertTitle>Vote Recorded</AlertTitle>
           <AlertDescription>
             Participation complete. Protocol integrity allows only one vote per verified voter.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isMounted && !isCheckingVote && !isElectionLive && (
+        <Alert variant="destructive" className="bg-destructive/5 border-destructive/20 text-destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>No Active Election Protocol</AlertTitle>
+          <AlertDescription>
+            The decentralized ledger is currently in standby. Please wait for an administrator to activate an election window.
           </AlertDescription>
         </Alert>
       )}
@@ -314,6 +339,7 @@ export default function VotePage() {
           </motion.div>
         ))}
       </div>
+
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
         <AlertDialogContent>
           <AlertDialogHeader>
