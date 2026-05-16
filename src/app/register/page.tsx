@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -133,6 +134,8 @@ export default function RegisterPage() {
     } catch (error: any) {
       console.error("Registration Error:", error);
       let description = "An unexpected error occurred.";
+      
+      // Explicitly handle the email-already-in-use error
       if (error.code === 'auth/email-already-in-use') {
         description = "This email is already registered in the OOTU protocol.";
       } else if (error.message) {

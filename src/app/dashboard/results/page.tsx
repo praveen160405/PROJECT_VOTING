@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell } from "recharts";
 import { format } from "date-fns";
-import { collection, Timestamp } from "firebase/firestore";
+import { collection } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";

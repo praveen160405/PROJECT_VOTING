@@ -8,7 +8,7 @@ import { Key, Loader2, Mail, ShieldAlert, ZapOff, Lock, Fingerprint, Camera, Ref
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
+import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState, useEffect, useRef } from "react";
 import { collection, serverTimestamp, doc, getDoc, query, where, getDocs, limit } from "firebase/firestore";
 
@@ -21,31 +21,17 @@ import {
   CardDescription,
   CardFooter,
 } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
 import { useAuth, useFirestore, addDocumentNonBlocking } from "@/firebase";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { verifyBiometric } from "@/ai/flows/verify-biometric-flow";
 
 const loginSchema = z.object({
   voterId: z.string().trim().min(10, "Voter ID must be 10 characters.").max(10, "Voter ID must be 10 characters."),
   password: z.string().min(1, "Password is required."),
   username_hp: z.string().max(0).optional(), 
-});
-
-const forgotPasswordSchema = z.object({
-  email: z.string().trim().email("Invalid email address."),
 });
 
 type LoginStep = 'credentials' | 'biometric';
@@ -57,11 +43,8 @@ export default function LoginPage() {
   const firestore = useFirestore();
   
   const [step, setStep] = useState<LoginStep>('credentials');
-  const [tempUser, setTempUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   
-  const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
-  const [isResetLoading, setIsResetLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [isVerifyingBiometric, setIsVerifyingBiometric] = useState(false);
@@ -69,17 +52,10 @@ export default function LoginPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
-  
-  const [attempts, setAttempts] = useState<number[]>([]);
-  const [isRateLimited, setIsRateLimited] = useState(false);
-  const coolDownTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setIsMounted(true);
     checkIpBlock();
-    return () => {
-      if (coolDownTimer.current) clearTimeout(coolDownTimer.current);
-    };
   }, []);
 
   useEffect(() => {
@@ -127,13 +103,6 @@ export default function LoginPage() {
     },
   });
 
-  const resetForm = useForm<z.infer<typeof forgotPasswordSchema>>({
-    resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: {
-      email: "",
-    },
-  });
-
   const logThreat = async (type: string, payload: string) => {
     try {
       const ipResponse = await fetch('https://api.ipify.org?format=json');
@@ -155,7 +124,7 @@ export default function LoginPage() {
   };
 
   const handleCredentialSubmit = async (values: z.infer<typeof loginSchema>) => {
-    if (isBlocked || isRateLimited) return;
+    if (isBlocked) return;
 
     try {
       const usersRef = collection(firestore, "users");
@@ -170,12 +139,16 @@ export default function LoginPage() {
       const userData = querySnapshot.docs[0].data();
       const email = userData.email;
 
+      if (!email) {
+        toast({ variant: "destructive", title: "Login Failed", description: "No email associated with this Voter ID." });
+        return;
+      }
+
       // Authenticate with email/password first
-      const userCredential = await signInWithEmailAndPassword(auth, email, values.password);
-      setTempUser(userCredential.user);
+      await signInWithEmailAndPassword(auth, email, values.password);
       setProfile(userData);
 
-      // Move to Biometric step if user has face image
+      // Move to Biometric step
       if (userData.faceImageHash) {
         setStep('biometric');
         toast({
@@ -183,10 +156,10 @@ export default function LoginPage() {
           description: "Proceeding to biometric verification step.",
         });
       } else {
-        // Fallback for older profiles without biometrics
         router.push("/dashboard");
       }
     } catch (error: any) {
+      console.error("Login Error:", error);
       toast({ variant: "destructive", title: "Login Failed", description: "Invalid credentials. Please try again." });
     }
   };
@@ -223,20 +196,16 @@ export default function LoginPage() {
             title: "Biometric Mismatch",
             description: "Live capture does not match the registered profile. Login denied.",
           });
-          // Log threat for failed biometric audit
-          logThreat("Biometric Spoofing Attempt", `Voter ID: ${profile.voterId} | Confidence: ${result.confidence}`);
-          
-          // Force sign out since biometric failed
+          logThreat("Biometric Spoofing Attempt", `Voter ID: ${profile.voterId}`);
           await auth.signOut();
           setStep('credentials');
-          setTempUser(null);
           setProfile(null);
         }
       } catch (error) {
         toast({
           variant: "destructive",
           title: "Audit Node Error",
-          description: "Biometric AI engine is unavailable. Please try again later.",
+          description: "Biometric AI engine is unavailable.",
         });
       } finally {
         setIsVerifyingBiometric(false);
