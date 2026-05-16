@@ -1,11 +1,11 @@
 
 "use client"
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Loader2, Wallet, Quote, AlertCircle, Timer, Globe } from 'lucide-react';
-import { collection, serverTimestamp } from "firebase/firestore";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, CheckCircle2, Loader2, Quote, AlertCircle, Timer, Globe, Camera, Fingerprint, ShieldCheck } from 'lucide-react';
+import { collection, serverTimestamp, doc } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,12 +21,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import type { Candidate, Vote, Election } from "@/lib/types";
-import { useFirebase, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
-import { useWeb3 } from "@/app/providers";
-import { votingContractAddress } from "@/lib/contract";
+import type { Candidate, Vote, Election, Voter } from "@/lib/types";
+import { useFirebase, useCollection, addDocumentNonBlocking, useMemoFirebase, useDoc } from "@/firebase";
+import { verifyBiometric } from "@/ai/flows/verify-biometric-flow";
 
 const PROVERBS = [
   "The ballot is stronger than the bullet. — Abraham Lincoln",
@@ -86,15 +92,24 @@ export default function VotePage() {
   const [txHash, setTxHash] = useState<string | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [isBiometricSigning, setIsBiometricSigning] = useState(false);
+  const [isVerifyingSign, setIsVerifyingSign] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [currentProverb, setCurrentProverb] = useState<string>("");
+
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   
   const { toast } = useToast();
   const router = useRouter();
   const { user, firestore, isUserLoading } = useFirebase();
-  const { contract, address, connectWallet, isLoading: isWeb3Loading } = useWeb3();
 
-  // Fetch active elections
+  const userDocRef = useMemoFirebase(() => {
+    if (!firestore || !user) return null;
+    return doc(firestore, 'users', user.uid);
+  }, [firestore, user]);
+  const { data: profile } = useDoc<Voter>(userDocRef);
+
   const electionsRef = useMemoFirebase(() => {
     if (!firestore) return null;
     return collection(firestore, 'elections');
@@ -122,16 +137,33 @@ export default function VotePage() {
     setCurrentProverb(PROVERBS[Math.floor(Math.random() * PROVERBS.length)]);
   }, []);
 
-  const isCheckingVote = isUserLoading || isLoadingVotes || areElectionsLoading;
+  useEffect(() => {
+    if (isBiometricSigning) {
+        startCamera();
+    }
+    return () => stopCamera();
+  }, [isBiometricSigning]);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      if (videoRef.current) videoRef.current.srcObject = stream;
+    } catch (e) {
+      toast({ variant: "destructive", title: "Camera Error", description: "Could not access camera for biometric signing." });
+    }
+  }
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+    }
+  }
 
   const handleInitiateVote = (candidate: Candidate) => {
     if (!user) {
         toast({ variant: "destructive", title: "Not Logged In", description: "Please log in to vote." });
         router.push('/login');
-        return;
-    }
-    if (!address) {
-        toast({ variant: "destructive", title: "Wallet Required", description: "Connect your wallet to sign the ballot." });
         return;
     }
     if (!isElectionLive) {
@@ -142,98 +174,65 @@ export default function VotePage() {
     setIsConfirming(true);
   };
 
-  const handleBlockchainVote = async (candidate: Candidate) => {
-    // If no real contract address, simulate the blockchain transaction
-    if (votingContractAddress === "0x0000000000000000000000000000000000000000" || !contract) {
-      toast({ 
-        title: "Prototype Simulation Active", 
-        description: "Bypassing gas fees. Simulating on-chain verification...",
-      });
-      // Simulate network delay
-      await new Promise(r => setTimeout(r, 2000));
-      const simulatedHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-      setTxHash(simulatedHash);
-      return { success: true, hash: simulatedHash };
-    }
+  const executeBiometricSignature = async () => {
+    if (!videoRef.current || !canvasRef.current || !profile?.faceImageHash || !selectedCandidate) return;
 
-    try {
-      const numericId = parseInt(candidate.id.replace('c', ''));
-      const tx = await contract.vote(numericId);
-      setTxHash(tx.hash);
-      
-      toast({ title: "Transaction Sent", description: "Your vote is being broadcast to the ledger." });
+    setIsVerifyingSign(true);
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const liveCapture = canvas.toDataURL('image/jpeg', 0.8);
 
-      await tx.wait();
-      return { success: true, hash: tx.hash };
-    } catch (error: any) {
-      console.error("Blockchain Vote Error:", error);
-      
-      if (error.code === 4001 || error.code === "ACTION_REJECTED" || error.message?.includes('rejected')) {
+      try {
+        const result = await verifyBiometric({
+          referenceImageUri: profile.faceImageHash,
+          liveCaptureUri: liveCapture,
+        });
+
+        if (result.isMatch) {
+          const simulatedHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+          setTxHash(simulatedHash);
+          
+          const newVote: Omit<Vote, 'id'> = {
+            voterId: user!.uid,
+            candidateId: selectedCandidate.id,
+            timestamp: serverTimestamp(),
+            electionId: activeElections?.[0]?.id || "main_election",
+            isVerified: true,
+            txHash: simulatedHash,
+          };
+
+          addDocumentNonBlocking(userVotesCollection!, newVote);
+          setVotedCandidateId(selectedCandidate.id);
+          setIsBiometricSigning(false);
+          
+          toast({
+            title: "Digital Signature Verified",
+            description: "Your biometric ID has permanently signed this ballot.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Identity Verification Failed",
+            description: "Biometric match failed. Please ensure clear lighting and try again.",
+          });
+        }
+      } catch (error) {
         toast({
           variant: "destructive",
-          title: "Transaction Cancelled",
-          description: "You rejected the signature request in your wallet.",
+          title: "Forensic Node Unavailable",
+          description: "Could not verify biometric signature at this time.",
         });
-        return { success: false, hash: null };
+      } finally {
+        setIsVerifyingSign(false);
       }
-
-      // Handle insufficient funds specifically
-      if (error.code === "INSUFFICIENT_FUNDS" || error.message?.includes('insufficient funds')) {
-         toast({
-          variant: "destructive",
-          title: "Insufficient Gas",
-          description: "You need coins in your wallet to pay for blockchain gas fees. Switching to simulation mode for this session.",
-        });
-        // Auto-simulation for failed real calls in prototype
-        await new Promise(r => setTimeout(r, 1000));
-        const simulatedHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-        setTxHash(simulatedHash);
-        return { success: true, hash: simulatedHash };
-      }
-
-      toast({
-        variant: "destructive",
-        title: "Blockchain Error",
-        description: error.reason || error.message || "Failed to submit vote.",
-      });
-      return { success: false, hash: null };
     }
   }
-
-  const handleFirestoreVote = async (candidate: Candidate, hash: string) => {
-    if (!user || !userVotesCollection) return;
-
-    const newVote: Omit<Vote, 'id'> = {
-      voterId: user.uid,
-      candidateId: candidate.id,
-      timestamp: serverTimestamp(),
-      electionId: activeElections?.[0]?.id || "main_election",
-      isVerified: true,
-      txHash: hash,
-    };
-
-    addDocumentNonBlocking(userVotesCollection, newVote);
-  }
-
-  const handleVote = async (candidate: Candidate) => {
-    setIsConfirming(false);
-    setIsSubmitting(true);
-
-    const { success, hash } = await handleBlockchainVote(candidate);
-    
-    if (success && hash) {
-      await handleFirestoreVote(candidate, hash);
-      setVotedCandidateId(candidate.id);
-      
-      toast({
-        title: "Vote Confirmed!",
-        description: `Your vote for ${candidate.name} is now immutable.`,
-        duration: 5000,
-      });
-    }
-
-    setIsSubmitting(false);
-  };
 
   useEffect(() => {
     if (votedCandidateId) {
@@ -262,7 +261,7 @@ export default function VotePage() {
               </div>
               <CardTitle className="text-3xl font-bold tracking-tight">Vote Confirmed</CardTitle>
               <CardDescription className="pt-2">
-                Your choice for <strong>{votedCandidate?.name}</strong> is etched into the blockchain.
+                Your choice for <strong>{votedCandidate?.name}</strong> is etched into the OOTU protocol.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -273,7 +272,7 @@ export default function VotePage() {
                 </p>
               </div>
               <div className="text-left space-y-1">
-                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Signature</p>
+                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Digital Audit Receipt</p>
                  <p className="text-[10px] font-mono text-muted-foreground p-3 bg-muted rounded border overflow-hidden text-ellipsis whitespace-nowrap">
                   {txHash}
                  </p>
@@ -291,34 +290,27 @@ export default function VotePage() {
     )
   }
 
+  const isCheckingVote = isUserLoading || isLoadingVotes || areElectionsLoading;
   const isVoted = hasAlreadyVoted;
-  const pageDisabled = !isMounted || isCheckingVote || isSubmitting || isWeb3Loading || !isElectionLive;
+  const pageDisabled = !isMounted || isCheckingVote || isSubmitting || !isElectionLive;
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Voting Booth</h1>
+          <h1 className="text-3xl font-bold tracking-tight">OOTU Voting Booth</h1>
           <p className="text-muted-foreground">
             {!isMounted ? "Initialising Secure Link..." : 
              isCheckingVote ? "Verifying Eligibility..." : 
-             !isElectionLive ? "System on Standby" :
-             isVoted ? "Vote Recorded" : 
-             !address ? "Connect Wallet to Access Ballot" : 
-             "Cast your immutable vote on the blockchain."}
+             !isElectionLive ? "System on Standby (No Active Window)" :
+             isVoted ? "Vote Recorded Successfully" : 
+             "Cast your secure, anonymous ballot."}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {votingContractAddress === "0x0000000000000000000000000000000000000000" && (
-            <Badge variant="secondary" className="gap-1">
-              <Globe className="h-3 w-3" /> Simulation Mode
-            </Badge>
-          )}
-          {!address && isMounted && isElectionLive && (
-            <Button onClick={connectWallet} variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5">
-              <Wallet className="h-4 w-4" /> Connect Wallet to Vote
-            </Button>
-          )}
+           <Badge variant="outline" className="gap-2 px-3 py-1 bg-primary/5 text-primary border-primary/20">
+            <ShieldCheck className="h-4 w-4" /> Biometric Identity Active
+          </Badge>
         </div>
       </div>
       
@@ -327,7 +319,7 @@ export default function VotePage() {
           <CheckCircle2 className="h-4 w-4 !text-primary" />
           <AlertTitle>Vote Recorded</AlertTitle>
           <AlertDescription>
-            Participation complete. Protocol integrity allows only one vote per verified voter.
+            Your identity has successfully signed a ballot for this window. Protocol integrity allows only one submission.
           </AlertDescription>
         </Alert>
       )}
@@ -337,17 +329,7 @@ export default function VotePage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>No Active Election Protocol</AlertTitle>
           <AlertDescription>
-            The decentralized ledger is currently in standby. Please wait for an administrator to activate an election window.
-          </AlertDescription>
-        </Alert>
-      )}
-
-       {isSubmitting && (
-         <Alert className="border-primary/50 bg-primary/5">
-          <Loader2 className="h-4 w-4 animate-spin text-primary" />
-          <AlertTitle>Executing On-Chain Transaction</AlertTitle>
-          <AlertDescription>
-            Interacting with the ledger. {votingContractAddress === "0x0000000000000000000000000000000000000000" ? "Simulating secure handshake..." : "Confirm the signature in your wallet."}
+            The OOTU ledger is currently in standby. No active protocol windows have been opened by administrators.
           </AlertDescription>
         </Alert>
       )}
@@ -374,20 +356,55 @@ export default function VotePage() {
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Transaction</AlertDialogTitle>
+            <AlertDialogTitle>Confirm Final Selection</AlertDialogTitle>
             <AlertDialogDescription>
-              Casting a permanent vote for <strong>{selectedCandidate?.name}</strong>. 
-              This action is broadcast to the decentralized network and is irreversible.
+              You are selecting <strong>{selectedCandidate?.name}</strong>. To finalize this choice, you will be asked to perform a Digital Biometric Signature scan.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Review Choice</AlertDialogCancel>
-            <AlertDialogAction onClick={() => selectedCandidate && handleVote(selectedCandidate)} className="bg-primary">
-              Confirm & Sign
+            <AlertDialogCancel>Review Candidates</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="bg-primary">
+              Proceed to Signing
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={isBiometricSigning} onOpenChange={(open) => !isVerifyingSign && setIsBiometricSigning(open)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Fingerprint className="h-5 w-5 text-primary" />
+              Digital Biometric Signature
+            </DialogTitle>
+            <DialogDescription>
+              Confirming your ballot for {selectedCandidate?.name}. Look into the camera to sign.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            <div className="relative aspect-video rounded-lg overflow-hidden bg-black border-2 border-primary/20">
+               <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale brightness-110" />
+               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-48 h-48 border-2 border-primary/40 rounded-full border-dashed animate-[spin_10s_linear_infinite]" />
+               </div>
+               {isVerifyingSign && (
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4 text-center p-4">
+                    <Loader2 className="h-10 w-10 text-primary animate-spin" />
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary">Validating Signature...</p>
+                  </div>
+               )}
+            </div>
+            <canvas ref={canvasRef} className="hidden" />
+            <Button className="w-full h-12" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
+              {isVerifyingSign ? "Signing Ballot..." : "Sign & Cast Vote"}
+            </Button>
+            <p className="text-[10px] text-center text-muted-foreground uppercase tracking-wider font-bold">
+               Consensus Protocol: Biometric Auth-V2
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+

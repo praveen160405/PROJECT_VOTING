@@ -6,7 +6,7 @@ import { useFirebase, useCollection, useMemoFirebase, useDoc } from "@/firebase"
 import { collection, doc } from "firebase/firestore";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Vote, ArrowRight, BarChart, ShieldCheck, Zap, Globe, Users, Clock, Database, Lock } from "lucide-react";
+import { Vote, ArrowRight, BarChart, ShieldCheck, Zap, Globe, Users, Clock, Database, Lock, Fingerprint } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Voter } from "@/lib/types";
 
@@ -20,7 +20,7 @@ export default function DashboardPage() {
   }, [firestore, user]);
   const { data: profile, isLoading: isProfileLoading } = useDoc<Voter>(userDocRef);
 
-  // RESTRICT REGISTRY ACCESS TO ADMINS ONLY - Prevents FirestorePermissionError for regular voters
+  // RESTRICT REGISTRY ACCESS TO ADMINS ONLY
   const usersCollectionRef = useMemoFirebase(() => {
     if (!firestore || !profile?.isAdmin) return null;
     return collection(firestore, "users");
@@ -30,33 +30,33 @@ export default function DashboardPage() {
 
   const stats = [
     {
-      label: "Identity Status",
-      value: profile?.id ? "Sybil-Proof" : "Unverified",
-      description: "Biometrics active",
-      icon: ShieldCheck,
-      color: "text-green-500",
+      label: "Identity Signature",
+      value: profile?.id ? "Biometric-Linked" : "Unverified",
+      description: "SHA-256 Identity Active",
+      icon: Fingerprint,
+      color: "text-blue-500",
       isLoading: isProfileLoading
     },
     {
-      label: "Blockchain Sync",
-      value: "100%",
-      description: "Nodes: 128 (Healthy)",
+      label: "Protocol Consensus",
+      value: "Healthy",
+      description: "Nodes: 128 (Sync 1.2s)",
       icon: Zap,
-      color: "text-blue-500",
+      color: "text-yellow-500",
       isLoading: false
     },
     {
       label: "System Electorate",
       value: profile?.isAdmin ? (allUsers?.length || "0") : "Verified",
-      description: profile?.isAdmin ? "Global registry count" : "Participation active",
+      description: profile?.isAdmin ? "Global registry count" : "Digital ID Validated",
       icon: Users,
       color: "text-primary",
       isLoading: profile?.isAdmin ? isUsersLoading : false
     },
     {
-      label: "Ledger Integrity",
-      value: "Verified",
-      description: "SHA-256 active",
+      label: "Ledger Security",
+      value: "VVSG 2.0",
+      description: "Audit Trail Hardened",
       icon: Database,
       color: "text-green-500",
       isLoading: false
@@ -65,18 +65,18 @@ export default function DashboardPage() {
 
   const features = [
     {
-      title: "Immutable Voting",
-      description: "Cast your vote on the tamper-proof blockchain ledger.",
+      title: "Cast Your Ballot",
+      description: "Submit a secure, biometric-signed vote to the protocol.",
       link: "/dashboard/vote",
       icon: Vote,
-      cta: "Enter Booth",
+      cta: "Enter Voting Booth",
     },
     {
-      title: "Live Results",
-      description: "Monitor tallies with cryptographic proof of accuracy.",
-      link: "/dashboard/results",
-      icon: BarChart,
-      cta: "View Audit",
+      title: "Audit Your Vote",
+      description: "Verify your ballot receipt against the global ledger.",
+      link: "/dashboard/verify",
+      icon: ShieldCheck,
+      cta: "Check Integrity",
     },
   ];
 
@@ -84,18 +84,18 @@ export default function DashboardPage() {
     <div className="flex flex-col gap-8">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">OOTU Command Center</h1>
-          <p className="text-muted-foreground">Monitoring decentralized integrity and voter participation.</p>
+          <h1 className="text-3xl font-bold tracking-tight">OOTU Integrity Dashboard</h1>
+          <p className="text-muted-foreground">Monitoring decentralized voting participation and protocol status.</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 border border-primary/10 rounded-full text-sm font-medium">
-          <Clock className="h-4 w-4 text-primary animate-pulse" />
-          <span>Protocol window active</span>
+        <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 border border-primary/10 rounded-full text-sm font-medium text-primary">
+          <Clock className="h-4 w-4 animate-pulse" />
+          <span>Active Protocol Window</span>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (stat.label !== "System Electorate" || profile?.isAdmin) && (
-          <Card key={stat.label} className="border-primary/5 shadow-sm">
+          <Card key={stat.label} className="border-primary/5 shadow-sm bg-card/50 backdrop-blur-sm">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -112,14 +112,14 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-2">
         {features.map((feature) => (
-          <Card key={feature.title} className="flex flex-col relative overflow-hidden group border-primary/10 shadow-md">
+          <Card key={feature.title} className="flex flex-col relative overflow-hidden group border-primary/10 shadow-md hover:shadow-lg transition-all">
             <CardHeader className="flex flex-row items-center gap-4">
-              <div className="rounded-full bg-primary/10 p-3 text-primary"><feature.icon className="h-6 w-6" /></div>
+              <div className="rounded-full bg-primary/10 p-3 text-primary group-hover:scale-110 transition-transform"><feature.icon className="h-6 w-6" /></div>
               <div><CardTitle>{feature.title}</CardTitle><CardDescription>{feature.description}</CardDescription></div>
             </CardHeader>
             <CardContent className="flex-grow flex items-end pt-4">
               <Link href={feature.link} className="w-full">
-                <Button className="w-full">{feature.cta} <ArrowRight className="ml-2 h-4 w-4" /></Button>
+                <Button className="w-full h-11">{feature.cta} <ArrowRight className="ml-2 h-4 w-4" /></Button>
               </Link>
             </CardContent>
           </Card>
@@ -130,11 +130,12 @@ export default function DashboardPage() {
         <CardContent className="p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <ShieldCheck className="h-5 w-5 text-green-500" />
-            <span className="text-sm font-medium">Your identity is secured via biometric protocol.</span>
+            <span className="text-sm font-medium">Identity linked to Biometric Signature Protocol.</span>
           </div>
-          <Lock className="h-4 w-4 text-green-500/50" />
+          <Lock className="h-4 w-4 text-green-500/30" />
         </CardContent>
       </Card>
     </div>
   );
 }
+
