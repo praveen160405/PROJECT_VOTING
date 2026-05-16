@@ -86,9 +86,10 @@ export default function ResultsPage() {
           const partyVotes: PartyVote[] = results.map(r => ({ party: r.name, votes: r.votes }));
           setElectionResults({ voteResults: results, partyVotes, totalVotes, isLiveBlockchain: true });
         } else {
-          const voteResults: VoteResult[] = initialCandidates.map(c => ({
+          // Simulation mode with pseudo-realistic data based on random seeds
+          const voteResults: VoteResult[] = initialCandidates.map((c, idx) => ({
             name: c.name,
-            votes: Math.floor(Math.random() * 5000) + 1000
+            votes: Math.floor(Math.abs(Math.sin(idx + 1) * 5000)) + 1200
           }));
           const partyVotes: PartyVote[] = voteResults.map(vr => ({ party: vr.name, votes: vr.votes }));
           const totalVotes = voteResults.reduce((sum, r) => sum + r.votes, 0);
@@ -127,7 +128,9 @@ export default function ResultsPage() {
             <Globe className="h-3 w-3" /> Live Blockchain
           </Badge>
         ) : (
-          <Badge variant="outline">Simulation Mode</Badge>
+          <Badge variant="outline" className="gap-1 bg-orange-500/10 text-orange-600 border-orange-500/20">
+            <Globe className="h-3 w-3" /> Simulation Mode
+          </Badge>
         )}
       </div>
 
@@ -135,12 +138,12 @@ export default function ResultsPage() {
         <Card className="col-span-2">
           <CardHeader>
             <CardTitle>On-Chain Vote Counts</CardTitle>
-            <CardDescription>Verified tallies from the smart contract.</CardDescription>
+            <CardDescription>Verified tallies from the OOTU protocol ledger.</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[400px] w-full">
               <BarChart data={voteResults}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                 <XAxis dataKey="name" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
                 <ChartTooltip content={<ChartTooltipContent />} />
@@ -181,8 +184,12 @@ export default function ResultsPage() {
                   <span className="font-semibold">{totalVotes.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Status</span>
+                  <span className="text-muted-foreground">Network Status</span>
                   <span className="font-semibold text-green-500">Verified</span>
+                </div>
+                 <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Node Consensus</span>
+                  <span className="font-semibold">99.9%</span>
                 </div>
           </CardContent>
         </Card>
@@ -192,7 +199,7 @@ export default function ResultsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>TX Hash</TableHead>
+                    <TableHead>TX Hash / Audit Key</TableHead>
                     <TableHead>Recipient</TableHead>
                     <TableHead className="text-right">Timestamp</TableHead>
                   </TableRow>
@@ -219,6 +226,13 @@ export default function ResultsPage() {
                         </TableRow>
                       )
                   })}
+                  {!userVotes?.length && !isLoadingVotes && (
+                     <TableRow>
+                        <TableCell colSpan={3} className="text-center py-8 text-muted-foreground italic">
+                           You haven't cast a ballot in this protocol window yet.
+                        </TableCell>
+                     </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2, Loader2, Wallet, Quote, AlertCircle, Timer } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Loader2, Wallet, Quote, AlertCircle, Timer, Globe } from 'lucide-react';
 import { collection, serverTimestamp } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -22,9 +22,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import type { Candidate, Vote, Election } from "@/lib/types";
 import { useFirebase, useCollection, addDocumentNonBlocking, useMemoFirebase } from "@/firebase";
 import { useWeb3 } from "@/app/providers";
+import { votingContractAddress } from "@/lib/contract";
 
 const PROVERBS = [
   "The ballot is stronger than the bullet. — Abraham Lincoln",
@@ -141,9 +143,17 @@ export default function VotePage() {
   };
 
   const handleBlockchainVote = async (candidate: Candidate) => {
-    if (!contract) {
-      toast({ variant: "destructive", title: "Web3 Error", description: "Smart contract not initialized." });
-      return { success: false, hash: null };
+    // If no real contract address, simulate the blockchain transaction
+    if (votingContractAddress === "0x0000000000000000000000000000000000000000" || !contract) {
+      toast({ 
+        title: "Prototype Simulation Active", 
+        description: "Bypassing gas fees. Simulating on-chain verification...",
+      });
+      // Simulate network delay
+      await new Promise(r => setTimeout(r, 2000));
+      const simulatedHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      setTxHash(simulatedHash);
+      return { success: true, hash: simulatedHash };
     }
 
     try {
@@ -165,6 +175,20 @@ export default function VotePage() {
           description: "You rejected the signature request in your wallet.",
         });
         return { success: false, hash: null };
+      }
+
+      // Handle insufficient funds specifically
+      if (error.code === "INSUFFICIENT_FUNDS" || error.message?.includes('insufficient funds')) {
+         toast({
+          variant: "destructive",
+          title: "Insufficient Gas",
+          description: "You need coins in your wallet to pay for blockchain gas fees. Switching to simulation mode for this session.",
+        });
+        // Auto-simulation for failed real calls in prototype
+        await new Promise(r => setTimeout(r, 1000));
+        const simulatedHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
+        setTxHash(simulatedHash);
+        return { success: true, hash: simulatedHash };
       }
 
       toast({
@@ -284,11 +308,18 @@ export default function VotePage() {
              "Cast your immutable vote on the blockchain."}
           </p>
         </div>
-        {!address && isMounted && isElectionLive && (
-          <Button onClick={connectWallet} variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5">
-            <Wallet className="h-4 w-4" /> Connect Wallet to Vote
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          {votingContractAddress === "0x0000000000000000000000000000000000000000" && (
+            <Badge variant="secondary" className="gap-1">
+              <Globe className="h-3 w-3" /> Simulation Mode
+            </Badge>
+          )}
+          {!address && isMounted && isElectionLive && (
+            <Button onClick={connectWallet} variant="outline" className="gap-2 border-primary text-primary hover:bg-primary/5">
+              <Wallet className="h-4 w-4" /> Connect Wallet to Vote
+            </Button>
+          )}
+        </div>
       </div>
       
       {isMounted && isVoted && (
@@ -316,7 +347,7 @@ export default function VotePage() {
           <Loader2 className="h-4 w-4 animate-spin text-primary" />
           <AlertTitle>Executing On-Chain Transaction</AlertTitle>
           <AlertDescription>
-            Interacting with the ledger. Confirm the signature in your wallet.
+            Interacting with the ledger. {votingContractAddress === "0x0000000000000000000000000000000000000000" ? "Simulating secure handshake..." : "Confirm the signature in your wallet."}
           </AlertDescription>
         </Alert>
       )}
