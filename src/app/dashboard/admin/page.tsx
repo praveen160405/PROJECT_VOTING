@@ -69,7 +69,6 @@ export default function AdminPage() {
   const [newElectionName, setNewElectionName] = useState("");
   const [isStartingElection, setIsStartingElection] = useState(false);
   
-  // Secondary verification state
   const [isAdminVerified, setIsAdminVerified] = useState(false);
   const [verificationInput, setVerificationInput] = useState("");
 
@@ -188,7 +187,6 @@ export default function AdminPage() {
     return <Alert variant="destructive" className="m-8"><ShieldAlert className="h-4 w-4" /><AlertTitle>Access Denied</AlertTitle></Alert>;
   }
 
-  // Mandatory verification screen
   if (!isAdminVerified) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
@@ -225,9 +223,6 @@ export default function AdminPage() {
             </Button>
           </CardFooter>
         </Card>
-        <p className="text-xs text-muted-foreground italic">
-          Tip: Use the prototype master key (admin123)
-        </p>
       </div>
     );
   }
@@ -386,21 +381,6 @@ export default function AdminPage() {
               </CardContent>
             </Card>
           </div>
-
-          <Card>
-            <CardHeader><CardTitle>Candidate Roster Status</CardTitle></CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {initialCandidates.map(c => (
-                  <div key={c.id} className="p-4 bg-muted/20 rounded border flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">{c.name[0]}</div>
-                    <div><p className="font-bold text-sm">{c.name}</p><p className="text-[10px] text-muted-foreground uppercase tracking-widest">{c.party}</p></div>
-                    <Badge variant="outline" className="ml-auto text-[10px]">Verified</Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

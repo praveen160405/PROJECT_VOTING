@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -66,7 +65,6 @@ export default function LoginPage() {
     }
   }, [step, hasCameraPermission]);
 
-  // Handle the 10-second freeze countdown
   useEffect(() => {
     if (lockoutTimer > 0) {
       const timer = setInterval(() => {
@@ -152,13 +150,11 @@ export default function LoginPage() {
   const handleCredentialSubmit = async (values: z.infer<typeof loginSchema>) => {
     if (isBlocked || lockoutTimer > 0) return;
 
-    // Bot trap
     if (values.username_hp) {
       await logThreat("Bot Trapped via Honeypot", `Payload: ${values.username_hp}`);
       return;
     }
 
-    // Permanent audit block for extreme spam
     if (failedAttempts >= 10) {
        await logThreat("Sustained Brute Force Attempt", `Origin reached max failed attempts: ${failedAttempts}`);
        toast({
@@ -201,7 +197,6 @@ export default function LoginPage() {
       const newAttempts = failedAttempts + 1;
       setFailedAttempts(newAttempts);
 
-      // Trigger 10-second freeze every 3 failed attempts
       if (newAttempts % 3 === 0) {
         setLockoutTimer(10);
         toast({
@@ -384,7 +379,7 @@ export default function LoginPage() {
                       
                       {failedAttempts > 0 && lockoutTimer === 0 && (
                         <div className="flex items-center gap-2 justify-center p-2 rounded bg-orange-500/5 border border-orange-500/20 text-[10px] text-orange-600 font-bold uppercase">
-                           <AlertTriangle className="h-3 w-3" /> Failed Attempts: {failedAttempts} (Lockout at 3)
+                           <AlertTriangle className="h-3 w-3" /> Failed Attempts: {failedAttempts} (Freeze at 3)
                         </div>
                       )}
                     </form>

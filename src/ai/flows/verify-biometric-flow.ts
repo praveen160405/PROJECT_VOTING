@@ -28,7 +28,6 @@ const verifyBiometricPrompt = ai.definePrompt({
   input: { schema: VerifyBiometricInputSchema },
   output: { schema: VerifyBiometricOutputSchema },
   config: {
-    model: 'googleai/gemini-1.5-flash',
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
@@ -66,12 +65,12 @@ const verifyBiometricFlow = ai.defineFlow(
       const errorMessage = error.message || "Unknown error";
       
       // Handle model availability or capacity errors
-      if (errorMessage.includes('503') || errorMessage.includes('capacity') || errorMessage.includes('demand') || errorMessage.includes('Unavailable')) {
+      if (errorMessage.includes('503') || errorMessage.includes('capacity') || errorMessage.includes('demand') || errorMessage.includes('Unavailable') || errorMessage.includes('429')) {
         throw new Error("503: Forensic AI nodes are currently at capacity. Please retry in 30 seconds.");
       }
       
-      // Handle model not found errors
-      if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+      // Handle model not found or configuration errors
+      if (errorMessage.includes('404') || errorMessage.includes('not found') || errorMessage.includes('403')) {
         throw new Error("Biometric engine configuration mismatch. Please contact protocol administrators.");
       }
 
