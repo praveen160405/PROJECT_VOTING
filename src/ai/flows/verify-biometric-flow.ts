@@ -55,35 +55,48 @@ const verifyBiometricFlow = ai.defineFlow(
     outputSchema: VerifyBiometricOutputSchema,
   },
   async (input) => {
-    try {
-      const { output } = await verifyBiometricPrompt(input);
-      if (!output) {
-        throw new Error("Biometric AI engine failed to return a valid forensic result.");
+    let attempts = 0;
+    const maxAttempts = 2;
+    
+    while (attempts < maxAttempts) {
+      try {
+        const { output } = await verifyBiometricPrompt(input);
+        if (!output) {
+          throw new Error("Biometric AI engine failed to return a valid forensic result.");
+        }
+        return output;
+      } catch (error: any) {
+        attempts++;
+        const errorMessage = error.message || "Unknown error";
+        
+        // Handle transient model availability or capacity errors with a retry
+        const isTransient = 
+          errorMessage.includes('503') || 
+          errorMessage.includes('capacity') || 
+          errorMessage.includes('demand') || 
+          errorMessage.includes('Unavailable') || 
+          errorMessage.includes('429') ||
+          errorMessage.includes('404');
+        
+        if (isTransient && attempts < maxAttempts) {
+          // Wait 1.5 seconds before retrying
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          continue;
+        }
+        
+        if (isTransient) {
+          throw new Error("503: Forensic AI nodes are currently at capacity due to high election load. Please retry in 30 seconds.");
+        }
+        
+        // Catch safety blocks
+        if (errorMessage.includes('SAFETY') || errorMessage.includes('blocked')) {
+          throw new Error("Biometric input was blocked by safety filters. Ensure your face is clearly visible and centered.");
+        }
+        
+        throw new Error(`Biometric engine error: ${errorMessage}`);
       }
-      return output;
-    } catch (error: any) {
-      const errorMessage = error.message || "Unknown error";
-      
-      // Handle model availability or capacity errors
-      if (
-        errorMessage.includes('503') || 
-        errorMessage.includes('capacity') || 
-        errorMessage.includes('demand') || 
-        errorMessage.includes('Unavailable') || 
-        errorMessage.includes('429') ||
-        errorMessage.includes('404') ||
-        errorMessage.includes('not found')
-      ) {
-        throw new Error("503: Forensic AI nodes are currently at capacity or undergoing maintenance. Please retry in 30 seconds.");
-      }
-      
-      // Catch safety blocks
-      if (errorMessage.includes('SAFETY') || errorMessage.includes('blocked')) {
-        throw new Error("Biometric input was blocked by safety filters. Ensure your face is clearly visible and centered.");
-      }
-      
-      throw new Error(`Biometric engine error: ${errorMessage}`);
     }
+    throw new Error("Biometric engine error: Maximum node retry attempts reached.");
   }
 );
 

@@ -134,8 +134,6 @@ export default function LoginPage() {
 
         if (type.includes("Bot") || type.includes("DDoS")) {
           const blockRef = doc(firestore, 'blockedIps', ip.replace(/\./g, '_'));
-          // Log block but don't crash
-          getDoc(blockRef);
           setIsBlocked(true);
         }
       }
@@ -158,14 +156,24 @@ export default function LoginPage() {
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        throw new Error("voter-not-found");
+        toast({ 
+          variant: "destructive", 
+          title: "Authentication Failed", 
+          description: "No voter profile found for this ID."
+        });
+        return;
       }
 
       const userData = querySnapshot.docs[0].data();
       const email = userData.email;
 
       if (!email) {
-        throw new Error("missing-email");
+        toast({ 
+          variant: "destructive", 
+          title: "Protocol Error", 
+          description: "Missing identity email for this profile."
+        });
+        return;
       }
 
       await signInWithEmailAndPassword(auth!, email, values.password);
@@ -189,18 +197,14 @@ export default function LoginPage() {
         toast({
           variant: "destructive",
           title: "Security Cool-down",
-          description: "Too many incorrect attempts. Login is frozen for 10 seconds to prevent DDoS.",
+          description: "3 incorrect attempts. Protocol frozen for 10 seconds to prevent DDoS.",
         });
-        await logThreat("Rate Limit Triggered", `Voter ID attempt: ${values.voterId}`);
+        await logThreat("DDoS Prevention Triggered", `Voter ID attempt: ${values.voterId}`);
       } else {
-        const msg = error.code === 'auth/invalid-credential' || error.message === 'voter-not-found' 
-          ? "Invalid credentials. Please verify your Voter ID and password."
-          : "An unexpected protocol error occurred.";
-          
         toast({ 
           variant: "destructive", 
           title: "Authentication Failed", 
-          description: msg
+          description: "Invalid credentials. Please verify your Voter ID and password."
         });
       }
     }
@@ -246,7 +250,7 @@ export default function LoginPage() {
         }
       } catch (error: any) {
         const errorMsg = error.message || "";
-        const isHighDemand = errorMsg.includes("503") || errorMsg.includes("capacity") || errorMsg.includes("demand") || errorMsg.includes("404");
+        const isHighDemand = errorMsg.includes("503") || errorMsg.includes("capacity") || errorMsg.includes("demand");
         
         toast({
           variant: "destructive",

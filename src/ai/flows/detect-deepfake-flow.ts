@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview AI flow for detecting deepfakes and manipulated media.
@@ -57,17 +56,31 @@ const detectDeepfakeFlow = ai.defineFlow(
     outputSchema: DetectDeepfakeOutputSchema,
   },
   async (input) => {
-    try {
-      const { output } = await detectDeepfakePrompt(input);
-      if (!output) throw new Error("AI failed to return detection results.");
-      return output;
-    } catch (error: any) {
-      // Catch 503 errors and throw a meaningful message for the UI
-      if (error.message?.includes('503') || error.message?.includes('demand')) {
-        throw new Error("503: Forensic AI nodes are currently at capacity. Please retry in 30 seconds.");
+    let attempts = 0;
+    const maxAttempts = 2;
+
+    while (attempts < maxAttempts) {
+      try {
+        const { output } = await detectDeepfakePrompt(input);
+        if (!output) throw new Error("AI failed to return detection results.");
+        return output;
+      } catch (error: any) {
+        attempts++;
+        const errorMessage = error.message || "";
+        const isTransient = errorMessage.includes('503') || errorMessage.includes('demand') || errorMessage.includes('capacity');
+
+        if (isTransient && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          continue;
+        }
+
+        if (isTransient) {
+          throw new Error("503: Forensic AI nodes are currently at capacity. Please retry in 30 seconds.");
+        }
+        throw error;
       }
-      throw error;
     }
+    throw new Error("Forensic engine error: Maximum retry attempts reached.");
   }
 );
 
