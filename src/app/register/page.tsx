@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -166,7 +165,7 @@ export default function RegisterPage() {
     }
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await createUserWithEmailAndPassword(auth!, values.email, values.password);
       const user = userCredential.user;
 
       const userProfile = {
@@ -180,7 +179,7 @@ export default function RegisterPage() {
         isAdmin: false,
       };
 
-      const userDocRef = doc(firestore, "users", user.uid);
+      const userDocRef = doc(firestore!, "users", user.uid);
       setDocumentNonBlocking(userDocRef, userProfile, { merge: true });
 
       toast({
@@ -276,7 +275,6 @@ export default function RegisterPage() {
           <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Honeypot field */}
                 <div className="hidden" aria-hidden="true">
                   <FormField
                     control={control}

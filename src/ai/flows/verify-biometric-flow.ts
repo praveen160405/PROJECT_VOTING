@@ -71,6 +71,7 @@ const verifyBiometricFlow = ai.defineFlow(
       
       // Handle model not found or configuration errors
       if (errorMessage.includes('404') || errorMessage.includes('not found') || errorMessage.includes('403')) {
+        // Fallback or retry with the specific model ID if necessary
         throw new Error("Biometric engine configuration mismatch. Please contact protocol administrators.");
       }
 

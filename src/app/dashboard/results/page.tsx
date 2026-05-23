@@ -76,7 +76,6 @@ export default function ResultsPage() {
                 const votes = await contract.getVotes(numericId);
                 return { name: c.name, votes: Number(votes) };
               } catch (e) {
-                console.error(`Failed to fetch votes:`, e);
                 return { name: c.name, votes: 0 };
               }
             })
@@ -85,7 +84,6 @@ export default function ResultsPage() {
           const partyVotes: PartyVote[] = results.map(r => ({ party: r.name, votes: r.votes }));
           setElectionResults({ voteResults: results, partyVotes, totalVotes, isLiveBlockchain: true });
         } else {
-          // Simulation mode with pseudo-realistic data based on random seeds
           const voteResults: VoteResult[] = initialCandidates.map((c, idx) => ({
             name: c.name,
             votes: Math.floor(Math.abs(Math.sin(idx + 1) * 5000)) + 1200
@@ -95,7 +93,6 @@ export default function ResultsPage() {
           setElectionResults({ voteResults, partyVotes, totalVotes, isLiveBlockchain: false });
         }
       } catch (err) {
-        console.error("Error fetching results:", err);
         const mockResults: VoteResult[] = initialCandidates.map(c => ({ name: c.name, votes: 0 }));
         setElectionResults({ 
           voteResults: mockResults, 

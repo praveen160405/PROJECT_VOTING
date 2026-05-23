@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Key, Loader2, ShieldAlert, ZapOff, Lock, Fingerprint, Camera, ShieldCheck, Zap, AlertTriangle, Timer } from "lucide-react";
+import { Key, Loader2, ShieldAlert, Lock, Fingerprint, Camera, ShieldCheck, AlertTriangle, Timer } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -166,7 +166,7 @@ export default function LoginPage() {
     }
 
     try {
-      const usersRef = collection(firestore, "users");
+      const usersRef = collection(firestore!, "users");
       const q = query(usersRef, where("voterId", "==", values.voterId.toUpperCase()), limit(1));
       const querySnapshot = await getDocs(q);
 
@@ -181,7 +181,7 @@ export default function LoginPage() {
         throw new Error("missing-email");
       }
 
-      await signInWithEmailAndPassword(auth, email, values.password);
+      await signInWithEmailAndPassword(auth!, email, values.password);
       setProfile(userData);
 
       if (userData.faceImageHash) {
@@ -205,10 +205,14 @@ export default function LoginPage() {
           description: "Too many incorrect attempts. Login is frozen for 10 seconds.",
         });
       } else {
+        const msg = error.code === 'auth/invalid-credential' || error.message === 'voter-not-found' 
+          ? "Invalid credentials. Please verify your Voter ID and password."
+          : "An unexpected protocol error occurred.";
+          
         toast({ 
           variant: "destructive", 
           title: "Authentication Failed", 
-          description: "Invalid credentials. Please verify your Voter ID and password." 
+          description: msg
         });
       }
     }
@@ -248,7 +252,7 @@ export default function LoginPage() {
             description: "Live capture does not match the registered profile.",
           });
           logThreat("Biometric Spoofing Attempt", `Voter ID: ${profile.voterId}`);
-          await auth.signOut();
+          await auth!.signOut();
           setStep('credentials');
           setProfile(null);
         }
