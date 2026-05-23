@@ -63,15 +63,25 @@ const verifyBiometricFlow = ai.defineFlow(
       return output;
     } catch (error: any) {
       console.error("Verify Biometric Error:", error);
-      // Catch specific availability errors
-      if (error.message?.includes('503') || error.message?.includes('capacity') || error.message?.includes('demand')) {
+      
+      const errorMessage = error.message || "";
+      
+      // Handle model availability or capacity errors
+      if (errorMessage.includes('503') || errorMessage.includes('capacity') || errorMessage.includes('demand') || errorMessage.includes('Unavailable')) {
         throw new Error("503: Forensic AI nodes are currently at capacity. Please retry in 30 seconds.");
       }
+      
+      // Handle model not found errors
+      if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+        throw new Error("Biometric engine configuration mismatch. Please contact protocol administrators.");
+      }
+
       // Catch safety blocks
-      if (error.message?.includes('SAFETY') || error.message?.includes('blocked')) {
+      if (errorMessage.includes('SAFETY') || errorMessage.includes('blocked')) {
         throw new Error("Biometric input was blocked by safety filters. Ensure your face is clearly visible and centered.");
       }
-      throw new Error(`Biometric engine error: ${error.message || "Unknown error"}`);
+      
+      throw new Error(`Biometric engine error: ${errorMessage || "Unknown error"}`);
     }
   }
 );
