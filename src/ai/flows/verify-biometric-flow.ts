@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview AI flow for biometric facial verification.
@@ -88,7 +87,7 @@ const verifyBiometricFlow = ai.defineFlow(
            throw new Error("FORENSIC_SAFETY_BLOCK: AI forensic input was flagged. Ensure clear lighting and a neutral background.");
         }
         
-        throw new Error(`FORENSIC_NODE_UNAVAILABLE: The AI biometric node is currently unreachable. Please retry in 30 seconds.`);
+        throw new Error(`FORENSIC_NODE_UNAVAILABLE: The AI biometric node is currently unreachable. ${errorMessage}`);
       }
     }
     throw new Error("FORENSIC_NODE_TIMEOUT: AI nodes reached maximum retry threshold.");
