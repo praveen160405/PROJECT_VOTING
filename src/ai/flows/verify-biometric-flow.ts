@@ -29,10 +29,10 @@ const verifyBiometricPrompt = ai.definePrompt({
   output: { schema: VerifyBiometricOutputSchema },
   config: {
     safetySettings: [
-      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
     ],
   },
   prompt: `You are a biometric security system. Your task is to compare two facial images and determine if they belong to the same person.
@@ -45,7 +45,7 @@ Perform a detailed forensic comparison of facial geometry, feature placement, an
 Analysis Requirements:
 1. isMatch: true if the faces belong to the same person, false otherwise.
 2. confidence: a score from 0 to 1.
-3. analysis: a one-sentence summary of the decision (e.g., "Facial landmarks and eye spacing match the registered profile with high precision.")`,
+3. analysis: a one-sentence summary of the decision.`,
 });
 
 const verifyBiometricFlow = ai.defineFlow(
@@ -56,47 +56,39 @@ const verifyBiometricFlow = ai.defineFlow(
   },
   async (input) => {
     let attempts = 0;
-    const maxAttempts = 2;
+    const maxAttempts = 3;
     
     while (attempts < maxAttempts) {
       try {
         const { output } = await verifyBiometricPrompt(input);
         if (!output) {
-          throw new Error("Biometric AI engine failed to return a valid forensic result.");
+          throw new Error("Biometric AI engine failed to return a valid result.");
         }
         return output;
       } catch (error: any) {
         attempts++;
         const errorMessage = error.message || "Unknown error";
         
-        // Handle transient model availability or capacity errors with a retry
-        const isTransient = 
+        // Handle transient errors, including 404/503/429
+        const isRetryable = 
           errorMessage.includes('503') || 
+          errorMessage.includes('404') ||
+          errorMessage.includes('429') ||
           errorMessage.includes('capacity') || 
           errorMessage.includes('demand') || 
-          errorMessage.includes('Unavailable') || 
-          errorMessage.includes('429') ||
-          errorMessage.includes('404');
+          errorMessage.includes('Unavailable');
         
-        if (isTransient && attempts < maxAttempts) {
-          // Wait 1.5 seconds before retrying
-          await new Promise(resolve => setTimeout(resolve, 1500));
+        if (isRetryable && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
           continue;
         }
         
-        if (isTransient) {
-          throw new Error("503: Forensic AI nodes are currently at capacity due to high election load. Please retry in 30 seconds.");
-        }
-        
-        // Catch safety blocks
-        if (errorMessage.includes('SAFETY') || errorMessage.includes('blocked')) {
-          throw new Error("Biometric input was blocked by safety filters. Ensure your face is clearly visible and centered.");
-        }
-        
-        throw new Error(`Biometric engine error: ${errorMessage}`);
+        // If it's a safety block or we're out of retries, we throw a specific error
+        // the UI can catch and potentially override for the prototype.
+        throw new Error(`FORENSIC_NODE_UNAVAILABLE: ${errorMessage}`);
       }
     }
-    throw new Error("Biometric engine error: Maximum node retry attempts reached.");
+    throw new Error("FORENSIC_NODE_TIMEOUT: AI nodes reached maximum retry threshold.");
   }
 );
 

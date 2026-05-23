@@ -57,8 +57,8 @@ export default function ResultsPage() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     toast({
-      title: "TX Hash Copied",
-      description: "Hash copied for verification.",
+      title: "Audit Key Copied",
+      description: "SHA-256 hash ready for ledger audit.",
     });
   };
 
@@ -84,6 +84,7 @@ export default function ResultsPage() {
           const partyVotes: PartyVote[] = results.map(r => ({ party: r.name, votes: r.votes }));
           setElectionResults({ voteResults: results, partyVotes, totalVotes, isLiveBlockchain: true });
         } else {
+          // Protocol Simulation Fallback
           const voteResults: VoteResult[] = initialCandidates.map((c, idx) => ({
             name: c.name,
             votes: Math.floor(Math.abs(Math.sin(idx + 1) * 5000)) + 1200
@@ -116,25 +117,19 @@ export default function ResultsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Election Results</h1>
-          <p className="text-muted-foreground">Auditing the decentralized ledger in real-time.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Election Audit Center</h1>
+          <p className="text-muted-foreground">Monitoring decentralized ledger consensus in real-time.</p>
         </div>
-        {isLiveBlockchain ? (
-          <Badge variant="secondary" className="gap-1 bg-green-500/10 text-green-500">
-            <Globe className="h-3 w-3" /> Live Blockchain
-          </Badge>
-        ) : (
-          <Badge variant="outline" className="gap-1 bg-orange-500/10 text-orange-600 border-orange-500/20">
-            <Globe className="h-3 w-3" /> Simulation Mode
-          </Badge>
-        )}
+        <Badge variant={isLiveBlockchain ? "secondary" : "outline"} className={`gap-1 ${!isLiveBlockchain && 'bg-orange-500/10 text-orange-600 border-orange-500/20'}`}>
+          <Globe className="h-3 w-3" /> {isLiveBlockchain ? 'Live Node' : 'Protocol Simulation'}
+        </Badge>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
         <Card className="col-span-2">
           <CardHeader>
             <CardTitle>On-Chain Vote Counts</CardTitle>
-            <CardDescription>Verified tallies from the OOTU protocol ledger.</CardDescription>
+            <CardDescription>Verified tallies from the OOTU decentralized nodes.</CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[400px] w-full">
@@ -148,56 +143,34 @@ export default function ResultsPage() {
             </ChartContainer>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Party Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-               <PieChart>
-                 <ChartTooltip content={<ChartTooltipContent nameKey="party" />} />
-                 <Pie
-                   data={partyVotes}
-                   cx="50%"
-                   cy="50%"
-                   outerRadius={100}
-                   dataKey="votes"
-                   nameKey="party"
-                 >
-                   {partyVotes.map((entry) => (
-                     <Cell key={`cell-${entry.party}`} fill={chartConfig[entry.party]?.color} />
-                   ))}
-                 </Pie>
-               </PieChart>
-             </ChartContainer>
-          </CardContent>
-        </Card>
+
         <Card>
           <CardHeader><CardTitle>Statistics</CardTitle></CardHeader>
           <CardContent className="grid gap-4 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Votes Cast</span>
+                  <span className="text-muted-foreground">Total Ballots Cast</span>
                   <span className="font-semibold">{totalVotes.toLocaleString()}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Network Status</span>
-                  <span className="font-semibold text-green-500">Verified</span>
+                  <span className="text-muted-foreground">Protocol Health</span>
+                  <span className="font-semibold text-green-500">Active</span>
                 </div>
                  <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Node Consensus</span>
+                  <span className="text-muted-foreground">Ledger Sync</span>
                   <span className="font-semibold">99.9%</span>
                 </div>
           </CardContent>
         </Card>
+
         <Card className="md:col-span-2">
-            <CardHeader><CardTitle>Your Record</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Voter Integrity Ledger</CardTitle></CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>TX Hash / Audit Key</TableHead>
-                    <TableHead>Recipient</TableHead>
-                    <TableHead className="text-right">Timestamp</TableHead>
+                    <TableHead>Digital Receipt (Hash)</TableHead>
+                    <TableHead>Candidate</TableHead>
+                    <TableHead className="text-right">Audit Timestamp</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -215,9 +188,9 @@ export default function ResultsPage() {
                                 </Button>
                              </div>
                           </TableCell>
-                          <TableCell>{candidate?.name || 'Unknown'}</TableCell>
-                          <TableCell className="text-right">
-                            {vote.timestamp?.toDate ? format(vote.timestamp.toDate(), "PPp") : 'Confirming...'}
+                          <TableCell className="font-bold">{candidate?.name || 'Unknown'}</TableCell>
+                          <TableCell className="text-right text-xs">
+                            {vote.timestamp?.toDate ? format(vote.timestamp.toDate(), "PPp") : 'Broadcasting...'}
                           </TableCell>
                         </TableRow>
                       )
@@ -225,7 +198,7 @@ export default function ResultsPage() {
                   {!userVotes?.length && !isLoadingVotes && (
                      <TableRow>
                         <TableCell colSpan={3} className="text-center py-8 text-muted-foreground italic">
-                           You haven't cast a ballot in this protocol window yet.
+                           No ballot receipts found in current election window.
                         </TableCell>
                      </TableRow>
                   )}
