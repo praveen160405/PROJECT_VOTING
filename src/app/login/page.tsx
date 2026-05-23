@@ -71,7 +71,6 @@ export default function LoginPage() {
         videoRef.current.srcObject = stream;
       }
     } catch (error) {
-      console.error('Error accessing camera:', error);
       setHasCameraPermission(false);
       toast({
         variant: "destructive",
@@ -161,8 +160,12 @@ export default function LoginPage() {
         router.push("/dashboard");
       }
     } catch (error: any) {
-      console.error("Login Error:", error);
-      toast({ variant: "destructive", title: "Login Failed", description: "Invalid credentials. Please try again." });
+      // Graceful error handling for incorrect credentials
+      toast({ 
+        variant: "destructive", 
+        title: "Authentication Failed", 
+        description: "Invalid Voter ID or password. Please verify your credentials and try again." 
+      });
     }
   };
 
@@ -173,7 +176,6 @@ export default function LoginPage() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
-    // Optimized capture dimensions for AI processing
     canvas.width = 400;
     canvas.height = 300;
     const ctx = canvas.getContext('2d');
@@ -206,7 +208,6 @@ export default function LoginPage() {
           setProfile(null);
         }
       } catch (error: any) {
-        console.error("Biometric Verification Error:", error);
         const errorMsg = error.message || "";
         const isHighDemand = errorMsg.includes("503") || errorMsg.includes("capacity") || errorMsg.includes("demand");
         
@@ -215,7 +216,7 @@ export default function LoginPage() {
           title: isHighDemand ? "AI Forensic Busy" : "Biometric Error",
           description: isHighDemand 
             ? "AI verification nodes are at capacity. Please retry in 30 seconds." 
-            : errorMsg || "The biometric engine is currently unavailable. Please try again.",
+            : "The biometric engine is currently unavailable. Please try again.",
         });
       } finally {
         setIsVerifyingBiometric(false);

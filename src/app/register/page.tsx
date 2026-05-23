@@ -76,7 +76,6 @@ export default function RegisterPage() {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      // Use fixed dimensions for optimized biometric processing
       canvas.width = 400;
       canvas.height = 300;
       const ctx = canvas.getContext('2d');
@@ -132,17 +131,16 @@ export default function RegisterPage() {
       router.push("/login");
 
     } catch (error: any) {
-      console.error("Registration Error:", error);
-      let description = "An unexpected error occurred.";
+      let description = "An unexpected protocol error occurred.";
       if (error.code === 'auth/email-already-in-use') {
-        description = "This email is already registered in the OOTU protocol.";
+        description = "This identity email is already registered in the OOTU protocol. Please sign in instead.";
       } else if (error.message) {
         description = error.message;
       }
       
       toast({
         variant: "destructive",
-        title: "Registration Failed",
+        title: "Registration Denied",
         description: description,
       });
     }
@@ -161,7 +159,6 @@ export default function RegisterPage() {
           videoRef.current.srcObject = stream;
         }
       } catch (error) {
-        console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
       }
     };

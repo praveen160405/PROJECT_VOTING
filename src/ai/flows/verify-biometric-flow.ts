@@ -28,6 +28,7 @@ const verifyBiometricPrompt = ai.definePrompt({
   input: { schema: VerifyBiometricInputSchema },
   output: { schema: VerifyBiometricOutputSchema },
   config: {
+    model: 'googleai/gemini-1.5-flash',
     safetySettings: [
       { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
       { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
@@ -62,9 +63,7 @@ const verifyBiometricFlow = ai.defineFlow(
       }
       return output;
     } catch (error: any) {
-      console.error("Verify Biometric Error:", error);
-      
-      const errorMessage = error.message || "";
+      const errorMessage = error.message || "Unknown error";
       
       // Handle model availability or capacity errors
       if (errorMessage.includes('503') || errorMessage.includes('capacity') || errorMessage.includes('demand') || errorMessage.includes('Unavailable')) {
@@ -81,7 +80,7 @@ const verifyBiometricFlow = ai.defineFlow(
         throw new Error("Biometric input was blocked by safety filters. Ensure your face is clearly visible and centered.");
       }
       
-      throw new Error(`Biometric engine error: ${errorMessage || "Unknown error"}`);
+      throw new Error(`Biometric engine error: ${errorMessage}`);
     }
   }
 );
