@@ -62,7 +62,7 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
             </div>
         </div>
         {isVoted && (
-             <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center">
+             <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center z-10">
                 <CheckCircle2 className="h-12 w-12 text-primary" />
              </div>
         )}
@@ -178,6 +178,7 @@ export default function VotePage() {
     setIsVerifyingSign(true);
     const video = videoRef.current;
     const canvas = canvasRef.current;
+    
     // Optimized capture dimensions for AI processing
     canvas.width = 400;
     canvas.height = 300;
@@ -222,11 +223,16 @@ export default function VotePage() {
           });
         }
       } catch (error: any) {
-        const is503 = error.message?.includes('503') || error.message?.includes('capacity');
+        console.error("Biometric Signature Error:", error);
+        const errorMsg = error.message || "";
+        const isHighDemand = errorMsg.includes("503") || errorMsg.includes("capacity") || errorMsg.includes("demand");
+        
         toast({
           variant: "destructive",
-          title: is503 ? "Forensic Node Busy" : "Biometric Error",
-          description: is503 ? "AI nodes are currently busy. Please retry in 30 seconds." : "Could not verify biometric signature.",
+          title: isHighDemand ? "AI Forensic Busy" : "Signing Error",
+          description: isHighDemand 
+            ? "AI nodes are currently at capacity. Please retry in 30 seconds." 
+            : errorMsg || "Biometric signature engine unavailable.",
         });
       } finally {
         setIsVerifyingSign(false);
@@ -388,18 +394,18 @@ export default function VotePage() {
                   <div className="w-48 h-48 border-2 border-primary/40 rounded-full border-dashed animate-[spin_10s_linear_infinite]" />
                </div>
                {isVerifyingSign && (
-                  <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4 text-center p-4">
+                  <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4 text-center p-4 z-20">
                     <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                    <p className="text-xs font-bold uppercase tracking-widest text-primary">Validating Signature...</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">Neural Identity Sync Active</p>
                   </div>
                )}
             </div>
             <canvas ref={canvasRef} className="hidden" />
             <Button className="w-full h-12" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
-              {isVerifyingSign ? "Signing Ballot..." : "Sign & Cast Vote"}
+              {isVerifyingSign ? "Verifying Identity..." : "Sign & Cast Vote"}
             </Button>
-            <p className="text-[10px] text-center text-muted-foreground uppercase tracking-wider font-bold">
-               Consensus Protocol: Biometric Auth-V2
+            <p className="text-[10px] text-center text-muted-foreground uppercase tracking-widest">
+               OOTU Protocol: Biometric Signature v4.1
             </p>
           </div>
         </DialogContent>

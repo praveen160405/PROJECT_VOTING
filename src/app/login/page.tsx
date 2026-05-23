@@ -61,7 +61,7 @@ export default function LoginPage() {
     if (step === 'biometric' && !hasCameraPermission) {
       getCameraPermission();
     }
-  }, [step]);
+  }, [step, hasCameraPermission]);
 
   const getCameraPermission = async () => {
     try {
@@ -73,6 +73,11 @@ export default function LoginPage() {
     } catch (error) {
       console.error('Error accessing camera:', error);
       setHasCameraPermission(false);
+      toast({
+        variant: "destructive",
+        title: "Camera Access Denied",
+        description: "Camera is required for biometric identity verification.",
+      });
     }
   };
 
@@ -167,6 +172,7 @@ export default function LoginPage() {
     setIsVerifyingBiometric(true);
     const video = videoRef.current;
     const canvas = canvasRef.current;
+    
     // Optimized capture dimensions for AI processing
     canvas.width = 400;
     canvas.height = 300;
@@ -200,11 +206,16 @@ export default function LoginPage() {
           setProfile(null);
         }
       } catch (error: any) {
-        const is503 = error.message?.includes('503') || error.message?.includes('capacity');
+        console.error("Biometric Verification Error:", error);
+        const errorMsg = error.message || "";
+        const isHighDemand = errorMsg.includes("503") || errorMsg.includes("capacity") || errorMsg.includes("demand");
+        
         toast({
           variant: "destructive",
-          title: is503 ? "Forensic Node Busy" : "Audit Node Error",
-          description: is503 ? "AI nodes are currently at capacity. Retrying in 30s..." : "Biometric engine unavailable.",
+          title: isHighDemand ? "AI Forensic Busy" : "Biometric Error",
+          description: isHighDemand 
+            ? "AI verification nodes are at capacity. Please retry in 30 seconds." 
+            : errorMsg || "The biometric engine is currently unavailable. Please try again.",
         });
       } finally {
         setIsVerifyingBiometric(false);
@@ -271,10 +282,15 @@ export default function LoginPage() {
                           </FormItem>
                         )}
                       />
-                      <Button type="submit" className="w-full h-11" disabled={form.formState.isSubmitting}>
+                      <Button type="submit" className="w-full h-11" disabled={form.formState.isSubmitting || isBlocked}>
                         {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
                         Authenticate Credentials
                       </Button>
+                      {isBlocked && (
+                        <p className="text-xs text-center text-red-500 font-bold">
+                          Access denied for your origin.
+                        </p>
+                      )}
                     </form>
                   </Form>
                 </CardContent>
@@ -305,25 +321,28 @@ export default function LoginPage() {
                        <div className="w-48 h-48 border-2 border-accent/40 rounded-full border-dashed animate-[spin_10s_linear_infinite]" />
                     </div>
                     {isVerifyingBiometric && (
-                      <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+                      <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4 text-center p-4">
                         <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                        <p className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">Neural Pattern Match Active</p>
+                        <p className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">Forensic Identity Sync Active</p>
                       </div>
                     )}
                   </div>
                   <canvas ref={canvasRef} className="hidden" />
                   <Button className="w-full h-12 bg-accent hover:bg-accent/90" onClick={handleBiometricVerification} disabled={isVerifyingBiometric}>
                     {isVerifyingBiometric ? (
-                      <>Analyzing Facial Geometry...</>
+                      <>Analyzing Facial Mesh...</>
                     ) : (
                       <><Camera className="mr-2 h-5 w-5" /> Execute Biometric Scan</>
                     )}
                   </Button>
                 </CardContent>
-                <CardFooter className="bg-muted/30 p-4 border-t">
-                  <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setStep('credentials')}>
+                <CardFooter className="bg-muted/30 p-4 border-t flex flex-col gap-2">
+                  <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setStep('credentials')} disabled={isVerifyingBiometric}>
                     Back to Credentials
                   </Button>
+                  <p className="text-[10px] text-center text-muted-foreground uppercase tracking-widest">
+                    OOTU Protocol v4.1 Identity Engine
+                  </p>
                 </CardFooter>
               </Card>
             </motion.div>

@@ -27,14 +27,22 @@ const verifyBiometricPrompt = ai.definePrompt({
   name: 'verifyBiometricPrompt',
   input: { schema: VerifyBiometricInputSchema },
   output: { schema: VerifyBiometricOutputSchema },
+  config: {
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+    ],
+  },
   prompt: `You are a biometric security system. Your task is to compare two facial images and determine if they belong to the same person.
 
 Reference Image (Registered ID): {{media url=referenceImageUri}}
-Live Capture (Current Login): {{media url=liveCaptureUri}}
+Live Capture (Current Session): {{media url=liveCaptureUri}}
 
 Perform a detailed forensic comparison of facial geometry, feature placement, and bone structure. Account for differences in head pose, facial expression, and image quality. Ignore differences in lighting or background.
 
-Return a JSON object with:
+Analysis Requirements:
 1. isMatch: true if the faces belong to the same person, false otherwise.
 2. confidence: a score from 0 to 1.
 3. analysis: a one-sentence summary of the decision (e.g., "Facial landmarks and eye spacing match the registered profile with high precision.")`,
@@ -49,13 +57,21 @@ const verifyBiometricFlow = ai.defineFlow(
   async (input) => {
     try {
       const { output } = await verifyBiometricPrompt(input);
-      if (!output) throw new Error("Biometric AI engine failed to return a result.");
+      if (!output) {
+        throw new Error("Biometric AI engine failed to return a valid forensic result.");
+      }
       return output;
     } catch (error: any) {
-      if (error.message?.includes('503') || error.message?.includes('demand')) {
-        throw new Error("503: Biometric forensic nodes are currently at capacity. Please retry in 30 seconds.");
+      console.error("Verify Biometric Error:", error);
+      // Catch specific availability errors
+      if (error.message?.includes('503') || error.message?.includes('capacity') || error.message?.includes('demand')) {
+        throw new Error("503: Forensic AI nodes are currently at capacity. Please retry in 30 seconds.");
       }
-      throw error;
+      // Catch safety blocks
+      if (error.message?.includes('SAFETY') || error.message?.includes('blocked')) {
+        throw new Error("Biometric input was blocked by safety filters. Ensure your face is clearly visible and centered.");
+      }
+      throw new Error(`Biometric engine error: ${error.message || "Unknown error"}`);
     }
   }
 );
