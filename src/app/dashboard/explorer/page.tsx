@@ -45,22 +45,20 @@ export default function LedgerExplorerPage() {
   const { toast } = useToast();
   const { firestore } = useFirebase();
   const [blocks, setBlocks] = useState<Block[]>([]);
+  const [simulatedTxs, setSimulatedTxs] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [networkStatus, setNetworkStatus] = useState('Healthy');
 
   // Fetch recent transactions (votes) from the registry for transparency
-  // This uses the collectionGroup query rule defined in firestore.rules
   const recentVotesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
     return query(collection(firestore, 'users', 'global_votes_view', 'votes'), limit(10));
-    // Note: The above is a simplified reference. In OOTU, we'd use a collectionGroup or a dedicated public feed.
-    // For this prototype, we'll simulate the "Transactions" list if the query fails or for better UX.
   }, [firestore]);
 
   const { data: recentTransactions } = useCollection<Vote>(recentVotesQuery);
 
   useEffect(() => {
-    // Initialize simulated blocks
+    // Initialize simulated blocks on client mount to avoid hydration mismatch
     const initialBlocks: Block[] = Array.from({ length: 5 }, (_, i) => ({
       height: 125430 - i,
       hash: `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
@@ -71,10 +69,16 @@ export default function LedgerExplorerPage() {
     }));
     setBlocks(initialBlocks);
 
+    // Initialize simulated transactions on client mount
+    const initialTxs = Array.from({ length: 6 }, () => 
+      `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`
+    );
+    setSimulatedTxs(initialTxs);
+
     // Live block generator simulation
     const interval = setInterval(() => {
       setBlocks(prev => {
-        const newHeight = prev[0].height + 1;
+        const newHeight = prev.length > 0 ? prev[0].height + 1 : 125431;
         const newBlock: Block = {
           height: newHeight,
           hash: `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
@@ -104,7 +108,6 @@ export default function LedgerExplorerPage() {
       title: "Scanning Ledger...",
       description: `Searching for hash: ${searchQuery.substring(0, 10)}...`,
     });
-    // In a real app, this would query Firestore for the specific txHash
   };
 
   return (
@@ -131,7 +134,7 @@ export default function LedgerExplorerPage() {
               <p className="text-xs font-bold text-muted-foreground uppercase">Current Block</p>
               <Box className="h-4 w-4 text-primary/40" />
             </div>
-            <p className="text-2xl font-bold">{blocks[0]?.height || '125,430'}</p>
+            <p className="text-2xl font-bold">{blocks[0]?.height || '...'}</p>
             <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
               <Clock className="h-3 w-3" /> Average time: 15.2s
             </p>
@@ -261,32 +264,28 @@ export default function LedgerExplorerPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {/* Simulation of transaction list based on real data structure */}
-                {Array.from({ length: 6 }).map((_, i) => {
-                  const simulatedTx = `0x${Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
-                  return (
-                    <TableRow key={i} className="border-b hover:bg-muted/20">
-                      <TableCell className="font-mono text-[10px]">
-                        <div className="flex items-center gap-2">
-                          <span className="truncate max-w-[180px]">{simulatedTx}</span>
-                          <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => copyToClipboard(simulatedTx)}>
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="h-5 text-[9px] bg-green-500/5 text-green-600 border-green-500/20">Verified</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          {Array.from({ length: 5 }).map((_, j) => (
-                            <div key={j} className="w-1 h-1 rounded-full bg-green-500" />
-                          ))}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                {simulatedTxs.map((simulatedTx, i) => (
+                  <TableRow key={i} className="border-b hover:bg-muted/20">
+                    <TableCell className="font-mono text-[10px]">
+                      <div className="flex items-center gap-2">
+                        <span className="truncate max-w-[180px]">{simulatedTx}</span>
+                        <Button size="icon" variant="ghost" className="h-5 w-5" onClick={() => copyToClipboard(simulatedTx)}>
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="h-5 text-[9px] bg-green-500/5 text-green-600 border-green-500/20">Verified</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        {Array.from({ length: 5 }).map((_, j) => (
+                          <div key={j} className="w-1 h-1 rounded-full bg-green-500" />
+                        ))}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </CardContent>
