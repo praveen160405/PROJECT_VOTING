@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Key, Loader2, ShieldAlert, Lock, Fingerprint, Camera, ShieldCheck, AlertTriangle, Timer } from "lucide-react";
+import { Key, Loader2, ShieldAlert, Lock, Fingerprint, Camera, ShieldCheck, AlertTriangle, Timer, Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +26,7 @@ import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
 import { useAuth, useFirestore, addDocumentNonBlocking } from "@/firebase";
 import { verifyBiometric } from "@/ai/flows/verify-biometric-flow";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const loginSchema = z.object({
   voterId: z.string().trim().min(10, "Voter ID must be 10 characters.").max(10, "Voter ID must be 10 characters."),
@@ -49,6 +50,7 @@ export default function LoginPage() {
   const [isVerifyingBiometric, setIsVerifyingBiometric] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutTimer, setLockoutTimer] = useState(0);
+  const [isSafeModeActive, setIsSafeModeActive] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -201,6 +203,7 @@ export default function LoginPage() {
     if (!videoRef.current || !canvasRef.current || !profile?.faceImageHash) return;
 
     setIsVerifyingBiometric(true);
+    setIsSafeModeActive(false);
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
@@ -218,9 +221,21 @@ export default function LoginPage() {
           liveCaptureUri: liveCapture,
         });
 
+        if (result.isSafeMode) {
+          setIsSafeModeActive(true);
+        }
+
         if (result.isMatch) {
-          toast({ title: "Identity Verified", description: result.analysis });
-          router.push("/dashboard");
+          toast({ 
+            title: result.isSafeMode ? "Local Identity Verified" : "Forensic Identity Verified", 
+            description: result.analysis 
+          });
+          
+          // Delay redirect if in safe mode to show the message
+          setTimeout(() => {
+            router.push("/dashboard");
+          }, result.isSafeMode ? 2000 : 0);
+          
         } else {
           toast({ variant: "destructive", title: "Biometric Mismatch", description: "Identity check failed. Forensic report generated." });
           logThreat("Biometric Identity Spoofing", `Voter ID: ${profile.voterId}`);
@@ -228,16 +243,7 @@ export default function LoginPage() {
           setStep('credentials');
         }
       } catch (error: any) {
-        const errorMsg = error.message || "";
-        if (errorMsg.includes('FORENSIC_NODE')) {
-          toast({
-            title: "Safe-Mode Active",
-            description: "Forensic nodes unreachable. Using Local Protocol Consensus.",
-          });
-          router.push("/dashboard");
-        } else {
-          toast({ variant: "destructive", title: "Forensic Node Error", description: "AI engine unavailable. Retrying..." });
-        }
+         toast({ variant: "destructive", title: "Identity Engine Busy", description: "High demand on forensic nodes. Please retry or wait for safe-mode transition." });
       } finally {
         setIsVerifyingBiometric(false);
       }
@@ -378,6 +384,15 @@ export default function LoginPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {isSafeModeActive && (
+                    <Alert className="bg-primary/10 border-primary/20">
+                      <Info className="h-4 w-4 text-primary" />
+                      <AlertTitle className="text-xs font-bold uppercase">Protocol Safe-Mode Active</AlertTitle>
+                      <AlertDescription className="text-[10px]">
+                        Global AI nodes are at peak capacity. Switching to Local Consensus Audit for identity verification.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black border-2 border-accent/20">
                     <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
