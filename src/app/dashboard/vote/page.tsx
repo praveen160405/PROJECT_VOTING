@@ -1,4 +1,3 @@
-
 "use client"
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
@@ -88,7 +87,6 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
 
 export default function VotePage() {
   const [votedCandidateId, setVotedCandidateId] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | null>(null);
   const [isConfirming, setIsConfirming] = useState(false);
@@ -180,13 +178,14 @@ export default function VotePage() {
     setIsVerifyingSign(true);
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Optimized capture dimensions for AI processing
+    canvas.width = 400;
+    canvas.height = 300;
     const ctx = canvas.getContext('2d');
     
     if (ctx) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const liveCapture = canvas.toDataURL('image/jpeg', 0.8);
+      const liveCapture = canvas.toDataURL('image/jpeg', 0.85);
 
       try {
         const result = await verifyBiometric({
@@ -222,11 +221,12 @@ export default function VotePage() {
             description: "Biometric match failed. Please ensure clear lighting and try again.",
           });
         }
-      } catch (error) {
+      } catch (error: any) {
+        const is503 = error.message?.includes('503') || error.message?.includes('capacity');
         toast({
           variant: "destructive",
-          title: "Forensic Node Unavailable",
-          description: "Could not verify biometric signature at this time.",
+          title: is503 ? "Forensic Node Busy" : "Biometric Error",
+          description: is503 ? "AI nodes are currently busy. Please retry in 30 seconds." : "Could not verify biometric signature.",
         });
       } finally {
         setIsVerifyingSign(false);
@@ -292,7 +292,7 @@ export default function VotePage() {
 
   const isCheckingVote = isUserLoading || isLoadingVotes || areElectionsLoading;
   const isVoted = hasAlreadyVoted;
-  const pageDisabled = !isMounted || isCheckingVote || isSubmitting || !isElectionLive;
+  const pageDisabled = !isMounted || isCheckingVote || !isElectionLive;
 
   return (
     <div className="flex flex-col gap-6">
@@ -383,7 +383,7 @@ export default function VotePage() {
           </DialogHeader>
           <div className="space-y-6">
             <div className="relative aspect-video rounded-lg overflow-hidden bg-black border-2 border-primary/20">
-               <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale brightness-110" />
+               <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className="w-48 h-48 border-2 border-primary/40 rounded-full border-dashed animate-[spin_10s_linear_infinite]" />
                </div>
@@ -407,4 +407,3 @@ export default function VotePage() {
     </div>
   );
 }
-

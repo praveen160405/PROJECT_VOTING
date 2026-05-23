@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview AI flow for biometric facial verification.
@@ -33,7 +32,7 @@ const verifyBiometricPrompt = ai.definePrompt({
 Reference Image (Registered ID): {{media url=referenceImageUri}}
 Live Capture (Current Login): {{media url=liveCaptureUri}}
 
-Perform a detailed comparison of facial geometry, feature placement, and bone structure. Ignore differences in lighting, background, or minor clothing changes. Focus on permanent anatomical features.
+Perform a detailed forensic comparison of facial geometry, feature placement, and bone structure. Account for differences in head pose, facial expression, and image quality. Ignore differences in lighting or background.
 
 Return a JSON object with:
 1. isMatch: true if the faces belong to the same person, false otherwise.
@@ -48,9 +47,16 @@ const verifyBiometricFlow = ai.defineFlow(
     outputSchema: VerifyBiometricOutputSchema,
   },
   async (input) => {
-    const { output } = await verifyBiometricPrompt(input);
-    if (!output) throw new Error("Biometric AI engine failed to return a result.");
-    return output;
+    try {
+      const { output } = await verifyBiometricPrompt(input);
+      if (!output) throw new Error("Biometric AI engine failed to return a result.");
+      return output;
+    } catch (error: any) {
+      if (error.message?.includes('503') || error.message?.includes('demand')) {
+        throw new Error("503: Biometric forensic nodes are currently at capacity. Please retry in 30 seconds.");
+      }
+      throw error;
+    }
   }
 );
 

@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -144,11 +143,9 @@ export default function LoginPage() {
         return;
       }
 
-      // Authenticate with email/password first
       await signInWithEmailAndPassword(auth, email, values.password);
       setProfile(userData);
 
-      // Move to Biometric step
       if (userData.faceImageHash) {
         setStep('biometric');
         toast({
@@ -170,13 +167,14 @@ export default function LoginPage() {
     setIsVerifyingBiometric(true);
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    // Optimized capture dimensions for AI processing
+    canvas.width = 400;
+    canvas.height = 300;
     const ctx = canvas.getContext('2d');
     
     if (ctx) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const liveCapture = canvas.toDataURL('image/jpeg', 0.8);
+      const liveCapture = canvas.toDataURL('image/jpeg', 0.85);
 
       try {
         const result = await verifyBiometric({
@@ -201,11 +199,12 @@ export default function LoginPage() {
           setStep('credentials');
           setProfile(null);
         }
-      } catch (error) {
+      } catch (error: any) {
+        const is503 = error.message?.includes('503') || error.message?.includes('capacity');
         toast({
           variant: "destructive",
-          title: "Audit Node Error",
-          description: "Biometric AI engine is unavailable.",
+          title: is503 ? "Forensic Node Busy" : "Audit Node Error",
+          description: is503 ? "AI nodes are currently at capacity. Retrying in 30s..." : "Biometric engine unavailable.",
         });
       } finally {
         setIsVerifyingBiometric(false);
@@ -301,7 +300,7 @@ export default function LoginPage() {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black border-2 border-accent/20">
-                    <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale brightness-110" />
+                    <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                        <div className="w-48 h-48 border-2 border-accent/40 rounded-full border-dashed animate-[spin_10s_linear_infinite]" />
                     </div>

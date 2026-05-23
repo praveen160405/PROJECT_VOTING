@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -77,12 +76,13 @@ export default function RegisterPage() {
     if (videoRef.current && canvasRef.current) {
       const video = videoRef.current;
       const canvas = canvasRef.current;
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
+      // Use fixed dimensions for optimized biometric processing
+      canvas.width = 400;
+      canvas.height = 300;
       const ctx = canvas.getContext('2d');
       if (ctx) {
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
         setCapturedImage(dataUrl);
         toast({
           title: "Biometric Data Captured",
@@ -134,8 +134,6 @@ export default function RegisterPage() {
     } catch (error: any) {
       console.error("Registration Error:", error);
       let description = "An unexpected error occurred.";
-      
-      // Explicitly handle the email-already-in-use error
       if (error.code === 'auth/email-already-in-use') {
         description = "This email is already registered in the OOTU protocol.";
       } else if (error.message) {
