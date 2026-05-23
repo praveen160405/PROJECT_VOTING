@@ -23,6 +23,7 @@ import {
   Scale,
   Eye,
   FileText,
+  Activity,
 } from "lucide-react";
 import { Logo } from "./logo";
 import { useFirebase, useDoc, useMemoFirebase } from "@/firebase";
@@ -53,6 +54,7 @@ export function DashboardSidebar() {
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/dashboard/vote", label: "Vote", icon: Vote },
     { href: "/dashboard/verify", label: "Verify Integrity", icon: ShieldCheck },
+    { href: "/dashboard/explorer", label: "Ledger Explorer", icon: Activity },
     { href: "/dashboard/results", label: "Results", icon: BarChart },
     { href: "/dashboard/insights", label: "Insights", icon: BarChart3 },
     { href: "/dashboard/deepfake-detection", label: "AI Integrity Lab", icon: Eye },
