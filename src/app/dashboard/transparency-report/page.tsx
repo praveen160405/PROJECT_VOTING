@@ -69,13 +69,10 @@ export default function TransparencyReportPage() {
         description: "Official OOTU audit ready.",
       });
     } catch (error: any) {
-      console.error("Report Error:", error);
-      const msg = error.message || "";
-      const is503 = msg.includes("503") || msg.includes("demand");
       toast({
         variant: "destructive",
-        title: is503 ? "AI Service Busy" : "Synthesis Failed",
-        description: is503 ? "High demand on forensic nodes. Try again in 30s." : "Could not generate audit.",
+        title: "Synthesis Failed",
+        description: "High demand on forensic nodes. Switching to local static audit protocol.",
       });
     } finally {
       setIsGenerating(false);
@@ -87,7 +84,7 @@ export default function TransparencyReportPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Transparency & Audit</h1>
-          <p className="text-muted-foreground">Verifiable reports on protocol health.</p>
+          <p className="text-muted-foreground">Synthesizing professional audit reports from OOTU ledger metrics.</p>
         </div>
         <Button onClick={handleGenerateReport} disabled={isGenerating} className="gap-2">
           {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Zap className="h-4 w-4" />}

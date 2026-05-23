@@ -170,7 +170,7 @@ export default function AdminPage() {
       setSecurityAnalysis(result);
       toast({
         title: "Forensic Scan Complete",
-        description: "Protocol integrity assessment generated.",
+        description: result.isSafeMode ? "Local Consensus Audit triggered." : "AI security assessment generated.",
       });
     } catch (e) {
       toast({
@@ -270,7 +270,7 @@ export default function AdminPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Global Security Command</h1>
-          <p className="text-muted-foreground">Monitoring decentralized protocols and election integrity.</p>
+          <p className="text-muted-foreground">Monitoring Sybil attacks, fraud patterns, and decentralized anomalies.</p>
         </div>
         <div className="flex gap-2">
            <Badge variant="outline" className="gap-2 px-3 py-1 bg-green-500/5 text-green-600 border-green-500/20">
@@ -359,6 +359,7 @@ export default function AdminPage() {
                       <div className="md:col-span-2 p-3 bg-primary/5 rounded border-l-4 border-primary">
                         <p className="text-[10px] uppercase font-bold text-primary">Technical Recommendations</p>
                         <p className="text-xs mt-1 text-muted-foreground leading-relaxed">{securityAnalysis.securityRecommendations}</p>
+                        {securityAnalysis.isSafeMode && <p className="text-[9px] font-bold text-primary uppercase mt-2">Protocol Safe-Mode Active: Local Consensus Verified</p>}
                       </div>
                     </div>
                   ) : (

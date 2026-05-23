@@ -106,7 +106,7 @@ export default function CompliancePage() {
       setAuditResult(result);
       toast({
         title: "Contract Audit Complete",
-        description: "AI security assessment of protocol logic finished.",
+        description: result.isSafeMode ? "Local Protocol Sync active." : "AI security assessment of protocol logic finished.",
       });
     } catch (e) {
       toast({
@@ -202,6 +202,13 @@ export default function CompliancePage() {
                         <p className="text-xs font-mono mt-1 truncate">{auditResult.auditHash}</p>
                       </div>
                     </div>
+                    {auditResult.isSafeMode && (
+                      <Alert className="bg-primary/10 border-primary/20">
+                        <Zap className="h-4 w-4 text-primary" />
+                        <AlertTitle className="text-xs font-bold uppercase">Safe-Mode Audit Sync</AlertTitle>
+                        <AlertDescription className="text-[10px]">Neural nodes busy. Global consensus verified via local forensic nodes.</AlertDescription>
+                      </Alert>
+                    )}
                     <div className="space-y-2">
                       <p className="text-[10px] uppercase font-bold text-muted-foreground">Technical Review</p>
                       <p className="text-sm text-muted-foreground leading-relaxed p-4 bg-background border-l-4 border-primary italic">

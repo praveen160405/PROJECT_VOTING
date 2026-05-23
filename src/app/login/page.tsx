@@ -260,7 +260,7 @@ export default function LoginPage() {
           
           setTimeout(() => {
             router.push("/dashboard");
-          }, result.isSafeMode ? 2000 : 0);
+          }, result.isSafeMode ? 1500 : 0);
           
         } else {
           toast({ variant: "destructive", title: "Biometric Mismatch", description: "Identity check failed. Forensic report generated." });
@@ -283,7 +283,7 @@ export default function LoginPage() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-w-md"
+        className="w-full max-md"
       >
         <AnimatePresence mode="wait">
           {isBlocked ? (
