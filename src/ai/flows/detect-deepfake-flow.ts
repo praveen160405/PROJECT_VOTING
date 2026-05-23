@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview AI flow for detecting deepfakes and manipulated media.
@@ -33,6 +34,14 @@ const detectDeepfakePrompt = ai.definePrompt({
   name: 'detectDeepfakePrompt',
   input: { schema: DetectDeepfakeInputSchema },
   output: { schema: DetectDeepfakeOutputSchema },
+  config: {
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+    ],
+  },
   prompt: `You are an expert AI forensic analyst specializing in deepfake detection for high-stakes elections.
 
 Analyze the provided media for any signs of manipulation, including:
@@ -57,7 +66,7 @@ const detectDeepfakeFlow = ai.defineFlow(
   },
   async (input) => {
     let attempts = 0;
-    const maxAttempts = 2;
+    const maxAttempts = 3;
 
     while (attempts < maxAttempts) {
       try {
@@ -72,10 +81,13 @@ const detectDeepfakeFlow = ai.defineFlow(
           errorMessage.includes('demand') || 
           errorMessage.includes('capacity') ||
           errorMessage.includes('404') ||
-          errorMessage.includes('not found');
+          errorMessage.includes('not found') ||
+          errorMessage.includes('Unavailable') ||
+          errorMessage.includes('429');
 
         if (isTransient && attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // Exponential backoff for neural node retry
+          await new Promise(resolve => setTimeout(resolve, 1500 * attempts));
           continue;
         }
 

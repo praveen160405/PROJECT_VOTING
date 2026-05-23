@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview AI flow for biometric facial verification.
@@ -29,10 +30,10 @@ const verifyBiometricPrompt = ai.definePrompt({
   output: { schema: VerifyBiometricOutputSchema },
   config: {
     safetySettings: [
-      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
     ],
   },
   prompt: `You are a biometric security system. Your task is to compare two facial images and determine if they belong to the same person.
@@ -69,7 +70,6 @@ const verifyBiometricFlow = ai.defineFlow(
         attempts++;
         const errorMessage = error.message || "Unknown error";
         
-        // Handle transient errors, including 404/503/429
         const isRetryable = 
           errorMessage.includes('503') || 
           errorMessage.includes('404') ||
@@ -84,12 +84,11 @@ const verifyBiometricFlow = ai.defineFlow(
           continue;
         }
         
-        // If it's a safety block or we're out of retries, we throw a specific error
         if (errorMessage.includes('safety') || errorMessage.includes('blocked')) {
-           throw new Error("FORENSIC_SAFETY_BLOCK: AI input was flagged. Ensure clear lighting.");
+           throw new Error("FORENSIC_SAFETY_BLOCK: AI forensic input was flagged. Ensure clear lighting and a neutral background.");
         }
         
-        throw new Error(`FORENSIC_NODE_UNAVAILABLE: The AI forensic node is currently busy or unreachable. Please retry in 30 seconds.`);
+        throw new Error(`FORENSIC_NODE_UNAVAILABLE: The AI biometric node is currently unreachable. Please retry in 30 seconds.`);
       }
     }
     throw new Error("FORENSIC_NODE_TIMEOUT: AI nodes reached maximum retry threshold.");

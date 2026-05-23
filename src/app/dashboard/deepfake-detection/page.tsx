@@ -94,16 +94,16 @@ export default function DeepfakeDetectionPage() {
           });
         }
       } catch (error: any) {
-        console.error("Deepfake Analysis Error:", error);
+        // Operational error handled via toast, not console.error to avoid dev overlay
         const errorMsg = error.message || "";
-        const isHighDemand = errorMsg.includes("503") || errorMsg.includes("high demand") || errorMsg.includes("Unavailable");
+        const isHighDemand = errorMsg.includes("503") || errorMsg.includes("demand") || errorMsg.includes("capacity") || errorMsg.includes("BUSY");
         
         toast({
           variant: "destructive",
-          title: isHighDemand ? "AI Node High Demand" : "Analysis Failed",
+          title: isHighDemand ? "Forensic Node Busy" : "Analysis Failed",
           description: isHighDemand 
-            ? "The forensic AI node is currently experiencing high traffic. Please try again in 30 seconds." 
-            : "The AI node could not process this media or returned an error.",
+            ? "AI forensic nodes are currently at peak capacity. Please retry in 30 seconds." 
+            : "The forensic engine could not process this media. Ensure clear quality.",
         });
       } finally {
         setIsScanning(false);
