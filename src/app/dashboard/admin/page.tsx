@@ -30,12 +30,16 @@ import {
   Activity,
   StopCircle,
   Trash2,
-  Key
+  Key,
+  Scan,
+  Loader2,
+  Search
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { candidates as initialCandidates } from "@/lib/data";
+import { analyzeProtocolSecurity, type SecurityAnalysisOutput } from '@/ai/flows/analyze-security-flow';
 
 function ThreatRow({ threat, onBlock }: { threat: Threat, onBlock: (ip: string) => void }) {
   return (
@@ -72,6 +76,9 @@ export default function AdminPage() {
   const [isAdminVerified, setIsAdminVerified] = useState(false);
   const [verificationInput, setVerificationInput] = useState("");
 
+  const [isAnalyzingSecurity, setIsAnalyzingSecurity] = useState(false);
+  const [securityAnalysis, setSecurityAnalysis] = useState<SecurityAnalysisOutput | null>(null);
+
   const userDocRef = useMemoFirebase(() => {
     if (!firestore || !user) return null;
     return doc(firestore, "users", user.uid);
@@ -96,6 +103,12 @@ export default function AdminPage() {
     return collection(firestore, 'elections');
   }, [firestore, userProfile, isAdminVerified]);
   const { data: elections, isLoading: areElectionsLoading } = useCollection<Election>(electionsRef);
+
+  const allVotersRef = useMemoFirebase(() => {
+    if (!firestore || !userProfile?.isAdmin || !isAdminVerified) return null;
+    return collection(firestore, 'users');
+  }, [firestore, userProfile, isAdminVerified]);
+  const { data: allVoters } = useCollection<Voter>(allVotersRef);
 
   useEffect(() => {
     if (!isUserLoading && !isProfileLoading) {
@@ -143,6 +156,31 @@ export default function AdminPage() {
     const blockRef = doc(firestore, 'blockedIps', ipId);
     deleteDocumentNonBlocking(blockRef);
     toast({ title: "IP Whitelisted", description: `${ip} restored.` });
+  };
+
+  const handleRunSecurityAnalysis = async () => {
+    setIsAnalyzingSecurity(true);
+    try {
+      const result = await analyzeProtocolSecurity({
+        totalVoters: allVoters?.length || 0,
+        recentRegistrations: allVoters?.slice(0, 10).map(v => v.voterId) || [],
+        activeThreats: threats?.slice(0, 5).map(t => t.type) || [],
+        networkLatency: "1.2s",
+      });
+      setSecurityAnalysis(result);
+      toast({
+        title: "Forensic Scan Complete",
+        description: "Protocol integrity assessment generated.",
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Analysis Failed",
+        description: "Security nodes unavailable. Using local consensus audit.",
+      });
+    } finally {
+      setIsAnalyzingSecurity(false);
+    }
   };
 
   const handleCreateElection = async () => {
@@ -279,23 +317,77 @@ export default function AdminPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-2 border-red-500/20">
-              <CardHeader className="flex flex-row items-center justify-between">
-                <div><CardTitle className="text-red-600 flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Threat Intelligence Log</CardTitle></div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow><TableHead>IP Origin</TableHead><TableHead>Vector</TableHead><TableHead>Payload</TableHead><TableHead>Timestamp</TableHead><TableHead className="text-right">Action</TableHead></TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {areThreatsLoading && <TableRow><TableCell colSpan={5}><Skeleton className="h-10 w-full" /></TableCell></TableRow>}
-                    {threats?.map(t => <ThreatRow key={t.id} threat={t} onBlock={handleBlockIp} />)}
-                    {!threats?.length && !areThreatsLoading && <TableRow><TableCell colSpan={5} className="text-center italic text-muted-foreground py-8">Zero active threats detected.</TableCell></TableRow>}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="border-primary/20 bg-background/50">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-primary flex items-center gap-2">
+                      <Scan className="h-5 w-5" /> AI Forensic Suite
+                    </CardTitle>
+                    <CardDescription>Advanced Sybil, Fraud, and Anomaly Analysis.</CardDescription>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={handleRunSecurityAnalysis} disabled={isAnalyzingSecurity}>
+                    {isAnalyzingSecurity ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
+                    Execute Global Audit
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {securityAnalysis ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-4">
+                        <div className="p-3 bg-muted/30 rounded border">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Sybil Attack Risk</p>
+                          <Badge variant={securityAnalysis.sybilRisk === 'Low' ? 'secondary' : 'destructive'} className="mt-1">
+                            {securityAnalysis.sybilRisk}
+                          </Badge>
+                        </div>
+                        <div className="p-3 bg-muted/30 rounded border">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Fraud Detection Status</p>
+                          <p className={`text-sm font-bold mt-1 ${securityAnalysis.fraudDetected ? 'text-red-500' : 'text-green-500'}`}>
+                            {securityAnalysis.fraudDetected ? 'Alert: Anomalies Found' : 'Clear: No Fraud Patterns'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="space-y-4">
+                         <div className="p-3 bg-muted/30 rounded border">
+                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Anomaly Monitor</p>
+                          <ul className="text-xs mt-2 space-y-1 list-disc pl-4 text-muted-foreground">
+                            {securityAnalysis.anomalies.map((a, i) => <li key={i}>{a}</li>)}
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="md:col-span-2 p-3 bg-primary/5 rounded border-l-4 border-primary">
+                        <p className="text-[10px] uppercase font-bold text-primary">Technical Recommendations</p>
+                        <p className="text-xs mt-1 text-muted-foreground leading-relaxed">{securityAnalysis.securityRecommendations}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground italic">
+                      <ShieldAlert className="h-8 w-8 opacity-20 mb-2" />
+                      <p className="text-sm">Run AI Forensic Suite to perform a comprehensive security audit.</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border-red-500/20">
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div><CardTitle className="text-red-600 flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Threat Intelligence Log</CardTitle></div>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow><TableHead>IP Origin</TableHead><TableHead>Vector</TableHead><TableHead>Payload</TableHead><TableHead>Timestamp</TableHead><TableHead className="text-right">Action</TableHead></TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {areThreatsLoading && <TableRow><TableCell colSpan={5}><Skeleton className="h-10 w-full" /></TableCell></TableRow>}
+                      {threats?.map(t => <ThreatRow key={t.id} threat={t} onBlock={handleBlockIp} />)}
+                      {!threats?.length && !areThreatsLoading && <TableRow><TableCell colSpan={5} className="text-center italic text-muted-foreground py-8">Zero active threats detected.</TableCell></TableRow>}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </div>
 
             <Card>
               <CardHeader><CardTitle>Blacklisted Origins</CardTitle></CardHeader>

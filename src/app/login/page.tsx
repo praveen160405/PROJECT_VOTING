@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Key, Loader2, ShieldAlert, Lock, Fingerprint, Camera, ShieldCheck, AlertTriangle, Timer, Info } from "lucide-react";
+import { Key, Loader2, ShieldAlert, Lock, Fingerprint, Camera, ShieldCheck, AlertTriangle, Timer, Info, Activity } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +26,7 @@ import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
 import { useAuth, useFirestore, addDocumentNonBlocking } from "@/firebase";
 import { verifyBiometric } from "@/ai/flows/verify-biometric-flow";
+import { analyzeBehavioralAuth, type BehavioralAuthOutput } from "@/ai/flows/behavioral-auth-flow";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const loginSchema = z.object({
@@ -48,6 +49,8 @@ export default function LoginPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [isVerifyingBiometric, setIsVerifyingBiometric] = useState(false);
+  const [isAnalyzingBehavior, setIsAnalyzingBehavior] = useState(false);
+  const [behavioralResult, setBehavioralResult] = useState<BehavioralAuthOutput | null>(null);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [lockoutTimer, setLockoutTimer] = useState(0);
   const [isSafeModeActive, setIsSafeModeActive] = useState(false);
@@ -149,6 +152,29 @@ export default function LoginPage() {
     }
 
     try {
+      setIsAnalyzingBehavior(true);
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      const ip = ipData.ip || '0.0.0.0';
+
+      const behavior = await analyzeBehavioralAuth({
+        voterId: values.voterId,
+        ipAddress: ip,
+        userAgent: navigator.userAgent,
+        timestamp: new Date().toISOString(),
+      });
+      setBehavioralResult(behavior);
+      setIsAnalyzingBehavior(false);
+
+      if (behavior.riskScore > 0.8 && !behavior.isSafeMode) {
+        toast({
+          variant: "destructive",
+          title: "High Risk Detected",
+          description: "Behavioral audit flagged suspicious activity.",
+        });
+        await logThreat("High Behavioral Risk", `Voter ID: ${values.voterId}, Score: ${behavior.riskScore}`);
+      }
+
       const usersRef = collection(firestore!, "users");
       const q = query(usersRef, where("voterId", "==", values.voterId.toUpperCase()), limit(1));
       const querySnapshot = await getDocs(q);
@@ -173,6 +199,7 @@ export default function LoginPage() {
         router.push("/dashboard");
       }
     } catch (error: any) {
+      setIsAnalyzingBehavior(false);
       const newAttempts = failedAttempts + 1;
       setFailedAttempts(newAttempts);
 
@@ -231,7 +258,6 @@ export default function LoginPage() {
             description: result.analysis 
           });
           
-          // Delay redirect if in safe mode to show the message
           setTimeout(() => {
             router.push("/dashboard");
           }, result.isSafeMode ? 2000 : 0);
@@ -343,16 +369,21 @@ export default function LoginPage() {
                       <Button 
                         type="submit" 
                         className="w-full h-11" 
-                        disabled={form.formState.isSubmitting || lockoutTimer > 0}
+                        disabled={form.formState.isSubmitting || lockoutTimer > 0 || isAnalyzingBehavior}
                       >
-                        {form.formState.isSubmitting ? (
+                        {isAnalyzingBehavior ? (
+                           <>
+                             <Activity className="mr-2 h-4 w-4 animate-pulse" />
+                             Behavioral Audit...
+                           </>
+                        ) : form.formState.isSubmitting ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : lockoutTimer > 0 ? (
                           <Timer className="mr-2 h-4 w-4 animate-pulse" />
                         ) : (
                           <ShieldCheck className="mr-2 h-4 w-4" />
                         )}
-                        {lockoutTimer > 0 ? `Protocol Locked (${lockoutTimer}s)` : "Authenticate"}
+                        {lockoutTimer > 0 ? `Protocol Locked (${lockoutTimer}s)` : !isAnalyzingBehavior && !form.formState.isSubmitting && "Authenticate"}
                       </Button>
                       
                       {failedAttempts > 0 && lockoutTimer === 0 && (

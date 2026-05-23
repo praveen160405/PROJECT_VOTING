@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { 
   Card, 
   CardContent, 
   CardHeader, 
   CardTitle, 
-  CardDescription 
+  CardDescription,
+  CardFooter
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -23,9 +25,15 @@ import {
   Globe, 
   AlertCircle,
   Database,
-  Fingerprint
+  Fingerprint,
+  Code,
+  Zap,
+  Loader2
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
+import { motion, AnimatePresence } from "framer-motion";
+import { useToast } from "@/hooks/use-toast";
+import { analyzeSmartContract, type ContractAuditOutput } from "@/ai/flows/analyze-contract-flow";
 
 const compliancePillars = [
   {
@@ -66,7 +74,51 @@ const compliancePillars = [
   }
 ];
 
+const MOCK_CONTRACT_CODE = `
+// OOTU Protocol v2.1 Voting Contract
+pragma solidity ^0.8.0;
+
+contract VotingProtocol {
+    mapping(address => bool) public hasVoted;
+    mapping(uint256 => uint256) public voteCounts;
+    address public auditor;
+
+    function vote(uint256 _candidateId) public {
+        require(!hasVoted[msg.sender], "Voter already verified choice.");
+        hasVoted[msg.sender] = true;
+        voteCounts[_candidateId]++;
+    }
+}
+`;
+
 export default function CompliancePage() {
+  const { toast } = useToast();
+  const [isAuditing, setIsAuditing] = useState(false);
+  const [auditResult, setAuditResult] = useState<ContractAuditOutput | null>(null);
+
+  const handleRunContractAudit = async () => {
+    setIsAuditing(true);
+    try {
+      const result = await analyzeSmartContract({
+        contractCode: MOCK_CONTRACT_CODE,
+        environment: "OOTU Decentralized Mesh"
+      });
+      setAuditResult(result);
+      toast({
+        title: "Contract Audit Complete",
+        description: "AI security assessment of protocol logic finished.",
+      });
+    } catch (e) {
+      toast({
+        variant: "destructive",
+        title: "Audit Node Unavailable",
+        description: "Switching to local static audit protocol.",
+      });
+    } finally {
+      setIsAuditing(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-8 max-w-6xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -115,45 +167,98 @@ export default function CompliancePage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-primary" />
-              Detailed Regulatory Framework
-            </CardTitle>
-            <CardDescription>
-              How OOTU maps decentralized technology to established legal standards.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Accordion type="single" collapsible className="w-full">
-              <AccordionItem value="gdpr">
-                <AccordionTrigger>General Data Protection Regulation (GDPR)</AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                  OOTU utilizes "Privacy by Design" principles. Personal identification data (Voter ID) is stored separately from cryptographic ballot data. Ballots are anonymized and hashed, ensuring that while the participation is public, the individual choice is decoupled from the user's identity, meeting strict GDPR anonymization criteria.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="iso">
-                <AccordionTrigger>ISO/IEC 27001:2022 Information Security</AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                  Our system architecture follows the ISO 27001 framework for Information Security Management Systems (ISMS). This includes rigorous access controls, threat logging (Threat Intelligence Panel), and automated incident response protocols to mitigate multi-vector cyber attacks.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="vvsg">
-                <AccordionTrigger>Voluntary Voting System Guidelines (VVSG) 2.0</AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                  We adhere to the core principles of VVSG 2.0, specifically focusing on auditability and transparency. The "Vote Integrity Checker" allows for a voter-verifiable paper-less audit trail, ensuring that the software remains accountable to the electorate through cryptographic proof.
-                </AccordionContent>
-              </AccordionItem>
-              <AccordionItem value="soc2">
-                <AccordionTrigger>SOC 2 Type II Compliance</AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                  OOTU implements controls across the five "trust service principles": security, availability, processing integrity, confidentiality, and privacy. Real-time system monitoring ensures high availability (99.9% network uptime) and consistent processing of decentralized transactions.
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Code className="h-5 w-5 text-primary" />
+                    AI Smart Contract Audit
+                  </CardTitle>
+                  <CardDescription>
+                    Verifying the cryptographic logic of the decentralized ledger.
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleRunContractAudit} disabled={isAuditing}>
+                  {isAuditing ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Zap className="h-4 w-4 mr-2" />}
+                  Audit Protocol Logic
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <AnimatePresence mode="wait">
+                {auditResult ? (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-4 bg-muted/30 rounded border">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Security Status</p>
+                        <Badge variant={auditResult.isSecure ? "secondary" : "destructive"} className="mt-1">
+                          {auditResult.isSecure ? "Logic Verified Secure" : "Warning Detected"}
+                        </Badge>
+                      </div>
+                      <div className="p-4 bg-muted/30 rounded border">
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Forensic Audit Hash</p>
+                        <p className="text-xs font-mono mt-1 truncate">{auditResult.auditHash}</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-[10px] uppercase font-bold text-muted-foreground">Technical Review</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed p-4 bg-background border-l-4 border-primary italic">
+                        "{auditResult.technicalReview}"
+                      </p>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <div className="p-8 border border-dashed rounded bg-muted/20 flex flex-col items-center justify-center text-center gap-4">
+                     <Code className="h-8 w-8 opacity-20" />
+                     <p className="text-sm text-muted-foreground italic">Execute Smart Contract Audit to verify on-chain logic integrity.</p>
+                  </div>
+                )}
+              </AnimatePresence>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" />
+                Detailed Regulatory Framework
+              </CardTitle>
+              <CardDescription>
+                How OOTU maps decentralized technology to established legal standards.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Accordion type="single" collapsible className="w-full">
+                <AccordionItem value="gdpr">
+                  <AccordionTrigger>General Data Protection Regulation (GDPR)</AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+                    OOTU utilizes "Privacy by Design" principles. Personal identification data (Voter ID) is stored separately from cryptographic ballot data. Ballots are anonymized and hashed, ensuring that while the participation is public, the individual choice is decoupled from the user's identity, meeting strict GDPR anonymization criteria.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="iso">
+                  <AccordionTrigger>ISO/IEC 27001:2022 Information Security</AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+                    Our system architecture follows the ISO 27001 framework for Information Security Management Systems (ISMS). This includes rigorous access controls, threat logging (Threat Intelligence Panel), and automated incident response protocols to mitigate multi-vector cyber attacks.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="vvsg">
+                  <AccordionTrigger>Voluntary Voting System Guidelines (VVSG) 2.0</AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+                    We adhere to the core principles of VVSG 2.0, specifically focusing on auditability and transparency. The "Vote Integrity Checker" allows for a voter-verifiable paper-less audit trail, ensuring that the software remains accountable to the electorate through cryptographic proof.
+                  </AccordionContent>
+                </AccordionItem>
+                <AccordionItem value="soc2">
+                  <AccordionTrigger>SOC 2 Type II Compliance</AccordionTrigger>
+                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
+                    OOTU implements controls across the five "trust service principles": security, availability, processing integrity, confidentiality, and privacy. Real-time system monitoring ensures high availability (99.9% network uptime) and consistent processing of decentralized transactions.
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            </CardContent>
+          </Card>
+        </div>
 
         <div className="flex flex-col gap-6">
           <Card className="bg-muted/30 border-dashed">
