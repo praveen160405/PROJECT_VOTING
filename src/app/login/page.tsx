@@ -183,10 +183,15 @@ export default function LoginPage() {
         });
         await logThreat("Brute Force Detection", `Voter ID: ${values.voterId}`);
       } else {
+        let errorMsg = "Invalid Voter ID or Password. Identity mismatch logged.";
+        if (error.message === "NO_VOTER_PROFILE") {
+          errorMsg = "Voter ID not recognized in current ledger.";
+        }
+        
         toast({ 
           variant: "destructive", 
           title: "Access Denied", 
-          description: "Invalid Voter ID or Password. Identity mismatch logged."
+          description: errorMsg
         });
       }
     }
@@ -223,10 +228,10 @@ export default function LoginPage() {
           setStep('credentials');
         }
       } catch (error: any) {
-        // SAFE-MODE OVERRIDE: If the engine is busy/unavailable, we allow prototype access
-        if (error.message.includes('FORENSIC_NODE')) {
+        const errorMsg = error.message || "";
+        if (errorMsg.includes('FORENSIC_NODE')) {
           toast({
-            title: "Safe-Mode Override",
+            title: "Safe-Mode Active",
             description: "Forensic nodes unreachable. Using Local Protocol Consensus.",
           });
           router.push("/dashboard");

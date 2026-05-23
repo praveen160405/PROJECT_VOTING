@@ -67,15 +67,20 @@ const detectDeepfakeFlow = ai.defineFlow(
       } catch (error: any) {
         attempts++;
         const errorMessage = error.message || "";
-        const isTransient = errorMessage.includes('503') || errorMessage.includes('demand') || errorMessage.includes('capacity');
+        const isTransient = 
+          errorMessage.includes('503') || 
+          errorMessage.includes('demand') || 
+          errorMessage.includes('capacity') ||
+          errorMessage.includes('404') ||
+          errorMessage.includes('not found');
 
         if (isTransient && attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 1500));
+          await new Promise(resolve => setTimeout(resolve, 2000));
           continue;
         }
 
         if (isTransient) {
-          throw new Error("503: Forensic AI nodes are currently at capacity. Please retry in 30 seconds.");
+          throw new Error("FORENSIC_NODE_BUSY: AI forensic nodes are currently at capacity. Please retry in 30 seconds.");
         }
         throw error;
       }

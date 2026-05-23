@@ -192,7 +192,9 @@ export default function RegisterPage() {
     } catch (error: any) {
       let description = "An unexpected protocol error occurred.";
       if (error.code === 'auth/email-already-in-use') {
-        description = "This identity email is already registered.";
+        description = "This identity email is already registered in the system.";
+      } else if (error.code === 'auth/invalid-email') {
+        description = "The email address provided is invalid.";
       }
       
       toast({
