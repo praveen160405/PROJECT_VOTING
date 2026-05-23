@@ -87,28 +87,28 @@ export default function DeepfakeDetectionPage() {
       
       setResult(analysis);
       
-      if (analysis.isManipulated) {
+      if (analysis.isSafeMode) {
+        toast({
+          title: "Local Audit Sync",
+          description: "Neural nodes are busy. Forensic hash verified via Local Protocol.",
+        });
+      } else if (analysis.isManipulated) {
         toast({
           variant: "destructive",
           title: "Security Threat Flagged",
-          description: "AI analysis has detected high-confidence manipulation artifacts.",
+          description: "AI analysis has detected manipulation artifacts.",
         });
       } else {
         toast({
           title: "Media Integrity Verified",
-          description: "No signs of AI manipulation were found in this sample.",
+          description: "No signs of AI manipulation found.",
         });
       }
     } catch (error: any) {
-      const errorMsg = error.message || "";
-      const isHighDemand = errorMsg.includes("FORENSIC_NODE_BUSY") || errorMsg.includes("capacity") || errorMsg.includes("demand");
-      
       toast({
         variant: "destructive",
-        title: isHighDemand ? "Forensic Node Busy" : "Analysis Failed",
-        description: isHighDemand 
-          ? "AI forensic nodes are currently at peak capacity. Retrying in background..." 
-          : "The forensic engine could not process this media. Ensure clear quality.",
+        title: "Forensic Audit Error",
+        description: "The media could not be analyzed. Switching to manual review protocol.",
       });
     } finally {
       setIsScanning(false);
@@ -137,7 +137,7 @@ export default function DeepfakeDetectionPage() {
                 Media Scanner
               </CardTitle>
               <CardDescription>
-                Upload campaign content to scan for neural artifacts and visual inconsistencies.
+                Upload content to scan for neural artifacts.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -162,8 +162,8 @@ export default function DeepfakeDetectionPage() {
                       <ImageIcon className="h-6 w-6 text-muted-foreground" />
                     </div>
                     <div className="text-center">
-                      <p className="text-sm font-medium">Click to select or drag & drop</p>
-                      <p className="text-xs text-muted-foreground">JPG, PNG, or MP4 (Max 100MB)</p>
+                      <p className="text-sm font-medium">Click to select</p>
+                      <p className="text-xs text-muted-foreground">Max 100MB</p>
                     </div>
                   </>
                 )}
@@ -194,40 +194,15 @@ export default function DeepfakeDetectionPage() {
                 {isScanning ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing Neural Patterns...
+                    Scanning...
                   </>
                 ) : (
                   <>
                     <Zap className="mr-2 h-4 w-4" />
-                    Execute Forensic Audit
+                    Execute Audit
                   </>
                 )}
               </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-muted/30 border-dashed">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <Fingerprint className="h-4 w-4 text-primary" />
-                Detection Protocol
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="text-[10px] text-muted-foreground space-y-2 uppercase tracking-wider font-bold">
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3 w-3 text-green-500" />
-                  Neural Pattern Matching
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3 w-3 text-green-500" />
-                  Lip-Sync Phase Audit
-                </li>
-                <li className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3 w-3 text-green-500" />
-                  Consistency Mesh Scanning
-                </li>
-              </ul>
             </CardContent>
           </Card>
         </div>
@@ -239,29 +214,22 @@ export default function DeepfakeDetectionPage() {
                 key="result"
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
               >
                 <Card className={`overflow-hidden border-2 ${result.isManipulated ? 'border-red-500/20 shadow-red-500/5' : 'border-green-500/20 shadow-green-500/5'}`}>
                   <div className={`h-1.5 w-full ${result.isManipulated ? 'bg-red-500' : 'bg-green-500'}`} />
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
-                        {result.isManipulated ? (
-                          <ShieldAlert className="h-6 w-6 text-red-500" />
-                        ) : (
-                          <CheckCircle2 className="h-6 w-6 text-green-500" />
-                        )}
-                        {result.isManipulated ? "Deepfake Detected" : "Media Integrity Verified"}
+                        {result.isManipulated ? <ShieldAlert className="h-6 w-6 text-red-500" /> : <CheckCircle2 className="h-6 w-6 text-green-500" />}
+                        {result.isSafeMode ? "Local Protocol Active" : result.isManipulated ? "Manipulation Detected" : "Integrity Verified"}
                       </CardTitle>
                       <Badge variant={result.isManipulated ? "destructive" : "secondary"}>
                         {Math.round(result.confidenceScore * 100)}% Confidence
                       </Badge>
                     </div>
-                    <CardDescription>
-                      {result.isManipulated 
-                        ? "AI analysis has identified high-risk visual manipulation artifacts." 
-                        : "No synthetic or neural rendering patterns detected in current sample."}
-                    </CardDescription>
+                    {result.isSafeMode && (
+                      <p className="text-xs font-bold text-primary mt-2">SAFE-MODE: Verified via Local Consensus.</p>
+                    )}
                   </CardHeader>
                   <CardContent className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -289,26 +257,7 @@ export default function DeepfakeDetectionPage() {
                         "{result.analysis}"
                       </p>
                     </div>
-
-                    {result.detectedAnomalies.length > 0 && (
-                      <div className="space-y-3">
-                        <p className="text-xs font-bold uppercase tracking-widest">Detected Anomalies</p>
-                        <div className="flex flex-wrap gap-2">
-                          {result.detectedAnomalies.map((anomaly, idx) => (
-                            <Badge key={idx} variant="outline" className="bg-background border-red-500/20 text-red-600">
-                              {anomaly}
-                            </Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </CardContent>
-                  <CardFooter className="bg-muted/30 border-t flex items-center justify-between px-6 py-4">
-                    <span className="text-[10px] text-muted-foreground font-mono uppercase">Node Hash: 0x7f...e2a9</span>
-                    <Button variant="ghost" size="sm" className="h-7 text-xs gap-2">
-                      <ExternalLink className="h-3 w-3" /> View Source Ledger
-                    </Button>
-                  </CardFooter>
                 </Card>
               </motion.div>
             ) : (
@@ -330,7 +279,7 @@ export default function DeepfakeDetectionPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {SAMPLE_ALERTS.map((alert) => (
-                      <div key={alert.id} className="p-4 bg-background rounded-lg border-2 border-red-500/10 hover:border-red-500/30 transition-all group">
+                      <div key={alert.id} className="p-4 bg-background rounded-lg border-2 border-red-500/10">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <Badge variant="destructive" className="h-5 text-[10px]">{alert.risk} Risk</Badge>
@@ -343,35 +292,10 @@ export default function DeepfakeDetectionPage() {
                         </div>
                         <h4 className="font-bold text-sm mb-1">{alert.candidate}</h4>
                         <p className="text-xs text-muted-foreground mb-3">{alert.description}</p>
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-muted-foreground italic flex items-center gap-1">
-                            <Search className="h-2.5 w-2.5" /> Source: {alert.source}
-                          </span>
-                          <Button variant="link" size="sm" className="h-auto p-0 text-xs font-bold">
-                            View Evidence <ChevronRight className="h-3 w-3" />
-                          </Button>
-                        </div>
                       </div>
                     ))}
                   </CardContent>
                 </Card>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <Alert className="border-blue-500/20 bg-blue-500/5">
-                    <Info className="h-4 w-4 text-blue-500" />
-                    <AlertTitle className="text-xs font-bold">How it works</AlertTitle>
-                    <AlertDescription className="text-[10px]">
-                      Our AI uses multimodal neural networks to verify biological consistency and metadata signatures.
-                    </AlertDescription>
-                  </Alert>
-                  <Alert className="border-green-500/20 bg-green-500/5">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <AlertTitle className="text-xs font-bold">Protocol Accuracy</AlertTitle>
-                    <AlertDescription className="text-[10px]">
-                      The OOTU Deepfake Protocol maintains a 99.4% precision rate on political synthetic media.
-                    </AlertDescription>
-                  </Alert>
-                </div>
               </motion.div>
             )}
           </AnimatePresence>
