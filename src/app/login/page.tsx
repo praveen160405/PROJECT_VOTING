@@ -4,7 +4,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Key, Loader2, ShieldAlert, ZapOff, Lock, Fingerprint, Camera, ShieldCheck, Zap, AlertTriangle } from "lucide-react";
+import { Key, Loader2, ShieldAlert, ZapOff, Lock, Fingerprint, Camera, ShieldCheck, Zap, AlertTriangle, Timer } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -49,6 +49,7 @@ export default function LoginPage() {
   const [isBlocked, setIsBlocked] = useState(false);
   const [isVerifyingBiometric, setIsVerifyingBiometric] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutTimer, setLockoutTimer] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -64,6 +65,16 @@ export default function LoginPage() {
       getCameraPermission();
     }
   }, [step, hasCameraPermission]);
+
+  // Handle the 10-second freeze countdown
+  useEffect(() => {
+    if (lockoutTimer > 0) {
+      const timer = setInterval(() => {
+        setLockoutTimer((prev) => prev - 1);
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [lockoutTimer]);
 
   const getCameraPermission = async () => {
     try {
@@ -123,7 +134,6 @@ export default function LoginPage() {
           timestamp: serverTimestamp()
         });
 
-        // Auto-block if bot or high threat
         if (type.includes("Bot") || type.includes("DDoS")) {
           const blockRef = doc(firestore, 'blockedIps', ip.replace(/\./g, '_'));
           addDocumentNonBlocking(collection(firestore, 'blockedIps'), {
@@ -140,17 +150,17 @@ export default function LoginPage() {
   };
 
   const handleCredentialSubmit = async (values: z.infer<typeof loginSchema>) => {
-    if (isBlocked) return;
+    if (isBlocked || lockoutTimer > 0) return;
 
-    // Honeypot check
+    // Bot trap
     if (values.username_hp) {
-      await logThreat("Bot Honeypot Triggered", `Honeypot field filled: ${values.username_hp}`);
+      await logThreat("Bot Trapped via Honeypot", `Payload: ${values.username_hp}`);
       return;
     }
 
-    // Rate limiting
-    if (failedAttempts >= 5) {
-       await logThreat("DDoS / Brute Force Attempt", `Origin reached max failed attempts: ${failedAttempts}`);
+    // Permanent audit block for extreme spam
+    if (failedAttempts >= 10) {
+       await logThreat("Sustained Brute Force Attempt", `Origin reached max failed attempts: ${failedAttempts}`);
        toast({
          variant: "destructive",
          title: "Security Lockout",
@@ -165,17 +175,14 @@ export default function LoginPage() {
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        setFailedAttempts(prev => prev + 1);
-        toast({ variant: "destructive", title: "Login Failed", description: "No account found with this Voter ID." });
-        return;
+        throw new Error("voter-not-found");
       }
 
       const userData = querySnapshot.docs[0].data();
       const email = userData.email;
 
       if (!email) {
-        toast({ variant: "destructive", title: "Login Failed", description: "No email associated with this Voter ID." });
-        return;
+        throw new Error("missing-email");
       }
 
       await signInWithEmailAndPassword(auth, email, values.password);
@@ -184,19 +191,31 @@ export default function LoginPage() {
       if (userData.faceImageHash) {
         setStep('biometric');
         toast({
-          title: "Identity Authenticated",
-          description: "Proceeding to biometric verification step.",
+          title: "Credentials Authenticated",
+          description: "Proceeding to biometric verification.",
         });
       } else {
         router.push("/dashboard");
       }
     } catch (error: any) {
-      setFailedAttempts(prev => prev + 1);
-      toast({ 
-        variant: "destructive", 
-        title: "Authentication Failed", 
-        description: "Invalid credentials. Please verify your Voter ID and password." 
-      });
+      const newAttempts = failedAttempts + 1;
+      setFailedAttempts(newAttempts);
+
+      // Trigger 10-second freeze every 3 failed attempts
+      if (newAttempts % 3 === 0) {
+        setLockoutTimer(10);
+        toast({
+          variant: "destructive",
+          title: "Security Cool-down",
+          description: "Too many incorrect attempts. Login is frozen for 10 seconds.",
+        });
+      } else {
+        toast({ 
+          variant: "destructive", 
+          title: "Authentication Failed", 
+          description: "Invalid credentials. Please verify your Voter ID and password." 
+        });
+      }
     }
   };
 
@@ -275,7 +294,7 @@ export default function LoginPage() {
                     </div>
                     <CardTitle className="text-red-500">Access Denied</CardTitle>
                     <CardDescription>
-                      This origin has been blacklisted by the OOTU Forensic Shield due to suspicious activity.
+                      This origin has been blacklisted by the OOTU Forensic Shield due to security violations.
                     </CardDescription>
                  </CardHeader>
                  <CardFooter>
@@ -295,13 +314,12 @@ export default function LoginPage() {
                   </Link>
                   <CardTitle className="text-3xl font-bold tracking-tight">Voter Sign In</CardTitle>
                   <CardDescription className="text-muted-foreground pt-2">
-                    Enter your OOTU credentials to proceed.
+                    Identity verification for the OOTU Protocol.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleCredentialSubmit)} className="space-y-6">
-                      {/* Honeypot field - Hidden from humans */}
                       <div className="hidden" aria-hidden="true">
                         <FormField
                           control={form.control}
@@ -325,7 +343,7 @@ export default function LoginPage() {
                             <div className="relative">
                               <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                               <FormControl>
-                                <Input placeholder="ABC1234567" {...field} className="pl-10 uppercase" maxLength={10} />
+                                <Input placeholder="ABC1234567" {...field} className="pl-10 uppercase" maxLength={10} disabled={lockoutTimer > 0} />
                               </FormControl>
                             </div>
                             <FormMessage />
@@ -341,21 +359,32 @@ export default function LoginPage() {
                             <div className="relative">
                               <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                               <FormControl>
-                                <Input type="password" placeholder="••••••••" {...field} className="pl-10" />
+                                <Input type="password" placeholder="••••••••" {...field} className="pl-10" disabled={lockoutTimer > 0} />
                               </FormControl>
                             </div>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <Button type="submit" className="w-full h-11" disabled={form.formState.isSubmitting}>
-                        {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
-                        Authenticate Credentials
+
+                      <Button 
+                        type="submit" 
+                        className="w-full h-11" 
+                        disabled={form.formState.isSubmitting || lockoutTimer > 0}
+                      >
+                        {form.formState.isSubmitting ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : lockoutTimer > 0 ? (
+                          <Timer className="mr-2 h-4 w-4 animate-pulse" />
+                        ) : (
+                          <ShieldCheck className="mr-2 h-4 w-4" />
+                        )}
+                        {lockoutTimer > 0 ? `Security Cool-down (${lockoutTimer}s)` : "Verify Identity"}
                       </Button>
                       
-                      {failedAttempts > 0 && (
+                      {failedAttempts > 0 && lockoutTimer === 0 && (
                         <div className="flex items-center gap-2 justify-center p-2 rounded bg-orange-500/5 border border-orange-500/20 text-[10px] text-orange-600 font-bold uppercase">
-                           <AlertTriangle className="h-3 w-3" /> Failed Attempts: {failedAttempts}/5
+                           <AlertTriangle className="h-3 w-3" /> Failed Attempts: {failedAttempts} (Lockout at 3)
                         </div>
                       )}
                     </form>
@@ -376,9 +405,9 @@ export default function LoginPage() {
                   <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-2">
                     <Fingerprint className="h-6 w-6 text-accent" />
                   </div>
-                  <CardTitle className="text-2xl font-bold">Biometric Audit</CardTitle>
+                  <CardTitle className="text-2xl font-bold">Biometric Verification</CardTitle>
                   <CardDescription>
-                    Hello, {profile?.firstName}. Please look into the camera to verify your identity.
+                    Hello, {profile?.firstName}. Look into the camera to authenticate.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -390,16 +419,16 @@ export default function LoginPage() {
                     {isVerifyingBiometric && (
                       <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4 text-center p-4">
                         <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                        <p className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">Forensic Identity Sync Active</p>
+                        <p className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">Neural Identity Sync Active</p>
                       </div>
                     )}
                   </div>
                   <canvas ref={canvasRef} className="hidden" />
                   <Button className="w-full h-12 bg-accent hover:bg-accent/90" onClick={handleBiometricVerification} disabled={isVerifyingBiometric}>
                     {isVerifyingBiometric ? (
-                      <>Analyzing Facial Mesh...</>
+                      <>Analyzing Identity Mesh...</>
                     ) : (
-                      <><Camera className="mr-2 h-5 w-5" /> Execute Biometric Scan</>
+                      <><Camera className="mr-2 h-5 w-5" /> Capture Biometric Scan</>
                     )}
                   </Button>
                 </CardContent>
@@ -407,9 +436,6 @@ export default function LoginPage() {
                   <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setStep('credentials')} disabled={isVerifyingBiometric}>
                     Back to Credentials
                   </Button>
-                  <p className="text-[10px] text-center text-muted-foreground uppercase tracking-widest">
-                    OOTU Protocol v4.1 Identity Engine
-                  </p>
                 </CardFooter>
               </Card>
             </motion.div>
