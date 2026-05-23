@@ -1,9 +1,10 @@
+
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Key, Loader2, Mail, ShieldAlert, ZapOff, Lock, Fingerprint, Camera, RefreshCcw, CheckCircle2, ShieldCheck, Zap } from "lucide-react";
+import { Key, Loader2, ShieldAlert, ZapOff, Lock, Fingerprint, Camera, ShieldCheck, Zap, AlertTriangle } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,7 +31,7 @@ import { verifyBiometric } from "@/ai/flows/verify-biometric-flow";
 const loginSchema = z.object({
   voterId: z.string().trim().min(10, "Voter ID must be 10 characters.").max(10, "Voter ID must be 10 characters."),
   password: z.string().min(1, "Password is required."),
-  username_hp: z.string().max(0).optional(), 
+  username_hp: z.string().optional(), // Honeypot field
 });
 
 type LoginStep = 'credentials' | 'biometric';
@@ -47,6 +48,7 @@ export default function LoginPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [isBlocked, setIsBlocked] = useState(false);
   const [isVerifyingBiometric, setIsVerifyingBiometric] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -120,6 +122,17 @@ export default function LoginPage() {
           payload: payload,
           timestamp: serverTimestamp()
         });
+
+        // Auto-block if bot or high threat
+        if (type.includes("Bot") || type.includes("DDoS")) {
+          const blockRef = doc(firestore, 'blockedIps', ip.replace(/\./g, '_'));
+          addDocumentNonBlocking(collection(firestore, 'blockedIps'), {
+             ip,
+             reason: `Automated threat detected: ${type}`,
+             timestamp: serverTimestamp()
+          });
+          setIsBlocked(true);
+        }
       }
     } catch (e) {
       // Fail silent
@@ -129,12 +142,30 @@ export default function LoginPage() {
   const handleCredentialSubmit = async (values: z.infer<typeof loginSchema>) => {
     if (isBlocked) return;
 
+    // Honeypot check
+    if (values.username_hp) {
+      await logThreat("Bot Honeypot Triggered", `Honeypot field filled: ${values.username_hp}`);
+      return;
+    }
+
+    // Rate limiting
+    if (failedAttempts >= 5) {
+       await logThreat("DDoS / Brute Force Attempt", `Origin reached max failed attempts: ${failedAttempts}`);
+       toast({
+         variant: "destructive",
+         title: "Security Lockout",
+         description: "Too many failed attempts. Your IP has been flagged for audit.",
+       });
+       return;
+    }
+
     try {
       const usersRef = collection(firestore, "users");
       const q = query(usersRef, where("voterId", "==", values.voterId.toUpperCase()), limit(1));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
+        setFailedAttempts(prev => prev + 1);
         toast({ variant: "destructive", title: "Login Failed", description: "No account found with this Voter ID." });
         return;
       }
@@ -160,11 +191,11 @@ export default function LoginPage() {
         router.push("/dashboard");
       }
     } catch (error: any) {
-      // Graceful error handling for incorrect credentials
+      setFailedAttempts(prev => prev + 1);
       toast({ 
         variant: "destructive", 
         title: "Authentication Failed", 
-        description: "Invalid Voter ID or password. Please verify your credentials and try again." 
+        description: "Invalid credentials. Please verify your Voter ID and password." 
       });
     }
   };
@@ -200,7 +231,7 @@ export default function LoginPage() {
           toast({
             variant: "destructive",
             title: "Biometric Mismatch",
-            description: "Live capture does not match the registered profile. Login denied.",
+            description: "Live capture does not match the registered profile.",
           });
           logThreat("Biometric Spoofing Attempt", `Voter ID: ${profile.voterId}`);
           await auth.signOut();
@@ -216,7 +247,7 @@ export default function LoginPage() {
           title: isHighDemand ? "AI Forensic Busy" : "Biometric Error",
           description: isHighDemand 
             ? "AI verification nodes are at capacity. Please retry in 30 seconds." 
-            : "The biometric engine is currently unavailable. Please try again.",
+            : "The biometric engine is currently unavailable.",
         });
       } finally {
         setIsVerifyingBiometric(false);
@@ -235,7 +266,26 @@ export default function LoginPage() {
         className="w-full max-w-md"
       >
         <AnimatePresence mode="wait">
-          {step === 'credentials' ? (
+          {isBlocked ? (
+             <motion.div key="blocked" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+               <Card className="border-red-500/20 bg-red-500/5 shadow-2xl">
+                 <CardHeader className="text-center">
+                    <div className="mx-auto w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
+                      <ShieldAlert className="h-10 w-10 text-red-500" />
+                    </div>
+                    <CardTitle className="text-red-500">Access Denied</CardTitle>
+                    <CardDescription>
+                      This origin has been blacklisted by the OOTU Forensic Shield due to suspicious activity.
+                    </CardDescription>
+                 </CardHeader>
+                 <CardFooter>
+                    <Link href="/" className="w-full">
+                      <Button variant="outline" className="w-full">Return Home</Button>
+                    </Link>
+                 </CardFooter>
+               </Card>
+             </motion.div>
+          ) : step === 'credentials' ? (
             <motion.div key="credentials" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
               <Card className="glassmorphic-card shadow-2xl overflow-hidden">
                 <div className="h-1.5 w-full bg-primary" />
@@ -251,6 +301,21 @@ export default function LoginPage() {
                 <CardContent className="p-6">
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleCredentialSubmit)} className="space-y-6">
+                      {/* Honeypot field - Hidden from humans */}
+                      <div className="hidden" aria-hidden="true">
+                        <FormField
+                          control={form.control}
+                          name="username_hp"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormControl>
+                                <Input {...field} tabIndex={-1} autoComplete="off" />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+
                       <FormField
                         control={form.control}
                         name="voterId"
@@ -283,14 +348,15 @@ export default function LoginPage() {
                           </FormItem>
                         )}
                       />
-                      <Button type="submit" className="w-full h-11" disabled={form.formState.isSubmitting || isBlocked}>
+                      <Button type="submit" className="w-full h-11" disabled={form.formState.isSubmitting}>
                         {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldCheck className="mr-2 h-4 w-4" />}
                         Authenticate Credentials
                       </Button>
-                      {isBlocked && (
-                        <p className="text-xs text-center text-red-500 font-bold">
-                          Access denied for your origin.
-                        </p>
+                      
+                      {failedAttempts > 0 && (
+                        <div className="flex items-center gap-2 justify-center p-2 rounded bg-orange-500/5 border border-orange-500/20 text-[10px] text-orange-600 font-bold uppercase">
+                           <AlertTriangle className="h-3 w-3" /> Failed Attempts: {failedAttempts}/5
+                        </div>
                       )}
                     </form>
                   </Form>

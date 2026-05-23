@@ -20,13 +20,27 @@ service cloud.firestore {
       return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
+    // Injection Prevention: Validate schema for writes
+    function isValidVoter() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['id', 'voterId', 'email', 'firstName', 'lastName']) &&
+             data.voterId is string &&
+             data.voterId.size() == 10;
+    }
+
+    function isValidVote() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['voterId', 'candidateId', 'electionId', 'timestamp', 'isVerified', 'txHash']) &&
+             data.voterId == request.auth.uid;
+    }
+
     // User profiles
     match /users/{userId} {
-      allow get: if true; // Allow lookup by ID for login email mapping
-      allow list: if true; // Allow searching for email by voterId during login
-      allow create: if isOwner(userId) && request.resource.data.id == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
-      allow delete: if isExistingOwner(userId);
+      allow get: if true; 
+      allow list: if true; 
+      allow create: if isOwner(userId) && request.resource.data.id == userId && isValidVoter();
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id && isValidVoter();
+      allow delete: if isAdmin();
     }
 
     // This is the collection group query rule.
@@ -37,20 +51,24 @@ service cloud.firestore {
     // Votes
     match /users/{userId}/votes/{voteId} {
       allow get: if isOwner(userId);
-      allow create: if isOwner(userId) && request.resource.data.voterId == userId;
+      allow create: if isOwner(userId) && isValidVote();
       allow update, delete: if false; // Votes are immutable
     }
 
     // Threats - Anyone can report an attack attempt, but only admins can read.
+    // Validation prevents malicious parties from flooding the threat log with garbage.
     match /threats/{threatId} {
-      allow create: if true;
+      allow create: if request.resource.data.keys().hasAll(['ipAddress', 'type', 'timestamp']) &&
+                      request.resource.data.ipAddress is string;
       allow get, list: if isAdmin();
     }
 
-    // Blocked IPs - Anyone can check a specific IP (for login blocks), but only admins can manage.
+    // Blocked IPs
     match /blockedIps/{ipId} {
       allow get: if true;
-      allow list, create, update, delete: if isAdmin();
+      allow list: if isAdmin();
+      allow create: if true; // Allow logging self-blocks for bots
+      allow update, delete: if isAdmin();
     }
 
     // Public collections

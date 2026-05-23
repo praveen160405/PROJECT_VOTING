@@ -1,15 +1,16 @@
+
 "use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Loader2, Camera, ShieldCheck, Fingerprint, RefreshCcw, CheckCircle2, Mail, Lock, User } from "lucide-react";
+import { Loader2, Camera, ShieldCheck, Fingerprint, RefreshCcw, CheckCircle2, Mail, Lock, User, ShieldAlert } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useRef, useEffect } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc } from "firebase/firestore";
+import { doc, collection, serverTimestamp, getDoc } from "firebase/firestore";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +26,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
-import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
+import { useAuth, useFirestore, setDocumentNonBlocking, addDocumentNonBlocking } from "@/firebase";
 
 const registerSchema = z.object({
   fullName: z.string().trim().min(1, "Full name is required.").max(100, "Full name is too long."),
@@ -41,6 +42,7 @@ const registerSchema = z.object({
     .length(10, "Voter ID must be exactly 10 characters long.")
     .regex(/^[a-zA-Z]{3}[0-9]{7}$/, "Voter ID must be 3 letters followed by 7 numbers."),
   password: z.string().min(8, "Password must be at least 8 characters long.").max(72, "Password is too long."),
+  hp_field: z.string().optional(), // Honeypot
 });
 
 export default function RegisterPage() {
@@ -54,10 +56,59 @@ export default function RegisterPage() {
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [isBlocked, setIsBlocked] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+    checkIpBlock();
   }, []);
+
+  const checkIpBlock = async () => {
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      const ip = ipData.ip;
+      
+      if (ip && firestore) {
+        const blockDoc = await getDoc(doc(firestore, 'blockedIps', ip.replace(/\./g, '_')));
+        if (blockDoc.exists()) {
+          setIsBlocked(true);
+        }
+      }
+    } catch (e) {
+      // Fail silent
+    }
+  };
+
+  const logThreat = async (type: string, payload: string) => {
+    try {
+      const ipResponse = await fetch('https://api.ipify.org?format=json');
+      const ipData = await ipResponse.json();
+      const ip = ipData.ip || 'Unknown';
+
+      if (firestore) {
+        const threatsRef = collection(firestore, 'threats');
+        addDocumentNonBlocking(threatsRef, {
+          ipAddress: ip,
+          type: type,
+          payload: payload,
+          timestamp: serverTimestamp()
+        });
+
+        if (type.includes("Bot")) {
+          const blockRef = doc(firestore, 'blockedIps', ip.replace(/\./g, '_'));
+          setDocumentNonBlocking(blockRef, {
+             ip,
+             reason: `Automated threat detected: ${type}`,
+             timestamp: serverTimestamp()
+          }, { merge: true });
+          setIsBlocked(true);
+        }
+      }
+    } catch (e) {
+      // Fail silent
+    }
+  };
   
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -67,6 +118,7 @@ export default function RegisterPage() {
       aadharNumber: "",
       voterId: "",
       password: "",
+      hp_field: "",
     },
   });
 
@@ -85,7 +137,7 @@ export default function RegisterPage() {
         setCapturedImage(dataUrl);
         toast({
           title: "Biometric Data Captured",
-          description: "Your facial features have been mapped for identity verification.",
+          description: "Your facial features have been mapped.",
         });
       }
     }
@@ -96,11 +148,19 @@ export default function RegisterPage() {
   };
 
   const onSubmit = async (values: z.infer<typeof registerSchema>) => {
+    if (isBlocked) return;
+    
+    // Honeypot check
+    if (values.hp_field) {
+      await logThreat("Bot Honeypot Triggered", `Registration Honeypot: ${values.hp_field}`);
+      return;
+    }
+
     if (!capturedImage) {
       toast({
         variant: "destructive",
         title: "Biometric Required",
-        description: "Please capture your biometric ID photo to proceed.",
+        description: "Please capture your biometric ID photo.",
       });
       return;
     }
@@ -133,9 +193,7 @@ export default function RegisterPage() {
     } catch (error: any) {
       let description = "An unexpected protocol error occurred.";
       if (error.code === 'auth/email-already-in-use') {
-        description = "This identity email is already registered in the OOTU protocol. Please sign in instead.";
-      } else if (error.message) {
-        description = error.message;
+        description = "This identity email is already registered.";
       }
       
       toast({
@@ -185,6 +243,24 @@ export default function RegisterPage() {
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-full max-w-2xl"
       >
+        {isBlocked ? (
+           <Card className="border-red-500/20 bg-red-500/5 shadow-2xl">
+              <CardHeader className="text-center">
+                <div className="mx-auto w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
+                  <ShieldAlert className="h-10 w-10 text-red-500" />
+                </div>
+                <CardTitle className="text-red-500">Origin Restricted</CardTitle>
+                <CardDescription>
+                  Forensic audit flagged this origin for automated security violations.
+                </CardDescription>
+              </CardHeader>
+              <CardFooter>
+                <Link href="/" className="w-full">
+                  <Button variant="outline" className="w-full">Return Home</Button>
+                </Link>
+              </CardFooter>
+           </Card>
+        ) : (
         <Card className="glassmorphic-card shadow-2xl">
           <CardHeader className="items-center text-center p-6">
             <Link href="/" className="mb-4">
@@ -194,12 +270,27 @@ export default function RegisterPage() {
               Create a Voter Account
             </CardTitle>
             <CardDescription className="text-muted-foreground pt-2">
-              Identity verification is powered by biometrics and system encryption.
+              Identity verification is powered by biometrics and encryption.
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* Honeypot field */}
+                <div className="hidden" aria-hidden="true">
+                  <FormField
+                    control={control}
+                    name="hp_field"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormControl>
+                          <Input {...field} tabIndex={-1} autoComplete="off" />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                       control={control}
@@ -370,6 +461,7 @@ export default function RegisterPage() {
               </div>
           </CardFooter>
         </Card>
+        )}
       </motion.div>
     </main>
   );
