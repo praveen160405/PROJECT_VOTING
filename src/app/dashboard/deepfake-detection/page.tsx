@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -63,52 +62,57 @@ export default function DeepfakeDetectionPage() {
     }
   };
 
+  const readFileAsDataURL = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleScan = async () => {
     if (!mediaFile) return;
 
     setIsScanning(true);
     setResult(null);
 
-    const reader = new FileReader();
-    reader.readAsDataURL(mediaFile);
-    reader.onload = async () => {
-      const base64 = reader.result as string;
-      try {
-        const analysis = await detectDeepfake({
-          mediaDataUri: base64,
-          contentType: mediaFile.type,
-          context: "Election campaign monitoring",
-        });
-        setResult(analysis);
-        
-        if (analysis.isManipulated) {
-          toast({
-            variant: "destructive",
-            title: "Security Threat Flagged",
-            description: "AI analysis has detected high-confidence manipulation artifacts.",
-          });
-        } else {
-          toast({
-            title: "Media Integrity Verified",
-            description: "No signs of AI manipulation were found in this sample.",
-          });
-        }
-      } catch (error: any) {
-        // Operational error handled via toast, not console.error to avoid dev overlay
-        const errorMsg = error.message || "";
-        const isHighDemand = errorMsg.includes("503") || errorMsg.includes("demand") || errorMsg.includes("capacity") || errorMsg.includes("BUSY");
-        
+    try {
+      const base64 = await readFileAsDataURL(mediaFile);
+      const analysis = await detectDeepfake({
+        mediaDataUri: base64,
+        contentType: mediaFile.type,
+        context: "Election campaign monitoring forensic audit",
+      });
+      
+      setResult(analysis);
+      
+      if (analysis.isManipulated) {
         toast({
           variant: "destructive",
-          title: isHighDemand ? "Forensic Node Busy" : "Analysis Failed",
-          description: isHighDemand 
-            ? "AI forensic nodes are currently at peak capacity. Please retry in 30 seconds." 
-            : "The forensic engine could not process this media. Ensure clear quality.",
+          title: "Security Threat Flagged",
+          description: "AI analysis has detected high-confidence manipulation artifacts.",
         });
-      } finally {
-        setIsScanning(false);
+      } else {
+        toast({
+          title: "Media Integrity Verified",
+          description: "No signs of AI manipulation were found in this sample.",
+        });
       }
-    };
+    } catch (error: any) {
+      const errorMsg = error.message || "";
+      const isHighDemand = errorMsg.includes("FORENSIC_NODE_BUSY") || errorMsg.includes("capacity") || errorMsg.includes("demand");
+      
+      toast({
+        variant: "destructive",
+        title: isHighDemand ? "Forensic Node Busy" : "Analysis Failed",
+        description: isHighDemand 
+          ? "AI forensic nodes are currently at peak capacity. Retrying in background..." 
+          : "The forensic engine could not process this media. Ensure clear quality.",
+      });
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   return (
@@ -159,7 +163,7 @@ export default function DeepfakeDetectionPage() {
                     </div>
                     <div className="text-center">
                       <p className="text-sm font-medium">Click to select or drag & drop</p>
-                      <p className="text-xs text-muted-foreground">JPG, PNG, or MP4 (Max 10MB)</p>
+                      <p className="text-xs text-muted-foreground">JPG, PNG, or MP4 (Max 100MB)</p>
                     </div>
                   </>
                 )}
@@ -190,7 +194,7 @@ export default function DeepfakeDetectionPage() {
                 {isScanning ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing Patterns...
+                    Analyzing Neural Patterns...
                   </>
                 ) : (
                   <>

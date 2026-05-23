@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview AI flow for detecting deepfakes and manipulated media.
@@ -86,15 +85,14 @@ const detectDeepfakeFlow = ai.defineFlow(
           errorMessage.includes('429');
 
         if (isTransient && attempts < maxAttempts) {
-          // Exponential backoff for neural node retry
-          await new Promise(resolve => setTimeout(resolve, 1500 * attempts));
+          await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
           continue;
         }
 
         if (isTransient) {
           throw new Error("FORENSIC_NODE_BUSY: AI forensic nodes are currently at capacity. Please retry in 30 seconds.");
         }
-        throw error;
+        throw new Error(`FORENSIC_ENGINE_ERROR: ${errorMessage}`);
       }
     }
     throw new Error("Forensic engine error: Maximum retry attempts reached.");

@@ -79,7 +79,7 @@ const verifyBiometricFlow = ai.defineFlow(
           errorMessage.includes('not found');
         
         if (isRetryable && attempts < maxAttempts) {
-          await new Promise(resolve => setTimeout(resolve, 1500 * attempts));
+          await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
           continue;
         }
         
@@ -87,7 +87,7 @@ const verifyBiometricFlow = ai.defineFlow(
            throw new Error("FORENSIC_SAFETY_BLOCK: AI forensic input was flagged. Ensure clear lighting and a neutral background.");
         }
         
-        throw new Error(`FORENSIC_NODE_UNAVAILABLE: The AI biometric node is currently unreachable. ${errorMessage}`);
+        throw new Error(`BIOMETRIC_ENGINE_ERROR: ${errorMessage}`);
       }
     }
     throw new Error("FORENSIC_NODE_TIMEOUT: AI nodes reached maximum retry threshold.");
