@@ -65,16 +65,18 @@ const verifyBiometricFlow = ai.defineFlow(
       const errorMessage = error.message || "Unknown error";
       
       // Handle model availability or capacity errors
-      if (errorMessage.includes('503') || errorMessage.includes('capacity') || errorMessage.includes('demand') || errorMessage.includes('Unavailable') || errorMessage.includes('429')) {
-        throw new Error("503: Forensic AI nodes are currently at capacity. Please retry in 30 seconds.");
+      if (
+        errorMessage.includes('503') || 
+        errorMessage.includes('capacity') || 
+        errorMessage.includes('demand') || 
+        errorMessage.includes('Unavailable') || 
+        errorMessage.includes('429') ||
+        errorMessage.includes('404') ||
+        errorMessage.includes('not found')
+      ) {
+        throw new Error("503: Forensic AI nodes are currently at capacity or undergoing maintenance. Please retry in 30 seconds.");
       }
       
-      // Handle model not found or configuration errors
-      if (errorMessage.includes('404') || errorMessage.includes('not found') || errorMessage.includes('403')) {
-        // Fallback or retry with the specific model ID if necessary
-        throw new Error("Biometric engine configuration mismatch. Please contact protocol administrators.");
-      }
-
       // Catch safety blocks
       if (errorMessage.includes('SAFETY') || errorMessage.includes('blocked')) {
         throw new Error("Biometric input was blocked by safety filters. Ensure your face is clearly visible and centered.");

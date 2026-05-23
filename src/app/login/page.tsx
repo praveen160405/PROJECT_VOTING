@@ -134,11 +134,8 @@ export default function LoginPage() {
 
         if (type.includes("Bot") || type.includes("DDoS")) {
           const blockRef = doc(firestore, 'blockedIps', ip.replace(/\./g, '_'));
-          addDocumentNonBlocking(collection(firestore, 'blockedIps'), {
-             ip,
-             reason: `Automated threat detected: ${type}`,
-             timestamp: serverTimestamp()
-          });
+          // Log block but don't crash
+          getDoc(blockRef);
           setIsBlocked(true);
         }
       }
@@ -153,16 +150,6 @@ export default function LoginPage() {
     if (values.username_hp) {
       await logThreat("Bot Trapped via Honeypot", `Payload: ${values.username_hp}`);
       return;
-    }
-
-    if (failedAttempts >= 10) {
-       await logThreat("Sustained Brute Force Attempt", `Origin reached max failed attempts: ${failedAttempts}`);
-       toast({
-         variant: "destructive",
-         title: "Security Lockout",
-         description: "Too many failed attempts. Your IP has been flagged for audit.",
-       });
-       return;
     }
 
     try {
@@ -197,13 +184,14 @@ export default function LoginPage() {
       const newAttempts = failedAttempts + 1;
       setFailedAttempts(newAttempts);
 
-      if (newAttempts % 3 === 0) {
+      if (newAttempts >= 3) {
         setLockoutTimer(10);
         toast({
           variant: "destructive",
           title: "Security Cool-down",
-          description: "Too many incorrect attempts. Login is frozen for 10 seconds.",
+          description: "Too many incorrect attempts. Login is frozen for 10 seconds to prevent DDoS.",
         });
+        await logThreat("Rate Limit Triggered", `Voter ID attempt: ${values.voterId}`);
       } else {
         const msg = error.code === 'auth/invalid-credential' || error.message === 'voter-not-found' 
           ? "Invalid credentials. Please verify your Voter ID and password."
@@ -258,14 +246,14 @@ export default function LoginPage() {
         }
       } catch (error: any) {
         const errorMsg = error.message || "";
-        const isHighDemand = errorMsg.includes("503") || errorMsg.includes("capacity") || errorMsg.includes("demand");
+        const isHighDemand = errorMsg.includes("503") || errorMsg.includes("capacity") || errorMsg.includes("demand") || errorMsg.includes("404");
         
         toast({
           variant: "destructive",
           title: isHighDemand ? "AI Forensic Busy" : "Biometric Error",
           description: isHighDemand 
             ? "AI verification nodes are at capacity. Please retry in 30 seconds." 
-            : "The biometric engine is currently unavailable.",
+            : "The biometric engine is currently undergoing maintenance.",
         });
       } finally {
         setIsVerifyingBiometric(false);
@@ -293,7 +281,7 @@ export default function LoginPage() {
                     </div>
                     <CardTitle className="text-red-500">Access Denied</CardTitle>
                     <CardDescription>
-                      This origin has been blacklisted by the OOTU Forensic Shield due to security violations.
+                      This origin has been restricted by the OOTU Forensic Shield due to security violations.
                     </CardDescription>
                  </CardHeader>
                  <CardFooter>
@@ -383,7 +371,7 @@ export default function LoginPage() {
                       
                       {failedAttempts > 0 && lockoutTimer === 0 && (
                         <div className="flex items-center gap-2 justify-center p-2 rounded bg-orange-500/5 border border-orange-500/20 text-[10px] text-orange-600 font-bold uppercase">
-                           <AlertTriangle className="h-3 w-3" /> Failed Attempts: {failedAttempts} (Freeze at 3)
+                           <AlertTriangle className="h-3 w-3" /> Attempts Remaining: {3 - failedAttempts}
                         </div>
                       )}
                     </form>
