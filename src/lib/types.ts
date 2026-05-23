@@ -14,6 +14,8 @@ export type Vote = {
   electionId: string;
   timestamp: any;
   isVerified: boolean;
+  isPanic?: boolean;
+  isDecoy?: boolean;
   txHash?: string;
 };
 

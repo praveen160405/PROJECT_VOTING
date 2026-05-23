@@ -1,9 +1,26 @@
+
 "use client"
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, CheckCircle2, Loader2, Quote, AlertCircle, Timer, Globe, Camera, Fingerprint, ShieldCheck } from 'lucide-react';
+import { 
+  ArrowRight, 
+  CheckCircle2, 
+  Loader2, 
+  Quote, 
+  AlertCircle, 
+  Timer, 
+  Globe, 
+  Camera, 
+  Fingerprint, 
+  ShieldCheck,
+  ShieldAlert,
+  Ghost,
+  EyeOff,
+  RefreshCcw,
+  ShieldOff
+} from 'lucide-react';
 import { collection, serverTimestamp, doc } from "firebase/firestore";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -29,6 +46,8 @@ import {
 } from "@/components/ui/dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import type { Candidate, Vote, Election, Voter } from "@/lib/types";
 import { useFirebase, useCollection, addDocumentNonBlocking, useMemoFirebase, useDoc } from "@/firebase";
 import { verifyBiometric } from "@/ai/flows/verify-biometric-flow";
@@ -43,13 +62,11 @@ const PROVERBS = [
 ];
 
 function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean, disabled: boolean }) {
-  const isDisabled = isVoted || disabled;
-
   return (
     <Card 
-      onClick={() => !isDisabled && onVote(candidate)}
+      onClick={() => !disabled && onVote(candidate)}
       className="group/card relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60"
-      data-disabled={isDisabled ? true : undefined}
+      data-disabled={disabled ? true : undefined}
     >
       <div className="relative w-full aspect-square bg-primary/5 flex items-center justify-center border-b p-6">
         <div className="flex flex-col items-center gap-4">
@@ -74,16 +91,15 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
         <Button 
           variant={isVoted ? "secondary" : "default"} 
           className="w-full gap-2" 
-          disabled={isDisabled}
+          disabled={disabled}
         >
           {isVoted ? <CheckCircle2 className="h-4 w-4" /> : null}
-          {isVoted ? "Vote Cast" : "Cast Vote"}
+          {isVoted ? "Re-sign Ballot" : "Cast Vote"}
         </Button>
       </CardContent>
     </Card>
   );
 }
-
 
 export default function VotePage() {
   const [votedCandidateId, setVotedCandidateId] = useState<string | null>(null);
@@ -94,6 +110,10 @@ export default function VotePage() {
   const [isVerifyingSign, setIsVerifyingSign] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [currentProverb, setCurrentProverb] = useState<string>("");
+
+  // Anti-Coercion States
+  const [isPanicMode, setIsPanicMode] = useState(false);
+  const [isDecoyMode, setIsDecoyMode] = useState(false);
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -160,12 +180,11 @@ export default function VotePage() {
 
   const handleInitiateVote = (candidate: Candidate) => {
     if (!user) {
-        toast({ variant: "destructive", title: "Not Logged In", description: "Please log in to vote." });
         router.push('/login');
         return;
     }
     if (!isElectionLive) {
-        toast({ variant: "destructive", title: "Protocol Standby", description: "No active election window found on the ledger." });
+        toast({ variant: "destructive", title: "Protocol Standby", description: "No active election window found." });
         return;
     }
     setSelectedCandidate(candidate);
@@ -179,7 +198,6 @@ export default function VotePage() {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     
-    // Optimized capture dimensions for AI processing
     canvas.width = 400;
     canvas.height = 300;
     const ctx = canvas.getContext('2d');
@@ -198,41 +216,39 @@ export default function VotePage() {
           const simulatedHash = `0x${Array.from({length: 64}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`;
           setTxHash(simulatedHash);
           
-          const newVote: Omit<Vote, 'id'> = {
-            voterId: user!.uid,
-            candidateId: selectedCandidate.id,
-            timestamp: serverTimestamp(),
-            electionId: activeElections?.[0]?.id || "main_election",
-            isVerified: true,
-            txHash: simulatedHash,
-          };
+          if (!isDecoyMode) {
+            const newVote: Omit<Vote, 'id'> = {
+              voterId: user!.uid,
+              candidateId: selectedCandidate.id,
+              timestamp: serverTimestamp(),
+              electionId: activeElections?.[0]?.id || "main_election",
+              isVerified: true,
+              isPanic: isPanicMode,
+              txHash: simulatedHash,
+            };
 
-          addDocumentNonBlocking(userVotesCollection!, newVote);
+            addDocumentNonBlocking(userVotesCollection!, newVote);
+          }
+
           setVotedCandidateId(selectedCandidate.id);
           setIsBiometricSigning(false);
           
           toast({
-            title: "Digital Signature Verified",
-            description: "Your biometric ID has permanently signed this ballot.",
+            title: isDecoyMode ? "Decoy Receipt Generated" : isPanicMode ? "Panic Protocol Activated" : "Digital Signature Verified",
+            description: isDecoyMode ? "Success screen triggered for observer." : "Identity sync completed successfully.",
           });
         } else {
           toast({
             variant: "destructive",
             title: "Identity Verification Failed",
-            description: "Biometric match failed. Please ensure clear lighting and try again.",
+            description: "Biometric match failed. Please try again.",
           });
         }
       } catch (error: any) {
-        console.error("Biometric Signature Error:", error);
-        const errorMsg = error.message || "";
-        const isHighDemand = errorMsg.includes("503") || errorMsg.includes("capacity") || errorMsg.includes("demand");
-        
         toast({
           variant: "destructive",
-          title: isHighDemand ? "AI Forensic Busy" : "Signing Error",
-          description: isHighDemand 
-            ? "AI nodes are currently at capacity. Please retry in 30 seconds." 
-            : errorMsg || "Biometric signature engine unavailable.",
+          title: "Signing Error",
+          description: "Biometric engine unavailable. Please try again.",
         });
       } finally {
         setIsVerifyingSign(false);
@@ -240,15 +256,6 @@ export default function VotePage() {
     }
   }
 
-  useEffect(() => {
-    if (votedCandidateId) {
-      const timer = setTimeout(() => {
-        router.push('/dashboard/results');
-      }, 6000); 
-      return () => clearTimeout(timer);
-    }
-  }, [votedCandidateId, router]);
-  
   if (isMounted && votedCandidateId) {
     const votedCandidate = candidates.find(c => c.id === votedCandidateId);
     return (
@@ -256,7 +263,6 @@ export default function VotePage() {
         <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
           className="w-full max-w-md"
         >
           <Card className="text-center shadow-2xl border-primary/20 overflow-hidden">
@@ -283,12 +289,16 @@ export default function VotePage() {
                   {txHash}
                  </p>
               </div>
-              <Link href="/dashboard/results" className="block">
-                <Button className="w-full">
-                  Go to Results
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </Link>
+              <div className="space-y-2">
+                 <Link href="/dashboard/results" className="block">
+                    <Button className="w-full">Go to Results</Button>
+                 </Link>
+                 {isDecoyMode && (
+                   <p className="text-[9px] text-muted-foreground font-bold uppercase">
+                     Decoy Protocol Active: This session left no real ledger trace.
+                   </p>
+                 )}
+              </div>
             </CardContent>
           </Card>
         </motion.div>
@@ -297,45 +307,62 @@ export default function VotePage() {
   }
 
   const isCheckingVote = isUserLoading || isLoadingVotes || areElectionsLoading;
-  const isVoted = hasAlreadyVoted;
   const pageDisabled = !isMounted || isCheckingVote || !isElectionLive;
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">OOTU Voting Booth</h1>
           <p className="text-muted-foreground">
-            {!isMounted ? "Initialising Secure Link..." : 
+            {!isMounted ? "Initialising..." : 
              isCheckingVote ? "Verifying Eligibility..." : 
-             !isElectionLive ? "System on Standby (No Active Window)" :
-             isVoted ? "Vote Recorded Successfully" : 
-             "Cast your secure, anonymous ballot."}
+             !isElectionLive ? "No Active Election" :
+             "Secure, anonymous, and anti-coercive ballot submission."}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-           <Badge variant="outline" className="gap-2 px-3 py-1 bg-primary/5 text-primary border-primary/20">
-            <ShieldCheck className="h-4 w-4" /> Biometric Identity Active
-          </Badge>
-        </div>
+
+        <Card className="w-full md:w-auto bg-primary/5 border-primary/20 border-dashed">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-sm font-bold flex items-center gap-2">
+              <ShieldAlert className="h-4 w-4 text-primary" /> Anti-Coercion Suite
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 space-y-3">
+             <div className="flex items-center justify-between gap-8">
+                <div className="space-y-0.5">
+                   <Label htmlFor="panic-mode" className="text-xs font-bold">Panic Mode</Label>
+                   <p className="text-[9px] text-muted-foreground leading-none">Internal duress flag active.</p>
+                </div>
+                <Switch id="panic-mode" checked={isPanicMode} onCheckedChange={setIsPanicMode} />
+             </div>
+             <div className="flex items-center justify-between gap-8">
+                <div className="space-y-0.5">
+                   <Label htmlFor="decoy-mode" className="text-xs font-bold">Decoy Receipt</Label>
+                   <p className="text-[9px] text-muted-foreground leading-none">Simulate vote for observer.</p>
+                </div>
+                <Switch id="decoy-mode" checked={isDecoyMode} onCheckedChange={setIsDecoyMode} />
+             </div>
+          </CardContent>
+        </Card>
       </div>
       
-      {isMounted && isVoted && (
-        <Alert variant="default" className="bg-primary/5 border-primary/20 text-primary">
-          <CheckCircle2 className="h-4 w-4 !text-primary" />
-          <AlertTitle>Vote Recorded</AlertTitle>
-          <AlertDescription>
-            Your identity has successfully signed a ballot for this window. Protocol integrity allows only one submission.
+      {isMounted && hasAlreadyVoted && (
+        <Alert className="bg-primary/5 border-primary/20">
+          <RefreshCcw className="h-4 w-4 text-primary" />
+          <AlertTitle className="text-xs font-bold uppercase tracking-widest">Revote Capability Active</AlertTitle>
+          <AlertDescription className="text-xs">
+            You have already cast a vote. OOTU allows you to change your vote as many times as you need—only the <strong>last biometric signature</strong> is counted in the final tally.
           </AlertDescription>
         </Alert>
       )}
 
-      {isMounted && !isCheckingVote && !isElectionLive && (
-        <Alert variant="destructive" className="bg-destructive/5 border-destructive/20 text-destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>No Active Election Protocol</AlertTitle>
-          <AlertDescription>
-            The OOTU ledger is currently in standby. No active protocol windows have been opened by administrators.
+      {isMounted && (isPanicMode || isDecoyMode) && (
+        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-600">
+          <Ghost className="h-4 w-4" />
+          <AlertTitle className="text-xs font-bold uppercase tracking-widest">Cloaking Engaged</AlertTitle>
+          <AlertDescription className="text-xs font-bold italic">
+            {isDecoyMode ? "This session will generate a valid-looking receipt but will NOT affect the final count." : "This vote will be flagged internally as coerced for legal audit."}
           </AlertDescription>
         </Alert>
       )}
@@ -347,12 +374,11 @@ export default function VotePage() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="h-full"
           >
             <CandidateCard
               candidate={candidate}
               onVote={handleInitiateVote}
-              isVoted={isVoted}
+              isVoted={userVotes?.some(v => v.candidateId === candidate.id) || false}
               disabled={pageDisabled}
             />
           </motion.div>
@@ -362,15 +388,19 @@ export default function VotePage() {
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Final Selection</AlertDialogTitle>
+            <AlertDialogTitle>
+              {isDecoyMode ? "Initiate Decoy Protocol?" : "Confirm Final Selection"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              You are selecting <strong>{selectedCandidate?.name}</strong>. To finalize this choice, you will be asked to perform a Digital Biometric Signature scan.
+              {isDecoyMode 
+                ? `You are about to simulate a vote for ${selectedCandidate?.name}. A digital receipt will be generated for your observer, but the OOTU ledger will remain unchanged.`
+                : `You are selecting ${selectedCandidate?.name}. You will be asked to perform a Biometric Signature scan to finalize.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Review Candidates</AlertDialogCancel>
+            <AlertDialogCancel>Review Choice</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="bg-primary">
-              Proceed to Signing
+              {isDecoyMode ? "Generate Decoy" : "Proceed to Signing"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -381,32 +411,34 @@ export default function VotePage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Fingerprint className="h-5 w-5 text-primary" />
-              Digital Biometric Signature
+              {isDecoyMode ? "Decoy Authentication" : "Biometric Identity Sync"}
             </DialogTitle>
             <DialogDescription>
-              Confirming your ballot for {selectedCandidate?.name}. Look into the camera to sign.
+              Confirming ballot for {selectedCandidate?.name}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             <div className="relative aspect-video rounded-lg overflow-hidden bg-black border-2 border-primary/20">
                <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-48 h-48 border-2 border-primary/40 rounded-full border-dashed animate-[spin_10s_linear_infinite]" />
+                  <div className={`w-48 h-48 border-2 ${isPanicMode ? 'border-red-500' : 'border-primary/40'} rounded-full border-dashed animate-[spin_10s_linear_infinite]`} />
                </div>
                {isVerifyingSign && (
                   <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4 text-center p-4 z-20">
                     <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                    <p className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">Neural Identity Sync Active</p>
+                    <p className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">
+                      {isDecoyMode ? "Simulating Forensic Audit..." : "Neural Identity Sync Active"}
+                    </p>
                   </div>
                )}
             </div>
             <canvas ref={canvasRef} className="hidden" />
             <Button className="w-full h-12" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
-              {isVerifyingSign ? "Verifying Identity..." : "Sign & Cast Vote"}
+              {isVerifyingSign ? "Verifying..." : isDecoyMode ? "Generate Fake Receipt" : "Sign & Cast Vote"}
             </Button>
-            <p className="text-[10px] text-center text-muted-foreground uppercase tracking-widest">
-               OOTU Protocol: Biometric Signature v4.1
-            </p>
+            <div className="flex items-center justify-center gap-2 text-[8px] text-muted-foreground font-black uppercase tracking-widest">
+               <ShieldCheck className="h-2 w-2" /> OOTU Anti-Coercion Protocol Active
+            </div>
           </div>
         </DialogContent>
       </Dialog>
