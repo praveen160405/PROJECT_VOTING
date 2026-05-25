@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -33,7 +34,9 @@ import {
   Key,
   Scan,
   Loader2,
-  Search
+  Search,
+  Ghost,
+  Eye
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -332,6 +335,30 @@ export default function AdminPage() {
                   </Button>
                 </CardHeader>
                 <CardContent>
+                  <div className="mb-6 grid grid-cols-3 gap-4">
+                    <div className="p-3 bg-muted/30 rounded border flex items-center gap-3">
+                      <Ban className="h-4 w-4 text-red-500" />
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Sybil Monitor</p>
+                        <p className="text-xs font-bold">Active</p>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded border flex items-center gap-3">
+                      <Ghost className="h-4 w-4 text-primary" />
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Coercion Shield</p>
+                        <p className="text-xs font-bold">Active</p>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-muted/30 rounded border flex items-center gap-3">
+                      <Eye className="h-4 w-4 text-orange-500" />
+                      <div>
+                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Anomaly Watch</p>
+                        <p className="text-xs font-bold">Active</p>
+                      </div>
+                    </div>
+                  </div>
+
                   {securityAnalysis ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -28,13 +29,18 @@ import {
   Fingerprint,
   Code,
   Zap,
-  Loader2
+  Loader2,
+  ShieldAlert,
+  Ghost,
+  Eye,
+  Ban
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { analyzeSmartContract, type ContractAuditOutput } from "@/ai/flows/analyze-contract-flow";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const compliancePillars = [
   {
@@ -91,6 +97,15 @@ contract VotingProtocol {
     }
 }
 `;
+
+const threatMitigation = [
+  { attack: "Forced Voting (Coercion)", prevention: "Panic Mode & Unlimited Revotes", icon: ShieldAlert, severity: "High" },
+  { attack: "Vote Buying (Bribery)", prevention: "Decoy Receipt Generation", icon: Ghost, severity: "Critical" },
+  { attack: "Sybil Attacks (Mass Bots)", prevention: "AI Forensic Registry Audit", icon: Ban, severity: "Critical" },
+  { attack: "Deepfake Disinformation", prevention: "AI Media Integrity Lab", icon: Eye, severity: "High" },
+  { attack: "Brute-Force/DDoS", prevention: "Hardened 10s Security Shield", icon: Zap, severity: "Medium" },
+  { attack: "Ledger Tampering", prevention: "SHA-256 & Node Consensus", icon: Database, severity: "Critical" },
+];
 
 export default function CompliancePage() {
   const { toast } = useToast();
@@ -169,6 +184,47 @@ export default function CompliancePage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
+          <Card className="border-primary/20 shadow-lg">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                Threat Mitigation Matrix
+              </CardTitle>
+              <CardDescription>
+                How OOTU protects against high-stakes election attack vectors.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Target Attack</TableHead>
+                    <TableHead>OOTU Prevention Layer</TableHead>
+                    <TableHead className="text-right">Threat Level</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {threatMitigation.map((m) => (
+                    <TableRow key={m.attack}>
+                      <TableCell className="font-bold text-sm">
+                        <div className="flex items-center gap-2">
+                          <m.icon className="h-4 w-4 text-muted-foreground" />
+                          {m.attack}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{m.prevention}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant="outline" className={`text-[9px] ${m.severity === 'Critical' ? 'border-red-500 text-red-500 bg-red-500/5' : ''}`}>
+                          {m.severity}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
@@ -226,46 +282,6 @@ export default function CompliancePage() {
               </AnimatePresence>
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary" />
-                Detailed Regulatory Framework
-              </CardTitle>
-              <CardDescription>
-                How OOTU maps decentralized technology to established legal standards.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="gdpr">
-                  <AccordionTrigger>General Data Protection Regulation (GDPR)</AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                    OOTU utilizes "Privacy by Design" principles. Personal identification data (Voter ID) is stored separately from cryptographic ballot data. Ballots are anonymized and hashed, ensuring that while the participation is public, the individual choice is decoupled from the user's identity, meeting strict GDPR anonymization criteria.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="iso">
-                  <AccordionTrigger>ISO/IEC 27001:2022 Information Security</AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                    Our system architecture follows the ISO 27001 framework for Information Security Management Systems (ISMS). This includes rigorous access controls, threat logging (Threat Intelligence Panel), and automated incident response protocols to mitigate multi-vector cyber attacks.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="vvsg">
-                  <AccordionTrigger>Voluntary Voting System Guidelines (VVSG) 2.0</AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                    We adhere to the core principles of VVSG 2.0, specifically focusing on auditability and transparency. The "Vote Integrity Checker" allows for a voter-verifiable paper-less audit trail, ensuring that the software remains accountable to the electorate through cryptographic proof.
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="soc2">
-                  <AccordionTrigger>SOC 2 Type II Compliance</AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground leading-relaxed">
-                    OOTU implements controls across the five "trust service principles": security, availability, processing integrity, confidentiality, and privacy. Real-time system monitoring ensures high availability (99.9% network uptime) and consistent processing of decentralized transactions.
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-          </Card>
         </div>
 
         <div className="flex flex-col gap-6">
@@ -303,18 +319,6 @@ export default function CompliancePage() {
               </div>
             </CardContent>
           </Card>
-        </div>
-      </div>
-
-      <div className="flex flex-col items-center justify-center p-8 border border-dashed rounded-lg bg-muted/20 text-center gap-4">
-        <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
-          <ShieldCheck className="h-6 w-6 text-green-600" />
-        </div>
-        <div>
-          <h3 className="font-bold">Protocol Transparency Pledge</h3>
-          <p className="text-sm text-muted-foreground max-w-md mx-auto mt-1">
-            We are committed to maintaining 100% transparency. Our smart contracts and security protocols are open for audit by authorized regulatory bodies to ensure that democracy remains unhackable.
-          </p>
         </div>
       </div>
     </div>
