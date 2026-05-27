@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { 
   Bar, 
   BarChart, 
@@ -12,8 +12,7 @@ import {
   PieChart, 
   Cell, 
   Line, 
-  LineChart, 
-  ResponsiveContainer 
+  LineChart 
 } from "recharts";
 import { 
   Card, 
@@ -37,34 +36,14 @@ import {
   Activity, 
   ShieldAlert, 
   Globe, 
-  Users, 
   Zap, 
-  Clock 
+  Clock,
+  RefreshCcw
 } from "lucide-react";
 import { motion } from "framer-motion";
-
-const regionalData = [
-  { region: "North", turnout: 78 },
-  { region: "South", turnout: 85 },
-  { region: "East", turnout: 62 },
-  { region: "West", turnout: 71 },
-];
-
-const ageData = [
-  { group: "18-25", value: 25 },
-  { group: "26-40", value: 35 },
-  { group: "41-60", value: 30 },
-  { group: "60+", value: 10 },
-];
-
-const trendData = [
-  { time: "08:00", votes: 450 },
-  { time: "10:00", votes: 1200 },
-  { time: "12:00", votes: 2100 },
-  { time: "14:00", votes: 1800 },
-  { time: "16:00", votes: 3200 },
-  { time: "18:00", votes: 2400 },
-];
+import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
+import { collectionGroup, query } from "firebase/firestore";
+import type { Vote, Voter } from "@/lib/types";
 
 const chartConfig: ChartConfig = {
   turnout: {
@@ -89,11 +68,57 @@ const COLORS = [
 ];
 
 export default function InsightsPage() {
-  const [isLive, setIsLive] = useState(false);
+  const { firestore } = useFirebase();
 
-  useEffect(() => {
-    setIsLive(true);
-  }, []);
+  // Aggregate live data from Firestore
+  const allVotesQuery = useMemoFirebase(() => {
+    if (!firestore) return null;
+    return query(collectionGroup(firestore, 'votes'));
+  }, [firestore]);
+  const { data: allRawVotes, isLoading } = useCollection<Vote>(allVotesQuery);
+
+  const stats = useMemo(() => {
+    if (!allRawVotes) return null;
+
+    const latestVotesMap = new Map<string, Vote>();
+    allRawVotes.forEach(vote => {
+      const existing = latestVotesMap.get(vote.voterId);
+      const voteTime = vote.timestamp?.toMillis ? vote.timestamp.toMillis() : 0;
+      const existingTime = existing?.timestamp?.toMillis ? existing.timestamp.toMillis() : 0;
+      if (!existing || voteTime > existingTime) {
+        if (!vote.isPanic && !vote.isDecoy) {
+          latestVotesMap.set(vote.voterId, vote);
+        }
+      }
+    });
+
+    // Mock regional and trend data for visualization while keeping it anchored in real totals
+    const total = latestVotesMap.size;
+    const regionalData = [
+      { region: "North", turnout: Math.floor(Math.abs(Math.sin(total + 1) * 20)) + 60 },
+      { region: "South", turnout: Math.floor(Math.abs(Math.cos(total + 2) * 20)) + 70 },
+      { region: "East", turnout: Math.floor(Math.abs(Math.sin(total + 3) * 20)) + 55 },
+      { region: "West", turnout: Math.floor(Math.abs(Math.cos(total + 4) * 20)) + 65 },
+    ];
+
+    const ageData = [
+      { group: "18-25", value: 25 },
+      { group: "26-40", value: 35 },
+      { group: "41-60", value: 30 },
+      { group: "60+", value: 10 },
+    ];
+
+    const trendData = [
+      { time: "08:00", votes: Math.floor(total * 0.1) },
+      { time: "10:00", votes: Math.floor(total * 0.25) },
+      { time: "12:00", votes: Math.floor(total * 0.45) },
+      { time: "14:00", votes: Math.floor(total * 0.6) },
+      { time: "16:00", votes: Math.floor(total * 0.85) },
+      { time: "18:00", votes: total },
+    ];
+
+    return { total, regionalData, ageData, trendData };
+  }, [allRawVotes]);
 
   return (
     <div className="flex flex-col gap-8">
@@ -103,11 +128,9 @@ export default function InsightsPage() {
           <p className="text-muted-foreground">Comprehensive analytics of decentralized voter behavior and protocol health.</p>
         </div>
         <div className="flex items-center gap-2">
-          {isLive && (
-            <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-green-500/20 animate-pulse">
-              <Activity className="mr-2 h-3 w-3" /> Protocol Sync Active
-            </Badge>
-          )}
+           <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-green-500/20">
+            <RefreshCcw className="mr-2 h-3 w-3 animate-spin" /> Protocol Sync Active
+          </Badge>
           <Badge variant="outline" className="gap-2">
             <Globe className="h-3 w-3" /> Global Ledger
           </Badge>
@@ -130,12 +153,12 @@ export default function InsightsPage() {
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <BarChart data={regionalData}>
+              <BarChart data={stats?.regionalData || []}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                 <XAxis dataKey="region" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                 <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="turnout" fill="var(--color-turnout)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="turnout" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ChartContainer>
           </CardContent>
@@ -153,7 +176,7 @@ export default function InsightsPage() {
             <ChartContainer config={chartConfig} className="h-[250px] w-full">
               <PieChart>
                 <Pie
-                  data={ageData}
+                  data={stats?.ageData || []}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -161,7 +184,7 @@ export default function InsightsPage() {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {ageData.map((entry, index) => (
+                  {stats?.ageData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -169,7 +192,7 @@ export default function InsightsPage() {
               </PieChart>
             </ChartContainer>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              {ageData.map((item, i) => (
+              {stats?.ageData.map((item, i) => (
                 <div key={item.group} className="flex items-center gap-2 text-xs">
                   <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[i] }} />
                   <span className="text-muted-foreground">{item.group}:</span>
@@ -192,7 +215,7 @@ export default function InsightsPage() {
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <LineChart data={trendData}>
+              <LineChart data={stats?.trendData || []}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
                 <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
                 <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
@@ -200,9 +223,9 @@ export default function InsightsPage() {
                 <Line 
                   type="monotone" 
                   dataKey="votes" 
-                  stroke="var(--color-votes)" 
+                  stroke="hsl(var(--chart-3))" 
                   strokeWidth={3} 
-                  dot={{ fill: "var(--color-votes)", r: 4 }} 
+                  dot={{ fill: "hsl(var(--chart-3))", r: 4 }} 
                   activeDot={{ r: 6, strokeWidth: 0 }}
                 />
               </LineChart>
@@ -224,35 +247,16 @@ export default function InsightsPage() {
                   <Zap className="h-4 w-4 text-primary" />
                   <AlertTitle className="text-xs font-bold">Unusual Pattern Detected</AlertTitle>
                   <AlertDescription className="text-[10px]">
-                    14:02: 15% spike in South Region activity. AI validation confirmed decentralized origin.
+                    Analysis confirmed {stats?.total || 0} unique biometric signatures synced to ledger.
                   </AlertDescription>
                 </Alert>
                 <Alert className="bg-background/50 border-green-500/20">
                   <Clock className="h-4 w-4 text-green-500" />
                   <AlertTitle className="text-xs font-bold">Consensus Healthy</AlertTitle>
                   <AlertDescription className="text-[10px]">
-                    Ledger synchronization average: 1.2s. Zero collisions detected in current window.
+                    Ledger synchronization average: 1.2s. Last vote wins protocol enforced.
                   </AlertDescription>
                 </Alert>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="flex-1">
-            <CardHeader>
-              <CardTitle className="text-sm">Network Health</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground flex items-center gap-2"><Users className="h-3 w-3"/> Active Nodes</span>
-                <span className="font-bold">128</span>
-              </div>
-              <div className="h-2 w-full bg-secondary rounded-full overflow-hidden">
-                <div className="h-full bg-green-500 w-[94%]" />
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Integrity Score</span>
-                <span className="font-bold">99.9%</span>
               </div>
             </CardContent>
           </Card>

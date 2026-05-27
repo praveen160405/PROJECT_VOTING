@@ -1,14 +1,13 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useFirebase, useDoc, useCollection, useMemoFirebase, setDocumentNonBlocking, deleteDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
-import { doc, collection, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
-import type { Voter, Threat, BlockedIp, Election } from '@/lib/types';
+import { doc, collection, query, orderBy, limit, serverTimestamp, collectionGroup } from 'firebase/firestore';
+import type { Voter, Threat, BlockedIp, Election, Vote } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -19,7 +18,6 @@ import {
   ShieldAlert, 
   ShieldCheck, 
   Lock, 
-  Fingerprint, 
   Database, 
   AlertTriangle, 
   Zap, 
@@ -27,16 +25,13 @@ import {
   Unlock, 
   Users, 
   Play,
-  Calendar,
-  Activity,
   StopCircle,
-  Trash2,
   Key,
   Scan,
   Loader2,
-  Search,
   Ghost,
-  Eye
+  Eye,
+  RefreshCcw
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -112,6 +107,34 @@ export default function AdminPage() {
     return collection(firestore, 'users');
   }, [firestore, userProfile, isAdminVerified]);
   const { data: allVoters } = useCollection<Voter>(allVotersRef);
+
+  // Live Aggregation for Admin Stats
+  const allVotesQuery = useMemoFirebase(() => {
+    if (!firestore || !userProfile?.isAdmin || !isAdminVerified) return null;
+    return query(collectionGroup(firestore, 'votes'));
+  }, [firestore, userProfile, isAdminVerified]);
+  const { data: allRawVotes } = useCollection<Vote>(allVotesQuery);
+
+  const liveStats = useMemo(() => {
+    if (!allRawVotes) return { uniqueVotes: 0, turnout: '0%' };
+    
+    const latestVotesMap = new Map<string, Vote>();
+    allRawVotes.forEach(vote => {
+      const existing = latestVotesMap.get(vote.voterId);
+      const voteTime = vote.timestamp?.toMillis ? vote.timestamp.toMillis() : 0;
+      const existingTime = existing?.timestamp?.toMillis ? existing.timestamp.toMillis() : 0;
+      if (!existing || voteTime > existingTime) {
+        if (!vote.isPanic && !vote.isDecoy) {
+          latestVotesMap.set(vote.voterId, vote);
+        }
+      }
+    });
+
+    const uniqueVotes = latestVotesMap.size;
+    const turnout = allVoters?.length ? `${((uniqueVotes / allVoters.length) * 100).toFixed(1)}%` : '0%';
+    
+    return { uniqueVotes, turnout };
+  }, [allRawVotes, allVoters]);
 
   useEffect(() => {
     if (!isUserLoading && !isProfileLoading) {
@@ -280,7 +303,7 @@ export default function AdminPage() {
             <ShieldCheck className="h-4 w-4" /> Consensus Reached
           </Badge>
           <Badge variant="outline" className="gap-2 px-3 py-1 bg-primary/5 text-primary border-primary/20">
-            <Database className="h-4 w-4" /> Node Sync: 100%
+            <RefreshCcw className="h-4 w-4 animate-spin" /> Live Sync Active
           </Badge>
         </div>
       </div>
@@ -313,7 +336,7 @@ export default function AdminPage() {
             </Card>
             <Card className="bg-green-500/5 border-green-500/10">
               <CardContent className="p-6 flex items-center justify-between">
-                <div><p className="text-xs font-medium text-muted-foreground uppercase">Voter Turnout</p><p className="text-2xl font-bold text-green-600">84.2%</p></div>
+                <div><p className="text-xs font-medium text-muted-foreground uppercase">Voter Turnout</p><p className="text-2xl font-bold text-green-600">{liveStats.turnout}</p></div>
                 <Users className="h-8 w-8 text-green-500/30" />
               </CardContent>
             </Card>
