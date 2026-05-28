@@ -1,17 +1,24 @@
-
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect } from "react";
 import { useFirebase, useCollection, useMemoFirebase, useDoc } from "@/firebase";
 import { collection, doc } from "firebase/firestore";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Vote, ArrowRight, BarChart, ShieldCheck, Zap, Globe, Users, Clock, Database, Lock, Fingerprint } from "lucide-react";
+import { Vote, ArrowRight, ShieldCheck, Zap, Users, Clock, Database, Lock, Fingerprint, Quote } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Voter } from "@/lib/types";
+import { Badge } from "@/components/ui/badge";
+import { getRandomProverb } from "@/lib/proverbs";
 
 export default function DashboardPage() {
   const { user, firestore } = useFirebase();
+  const [proverb, setProverb] = useState({ text: "", author: "" });
+
+  useEffect(() => {
+    setProverb(getRandomProverb());
+  }, []);
 
   // Fetch current user profile for verification status
   const userDocRef = useMemoFirebase(() => {
@@ -70,6 +77,7 @@ export default function DashboardPage() {
       link: "/dashboard/vote",
       icon: Vote,
       cta: "Enter Voting Booth",
+      bg: "bg-primary/5"
     },
     {
       title: "Audit Your Vote",
@@ -77,6 +85,7 @@ export default function DashboardPage() {
       link: "/dashboard/verify",
       icon: ShieldCheck,
       cta: "Check Integrity",
+      bg: "bg-green-500/5"
     },
   ];
 
@@ -87,7 +96,7 @@ export default function DashboardPage() {
           <h1 className="text-3xl font-bold tracking-tight">OOTU Integrity Dashboard</h1>
           <p className="text-muted-foreground">Monitoring decentralized voting participation and protocol status.</p>
         </div>
-        <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 border border-primary/10 rounded-full text-sm font-medium text-primary">
+        <div className="flex items-center gap-2 px-4 py-2 bg-primary/5 border border-primary/10 rounded-full text-sm font-medium text-primary shadow-sm">
           <Clock className="h-4 w-4 animate-pulse" />
           <span>Active Protocol Window</span>
         </div>
@@ -95,47 +104,78 @@ export default function DashboardPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (stat.label !== "System Electorate" || profile?.isAdmin) && (
-          <Card key={stat.label} className="border-primary/5 shadow-sm bg-card/50 backdrop-blur-sm">
+          <Card key={stat.label} className="border-primary/5 shadow-sm bg-card/50 backdrop-blur-sm hover:shadow-md transition-shadow">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                  {stat.isLoading ? <Skeleton className="h-8 w-20 mt-1" /> : <p className="text-2xl font-bold">{stat.value}</p>}
-                  <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</p>
+                  {stat.isLoading ? <Skeleton className="h-8 w-20 mt-1" /> : <p className="text-2xl font-bold mt-1">{stat.value}</p>}
+                  <p className="text-[10px] text-muted-foreground mt-1 font-bold">{stat.description}</p>
                 </div>
-                <stat.icon className={`h-8 w-8 ${stat.color} opacity-20`} />
+                <div className={`p-2 rounded-lg ${stat.color} bg-current opacity-10`}>
+                   <stat.icon className="h-6 w-6" />
+                </div>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {features.map((feature) => (
-          <Card key={feature.title} className="flex flex-col relative overflow-hidden group border-primary/10 shadow-md hover:shadow-lg transition-all">
-            <CardHeader className="flex flex-row items-center gap-4">
-              <div className="rounded-full bg-primary/10 p-3 text-primary group-hover:scale-110 transition-transform"><feature.icon className="h-6 w-6" /></div>
-              <div><CardTitle>{feature.title}</CardTitle><CardDescription>{feature.description}</CardDescription></div>
-            </CardHeader>
-            <CardContent className="flex-grow flex items-end pt-4">
-              <Link href={feature.link} className="w-full">
-                <Button className="w-full h-11">{feature.cta} <ArrowRight className="ml-2 h-4 w-4" /></Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
+      <div className="grid gap-6 md:grid-cols-3">
+        <div className="md:col-span-2 grid gap-6 md:grid-cols-2">
+           {features.map((feature) => (
+            <Card key={feature.title} className={`flex flex-col relative overflow-hidden group border-primary/10 shadow-md hover:shadow-lg transition-all ${feature.bg}`}>
+              <CardHeader className="flex flex-row items-center gap-4">
+                <div className="rounded-full bg-white dark:bg-background p-3 text-primary shadow-sm group-hover:scale-110 transition-transform"><feature.icon className="h-6 w-6" /></div>
+                <div><CardTitle className="text-xl">{feature.title}</CardTitle><CardDescription className="text-xs">{feature.description}</CardDescription></div>
+              </CardHeader>
+              <CardContent className="flex-grow flex items-end pt-4">
+                <Link href={feature.link} className="w-full">
+                  <Button className="w-full h-11 font-bold">{feature.cta} <ArrowRight className="ml-2 h-4 w-4" /></Button>
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        <Card className="border-primary/20 bg-primary/5 shadow-lg relative overflow-hidden group">
+          <Quote className="absolute -top-4 -right-4 h-24 w-24 text-primary/5 transition-transform group-hover:scale-110" />
+          <CardHeader>
+            <CardTitle className="text-sm font-black uppercase tracking-[0.2em] text-primary">Integrity Insight</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-base italic font-medium leading-relaxed">
+              "{proverb.text}"
+            </p>
+            <div className="flex items-center justify-between pt-2">
+               <span className="text-[10px] font-bold text-primary uppercase tracking-widest">— {proverb.author}</span>
+               <Badge className="text-[8px] bg-primary/10 text-primary border-none">DAILY MOTIVATION</Badge>
+            </div>
+          </CardContent>
+        </Card>
       </div>
       
-      <Card className="border-green-500/20 bg-green-500/5">
-        <CardContent className="p-4 flex items-center justify-between">
+      <Card className="border-green-500/20 bg-green-500/5 shadow-sm">
+        <CardContent className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <ShieldCheck className="h-5 w-5 text-green-500" />
-            <span className="text-sm font-medium">Identity linked to Biometric Signature Protocol.</span>
+            <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+              <ShieldCheck className="h-5 w-5 text-green-500" />
+            </div>
+            <div className="text-sm">
+               <span className="font-bold text-green-600 uppercase text-[10px] block tracking-widest">Security Status: Verified</span>
+               <p className="text-muted-foreground text-xs">Identity linked to Biometric Signature Protocol.</p>
+            </div>
           </div>
-          <Lock className="h-4 w-4 text-green-500/30" />
+          <div className="flex items-center gap-4">
+             <div className="flex -space-x-2">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="w-6 h-6 rounded-full border-2 border-background bg-muted flex items-center justify-center text-[8px] font-bold">Node</div>
+                ))}
+             </div>
+             <Lock className="h-4 w-4 text-green-500/30" />
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
-
