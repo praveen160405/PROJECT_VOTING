@@ -31,7 +31,7 @@ export default function HomePage() {
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6 }}
-          className="space-y-6"
+          className="space-y-10"
         >
           <div className="flex items-center gap-2 mb-4">
              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 px-3 py-1 uppercase tracking-tighter font-black rounded-none">
@@ -41,28 +41,27 @@ export default function HomePage() {
                <ShieldCheck className="h-3 w-3" /> Secure Consensus
              </Badge>
           </div>
-          <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-foreground leading-[0.9]">
-            DECENTRALIZED <br />
-            <span className="text-primary italic">INTEGRITY.</span>
-          </h1>
-          <p className="text-lg font-medium text-muted-foreground leading-relaxed max-w-sm">
-            The OOTU Protocol ensures every ballot is immutable, anonymized, and protected by the world's first Anti-Coercion Suite.
-          </p>
 
-          <div className="p-6 bg-primary/5 backdrop-blur-md border-l-4 border-primary rounded-none relative overflow-hidden group">
-            <Quote className="absolute -top-2 -left-2 h-12 w-12 text-primary/10 group-hover:scale-110 transition-transform" />
-            <p className="text-lg italic font-medium text-foreground relative z-10 leading-relaxed">
+          <div className="p-8 bg-primary/5 backdrop-blur-md border-l-8 border-primary rounded-none relative overflow-hidden group shadow-2xl glow-box">
+            <Quote className="absolute -top-4 -left-4 h-24 w-24 text-primary/10 group-hover:scale-110 transition-transform" />
+            <p className="text-2xl md:text-3xl italic font-bold text-foreground relative z-10 leading-relaxed tracking-tight">
               "{proverb.text}"
             </p>
-            <p className="text-[10px] text-primary font-black mt-3 uppercase tracking-[0.2em]">— {proverb.author}</p>
+            <p className="text-xs text-primary font-black mt-6 uppercase tracking-[0.3em]">— {proverb.author}</p>
           </div>
 
-          <div className="flex flex-wrap gap-6 pt-4">
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-               <Zap className="h-4 w-4 text-primary" /> 128 Active Nodes
-            </div>
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-               <Globe className="h-4 w-4 text-accent" /> Global Ledger
+          <div className="space-y-6">
+            <p className="text-lg font-medium text-muted-foreground leading-relaxed max-w-sm">
+              The OOTU Protocol ensures every ballot is immutable, anonymized, and protected by the world's first Anti-Coercion Suite.
+            </p>
+
+            <div className="flex flex-wrap gap-6 pt-6 border-t border-primary/10">
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                 <Zap className="h-4 w-4 text-primary" /> 128 Active Nodes
+              </div>
+              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                 <Globe className="h-4 w-4 text-accent" /> Global Ledger
+              </div>
             </div>
           </div>
         </motion.div>
@@ -72,7 +71,7 @@ export default function HomePage() {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          <Card className="glassmorphic-card glow-box rounded-none shadow-2xl overflow-hidden">
+          <Card className="glassmorphic-card glow-box rounded-none shadow-2xl overflow-hidden border-2 border-primary/20">
             <CardHeader className="items-center text-center p-8">
               <Logo className="mb-2 scale-150" />
               <CardDescription className="text-sm font-medium text-muted-foreground pt-6 uppercase tracking-widest leading-relaxed">
