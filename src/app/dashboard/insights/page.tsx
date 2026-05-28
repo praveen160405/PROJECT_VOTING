@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { 
   Bar, 
   BarChart, 
@@ -43,7 +43,8 @@ import {
 import { motion } from "framer-motion";
 import { useFirebase, useCollection, useMemoFirebase } from "@/firebase";
 import { collectionGroup, query } from "firebase/firestore";
-import type { Vote, Voter } from "@/lib/types";
+import type { Vote } from "@/lib/types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const chartConfig: ChartConfig = {
   turnout: {
@@ -92,7 +93,6 @@ export default function InsightsPage() {
       }
     });
 
-    // Mock regional and trend data for visualization while keeping it anchored in real totals
     const total = latestVotesMap.size;
     const regionalData = [
       { region: "North", turnout: Math.floor(Math.abs(Math.sin(total + 1) * 20)) + 60 },
@@ -119,6 +119,25 @@ export default function InsightsPage() {
 
     return { total, regionalData, ageData, trendData };
   }, [allRawVotes]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col gap-8 p-2 md:p-0">
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-1/3" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          <Skeleton className="h-[400px] md:col-span-2" />
+          <Skeleton className="h-[400px]" />
+        </div>
+        <div className="grid gap-6 md:grid-cols-3">
+          <Skeleton className="h-[400px] md:col-span-2" />
+          <Skeleton className="h-[400px]" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8">
@@ -184,7 +203,7 @@ export default function InsightsPage() {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {stats?.ageData.map((entry, index) => (
+                  {stats?.ageData?.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
@@ -192,9 +211,9 @@ export default function InsightsPage() {
               </PieChart>
             </ChartContainer>
             <div className="mt-4 grid grid-cols-2 gap-2">
-              {stats?.ageData.map((item, i) => (
+              {stats?.ageData?.map((item, i) => (
                 <div key={item.group} className="flex items-center gap-2 text-xs">
-                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[i] }} />
+                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                   <span className="text-muted-foreground">{item.group}:</span>
                   <span className="font-bold">{item.value}%</span>
                 </div>
