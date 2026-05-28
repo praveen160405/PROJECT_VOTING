@@ -13,7 +13,9 @@ import {
   Ghost,
   RefreshCcw,
   UserCheck,
-  Activity
+  Activity,
+  Zap,
+  Network
 } from 'lucide-react';
 import { collection, serverTimestamp, doc } from "firebase/firestore";
 
@@ -48,29 +50,29 @@ import { PROVERBS } from "@/lib/proverbs";
 
 function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean, disabled: boolean }) {
   return (
-    <motion.div whileHover={{ y: -5 }}>
+    <motion.div whileHover={{ y: -8, scale: 1.02 }}>
       <Card 
         onClick={() => !disabled && onVote(candidate)}
-        className="group relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all rounded-2xl border-white/10 glassmorphic-card shimmer-card data-[disabled=true]:opacity-40 data-[disabled=true]:cursor-not-allowed"
+        className="group relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all rounded-3xl border-white/5 glassmorphic-card shimmer-card data-[disabled=true]:opacity-40 data-[disabled=true]:cursor-not-allowed"
         data-disabled={disabled}
       >
         <div className="relative w-full aspect-square bg-white/5 flex items-center justify-center border-b border-white/5">
-          <div className="flex flex-col items-center gap-4">
-              <div className="w-20 h-20 rounded-xl bg-primary/5 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
-                  <span className="text-3xl font-black italic">{candidate.name}</span>
+          <div className="flex flex-col items-center gap-6">
+              <div className="w-24 h-24 rounded-3xl bg-primary/5 flex items-center justify-center text-primary border border-primary/20 shadow-inner group-hover:bg-primary/10 transition-colors">
+                  <span className="text-4xl font-black italic glow-text">{candidate.name[0]}</span>
               </div>
-              <h3 className="text-xl font-bold uppercase italic">{candidate.name}</h3>
+              <h3 className="text-2xl font-black uppercase italic tracking-tighter">{candidate.name}</h3>
           </div>
           {isVoted && (
-               <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm flex items-center justify-center z-10 border-2 border-primary">
-                  <CheckCircle2 className="h-12 w-12 text-primary" />
+               <div className="absolute inset-0 bg-primary/20 backdrop-blur-md flex items-center justify-center z-10 border-2 border-primary">
+                  <CheckCircle2 className="h-16 w-16 text-primary glow-text" />
                </div>
           )}
         </div>
-        <CardContent className="p-6 w-full">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase text-center mb-6 tracking-widest">{candidate.party}</p>
-          <Button className="w-full h-12 rounded-xl font-black uppercase tracking-widest bg-primary text-background hover:bg-primary/90">
-            {isVoted ? "Override" : "Cast Ballot"}
+        <CardContent className="p-8 w-full">
+          <p className="text-[10px] font-black text-primary/70 uppercase text-center mb-6 tracking-[0.3em]">{candidate.party}</p>
+          <Button className="w-full h-14 rounded-2xl font-black uppercase tracking-[0.2em] bg-primary text-background hover:bg-primary/90 shadow-xl shadow-primary/10">
+            {isVoted ? "OVERRIDE" : "CAST BALLOT"}
           </Button>
         </CardContent>
       </Card>
@@ -142,7 +144,7 @@ export default function VotePage() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true });
       if (videoRef.current) videoRef.current.srcObject = stream;
     } catch (e) {
-      toast({ variant: "destructive", title: "Camera Error", description: "Access required for signing." });
+      toast({ variant: "destructive", title: "Camera Error", description: "Access required for biometric signing." });
     }
   }
 
@@ -155,7 +157,14 @@ export default function VotePage() {
 
   const handleInitiateVote = (candidate: Candidate) => {
     if (!user) { router.push('/login'); return; }
-    if (!isElectionLive) { toast({ variant: "destructive", title: "Window Closed" }); return; }
+    if (!isElectionLive) { 
+      toast({ 
+        variant: "destructive", 
+        title: "PROTOCOL WINDOW CLOSED", 
+        description: "No active election detected on the ledger." 
+      }); 
+      return; 
+    }
     setSelectedCandidate(candidate);
     setIsConfirming(true);
   };
@@ -197,12 +206,12 @@ export default function VotePage() {
 
           setVotedCandidateId(selectedCandidate.id);
           setIsBiometricSigning(false);
-          toast({ title: "Signature Verified" });
+          toast({ title: "SIGNATURE COMMITTED", description: "Ledger sync successful." });
         } else {
-          toast({ variant: "destructive", title: "Mismatch Detected" });
+          toast({ variant: "destructive", title: "SIGNATURE MISMATCH", description: "Neural signature does not match registry." });
         }
       } catch (error: any) {
-        toast({ variant: "destructive", title: "Signing Error" });
+        toast({ variant: "destructive", title: "PROTOCOL ERROR", description: "Neural sync node timeout." });
       } finally {
         setIsVerifyingSign(false);
       }
@@ -211,18 +220,22 @@ export default function VotePage() {
 
   if (isMounted && votedCandidateId) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="max-w-lg w-full text-center glassmorphic-card rounded-2xl shadow-2xl border-t-4 border-t-primary">
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <Card className="max-w-xl w-full text-center glassmorphic-card rounded-3xl shadow-2xl border-t-4 border-t-primary shimmer-card overflow-hidden">
           <CardHeader className="p-12">
-            <UserCheck className="mx-auto h-12 w-12 text-primary mb-6" />
-            <CardTitle className="text-3xl font-black uppercase italic">Signature Committed</CardTitle>
-            <CardDescription className="font-bold uppercase text-[10px] tracking-widest pt-4">Digital Audit Receipt generated.</CardDescription>
+            <UserCheck className="mx-auto h-16 w-16 text-primary mb-8 glow-text" />
+            <CardTitle className="text-4xl font-black uppercase italic tracking-tighter glow-text">Signature Committed</CardTitle>
+            <CardDescription className="font-black uppercase text-[10px] tracking-[0.4em] pt-6 text-primary/60">Digital Audit Receipt Generated</CardDescription>
           </CardHeader>
-          <CardContent className="px-12 pb-12 space-y-8">
-            <p className="text-lg italic text-foreground/80 leading-relaxed">"{currentProverb}"</p>
-            <div className="p-4 bg-black/20 font-mono text-[10px] break-all border border-white/5 rounded-xl">{txHash}</div>
+          <CardContent className="px-12 pb-12 space-y-10">
+            <div className="p-8 bg-primary/5 rounded-2xl border border-primary/20 italic font-medium leading-relaxed text-lg">
+              "{currentProverb}"
+            </div>
+            <div className="p-6 bg-black/40 font-mono text-[11px] break-all border border-white/5 rounded-2xl tracking-widest text-primary/80">
+              {txHash}
+            </div>
             <Link href="/dashboard/results" className="block">
-                <Button className="w-full h-14 rounded-xl font-black uppercase tracking-widest bg-primary text-background">View Ledger</Button>
+                <Button className="w-full h-16 rounded-2xl font-black uppercase tracking-[0.3em] bg-primary text-background shadow-2xl shadow-primary/20">VIEW GLOBAL LEDGER</Button>
             </Link>
           </CardContent>
         </Card>
@@ -233,72 +246,84 @@ export default function VotePage() {
   const isCheckingVote = isUserLoading || isLoadingVotes || areElectionsLoading;
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col lg:flex-row justify-between gap-6">
+    <div className="flex flex-col gap-10">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
         <div>
-          <h1 className="text-4xl font-black uppercase italic">Booth <span className="text-primary">Terminal</span></h1>
-          <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest mt-2">Decentralized Secure Ballot Submission</p>
+          <h1 className="text-5xl font-black uppercase italic tracking-tighter glow-text">Booth <span className="text-primary">Terminal</span></h1>
+          <p className="text-muted-foreground font-black uppercase text-[10px] tracking-[0.5em] mt-3">Decentralized Secure Ballot Submission</p>
         </div>
 
-        <Card className="glassmorphic-card rounded-2xl p-4 flex gap-6">
-           <div className="flex items-center gap-3">
-              <Label className="text-[10px] font-bold uppercase">Panic Mode</Label>
+        <Card className="glassmorphic-card rounded-2xl p-6 flex items-center gap-8 shadow-xl border-white/5">
+           <div className="flex items-center gap-4">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-destructive">Panic Mode</Label>
               <Switch checked={isPanicMode} onCheckedChange={setIsPanicMode} className="data-[state=checked]:bg-destructive" />
            </div>
-           <div className="w-px bg-white/5" />
-           <div className="flex items-center gap-3">
-              <Label className="text-[10px] font-bold uppercase">Decoy Receipt</Label>
+           <div className="w-px h-8 bg-white/10" />
+           <div className="flex items-center gap-4">
+              <Label className="text-[10px] font-black uppercase tracking-widest text-secondary">Decoy Receipt</Label>
               <Switch checked={isDecoyMode} onCheckedChange={setIsDecoyMode} className="data-[state=checked]:bg-secondary" />
            </div>
         </Card>
       </div>
       
       {isMounted && hasAlreadyVoted && (
-        <Alert className="bg-primary/5 border-primary/20 rounded-xl border-l-4 border-l-primary shadow-2xl backdrop-blur-md">
-          <RefreshCcw className="h-4 w-4 text-primary animate-spin-slow" />
-          <AlertTitle className="text-[10px] font-bold uppercase tracking-widest">Revote Granted</AlertTitle>
-          <AlertDescription className="text-[10px] uppercase">Only your final signature will commit to the ledger.</AlertDescription>
+        <Alert className="bg-primary/5 border-primary/30 rounded-2xl border-l-4 border-l-primary shadow-2xl backdrop-blur-md relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+             <RefreshCcw className="h-12 w-12 text-primary animate-spin-slow" />
+          </div>
+          <AlertTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-3">
+            <RefreshCcw className="h-4 w-4 animate-spin-slow" /> REVOTE CAPABILITY GRANTED
+          </AlertTitle>
+          <AlertDescription className="text-[10px] uppercase font-bold tracking-widest mt-1 opacity-70">
+            Anti-coercion protocol active: Only your final biometric signature will commit to the permanent ledger.
+          </AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
         {candidates.map((c) => (
           <CandidateCard key={c.id} candidate={c} onVote={handleInitiateVote} isVoted={userVotes?.some(v => v.candidateId === c.id) || false} disabled={isCheckingVote || !isElectionLive} />
         ))}
       </div>
 
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
-        <AlertDialogContent className="rounded-2xl glassmorphic-card">
+        <AlertDialogContent className="rounded-3xl glassmorphic-card border-primary/20 p-8">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-black uppercase italic">Lock Selection?</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs uppercase font-bold text-muted-foreground">Proceeding to neural identity signature for {selectedCandidate?.name}.</AlertDialogDescription>
+            <AlertDialogTitle className="font-black uppercase italic text-2xl tracking-tighter">LOCK SELECTION?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs uppercase font-bold text-muted-foreground tracking-widest leading-relaxed mt-4">
+              Proceeding to neural identity signature for <span className="text-primary">{selectedCandidate?.name}</span>. This action will commit an audit receipt to the mesh.
+            </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl uppercase font-bold text-[10px]">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="rounded-xl bg-primary text-background uppercase font-bold text-[10px]">Sign & Commit</AlertDialogAction>
+          <AlertDialogFooter className="mt-8 gap-4">
+            <AlertDialogCancel className="rounded-2xl uppercase font-black tracking-widest text-[10px] h-12 border-white/10 hover:bg-white/5">CANCEL</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="rounded-2xl bg-primary text-background uppercase font-black tracking-widest text-[10px] h-12 shadow-xl shadow-primary/20">SIGN & COMMIT</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <Dialog open={isBiometricSigning} onOpenChange={(o) => !isVerifyingSign && setIsBiometricSigning(o)}>
-        <DialogContent className="rounded-2xl glassmorphic-card p-10">
-          <DialogHeader className="text-center mb-6">
-            <DialogTitle className="font-black uppercase italic text-2xl">Neural Sign</DialogTitle>
-            <DialogDescription className="text-[10px] font-bold uppercase">Biometric Consensus window active.</DialogDescription>
+        <DialogContent className="rounded-3xl glassmorphic-card p-12 border-primary/20">
+          <DialogHeader className="text-center mb-8">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+               <Fingerprint className="h-8 w-8 text-primary glow-text" />
+            </div>
+            <DialogTitle className="font-black uppercase italic text-3xl tracking-tighter glow-text">Neural Sign</DialogTitle>
+            <DialogDescription className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 pt-2">Biometric Consensus Active</DialogDescription>
           </DialogHeader>
-          <div className="space-y-6">
-            <div className="aspect-video bg-black rounded-xl overflow-hidden relative border border-white/10">
-               <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale" />
+          <div className="space-y-8">
+            <div className="aspect-video bg-black rounded-3xl overflow-hidden relative border-2 border-primary/20 shadow-2xl">
+               <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale brightness-75" />
+               <div className="absolute inset-0 border-[20px] border-primary/5 pointer-events-none" />
                {isVerifyingSign && (
-                  <div className="absolute inset-0 bg-background/90 backdrop-blur-md flex flex-col items-center justify-center gap-4 z-20">
-                    <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                    <p className="text-[10px] font-bold uppercase animate-pulse">Syncing...</p>
+                  <div className="absolute inset-0 bg-background/90 backdrop-blur-md flex flex-col items-center justify-center gap-6 z-20">
+                    <Activity className="h-12 w-12 text-primary animate-pulse" />
+                    <p className="text-[11px] font-black uppercase tracking-[0.5em] animate-pulse">Syncing Signature...</p>
                   </div>
                )}
             </div>
             <canvas ref={canvasRef} className="hidden" />
-            <Button className="w-full h-14 rounded-xl font-black uppercase tracking-widest bg-primary text-background" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
-              Execute Signature
+            <Button className="w-full h-18 rounded-2xl font-black uppercase tracking-[0.3em] bg-primary text-background shadow-2xl shadow-primary/20" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
+              {isVerifyingSign ? "COMMITTING..." : "EXECUTE SIGNATURE"}
             </Button>
           </div>
         </DialogContent>

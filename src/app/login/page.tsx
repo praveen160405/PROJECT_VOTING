@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { Lock, Fingerprint, ShieldCheck, Activity, Terminal } from "lucide-react";
+import { motion } from "framer-motion";
+import { Lock, Fingerprint, ShieldCheck, Activity, Terminal, Key } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -93,13 +93,16 @@ export default function LoginPage() {
   }, [step]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center p-4 cyber-grid">
-      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md">
-        <Card className="glassmorphic-card rounded-2xl border-t-4 border-t-primary shadow-2xl overflow-hidden glow-box">
+    <main className="flex min-h-screen items-center justify-center p-4 cyber-grid relative overflow-hidden">
+      {/* Dynamic Glows */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 blur-[150px] rounded-full" />
+      
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md relative z-10">
+        <Card className="glassmorphic-card rounded-3xl border-t-4 border-t-primary shadow-[0_0_80px_rgba(0,0,0,0.6)] overflow-hidden shimmer-card">
           <CardHeader className="text-center p-10 pb-2">
-            <Logo className="mb-6 mx-auto scale-110" />
-            <CardTitle className="text-2xl font-black uppercase italic">Node Access</CardTitle>
-            <CardDescription className="text-[10px] font-bold uppercase tracking-widest pt-2">Identity Sync Required</CardDescription>
+            <Logo className="mb-8 mx-auto scale-125" />
+            <CardTitle className="text-3xl font-black uppercase italic tracking-tighter glow-text">NODE ACCESS</CardTitle>
+            <CardDescription className="text-[10px] font-black uppercase tracking-[0.4em] pt-4 text-primary/60">Forensic Identity Sync</CardDescription>
           </CardHeader>
           <CardContent className="p-10">
             {step === 'credentials' ? (
@@ -107,34 +110,49 @@ export default function LoginPage() {
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   <FormField control={form.control} name="voterId" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[10px] font-bold uppercase">Credential ID</FormLabel>
-                      <div className="relative"><Fingerprint className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/50" />
-                      <FormControl><Input placeholder="ABC1234567" {...field} className="pl-12 h-14 rounded-xl uppercase font-mono" /></FormControl></div>
+                      <FormLabel className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">Credential ID</FormLabel>
+                      <div className="relative group">
+                        <Fingerprint className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary group-focus-within:text-primary transition-colors" />
+                        <FormControl>
+                          <Input placeholder="ABC1234567" {...field} className="pl-12 h-16 rounded-2xl bg-white/5 border-white/10 uppercase font-mono tracking-widest focus:bg-white/10 transition-all" />
+                        </FormControl>
+                      </div>
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="password" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[10px] font-bold uppercase">Master Key</FormLabel>
-                      <div className="relative"><Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/50" />
-                      <FormControl><Input type="password" {...field} className="pl-12 h-14 rounded-xl" /></FormControl></div>
+                      <FormLabel className="text-[10px] font-black uppercase tracking-[0.2em] mb-2 block">Master Access Key</FormLabel>
+                      <div className="relative group">
+                        <Key className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary group-focus-within:text-primary transition-colors" />
+                        <FormControl>
+                          <Input type="password" placeholder="••••••••" {...field} className="pl-12 h-16 rounded-2xl bg-white/5 border-white/10 tracking-widest focus:bg-white/10 transition-all" />
+                        </FormControl>
+                      </div>
                     </FormItem>
                   )} />
-                  <Button type="submit" className="w-full h-16 rounded-xl font-black uppercase tracking-widest bg-primary text-background hover:bg-primary/90">Authorize</Button>
+                  <Button type="submit" className="w-full h-16 rounded-2xl font-black uppercase tracking-[0.3em] bg-primary text-background hover:bg-primary/90 shadow-xl shadow-primary/20">AUTHORIZE</Button>
                 </form>
               </Form>
             ) : (
               <div className="space-y-6">
-                <div className="aspect-video bg-black rounded-xl border border-white/10 overflow-hidden relative">
-                   <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale" />
-                   {isVerifying && <div className="absolute inset-0 bg-background/80 flex items-center justify-center font-bold uppercase text-[10px] animate-pulse">Syncing...</div>}
+                <div className="aspect-video bg-black rounded-2xl border-2 border-primary/20 overflow-hidden relative shadow-inner">
+                   <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale brightness-75" />
+                   {isVerifying && (
+                     <div className="absolute inset-0 bg-background/90 backdrop-blur-md flex flex-col items-center justify-center gap-4 z-20">
+                       <Activity className="h-10 w-10 text-primary animate-pulse" />
+                       <p className="text-[10px] font-black uppercase tracking-[0.4em] animate-pulse">Syncing Signature...</p>
+                     </div>
+                   )}
                 </div>
                 <canvas ref={canvasRef} className="hidden" />
-                <Button className="w-full h-16 rounded-xl font-black uppercase tracking-widest bg-secondary text-white" onClick={handleBiometric} disabled={isVerifying}>Initiate Sync</Button>
+                <Button className="w-full h-16 rounded-2xl font-black uppercase tracking-[0.3em] bg-secondary text-white shadow-xl shadow-secondary/20" onClick={handleBiometric} disabled={isVerifying}>INITIATE SYNC</Button>
               </div>
             )}
           </CardContent>
           <CardFooter className="p-10 pt-0 text-center">
-             <p className="text-[10px] font-bold uppercase text-muted-foreground w-full">New? <Link href="/register" className="text-primary underline">Register Node</Link></p>
+             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground w-full">
+               New Node? <Link href="/register" className="text-primary hover:glow-text transition-all">Register ID</Link>
+             </p>
           </CardFooter>
         </Card>
       </motion.div>

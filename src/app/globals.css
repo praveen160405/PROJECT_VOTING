@@ -4,33 +4,33 @@
 
 @layer base {
   :root {
-    --background: 222 38% 7%;
+    --background: 222 47% 7%;
     --foreground: 210 20% 98%;
-    --card: 222 38% 10%;
+    --card: 222 47% 9%;
     --card-foreground: 210 20% 98%;
-    --popover: 222 38% 7%;
+    --popover: 222 47% 7%;
     --popover-foreground: 210 20% 98%;
     --primary: 191 100% 50%;
-    --primary-foreground: 222 38% 7%;
+    --primary-foreground: 222 47% 7%;
     --secondary: 251 100% 68%;
     --secondary-foreground: 210 20% 98%;
-    --muted: 222 38% 15%;
+    --muted: 222 47% 15%;
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 162 100% 50%;
-    --accent-foreground: 222 38% 7%;
+    --accent-foreground: 222 47% 7%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 20% 98%;
-    --border: 222 38% 15%;
-    --input: 222 38% 15%;
+    --border: 222 47% 15%;
+    --input: 222 47% 15%;
     --ring: 191 100% 50%;
-    --radius: 0.75rem;
-    --sidebar-background: 222 38% 5%;
+    --radius: 1rem;
+    --sidebar-background: 222 47% 5%;
     --sidebar-foreground: 210 20% 98%;
     --sidebar-primary: 191 100% 50%;
-    --sidebar-primary-foreground: 222 38% 7%;
-    --sidebar-accent: 222 38% 10%;
+    --sidebar-primary-foreground: 222 47% 7%;
+    --sidebar-accent: 222 47% 10%;
     --sidebar-accent-foreground: 210 20% 98%;
-    --sidebar-border: 222 38% 10%;
+    --sidebar-border: 222 47% 10%;
     --sidebar-ring: 191 100% 50%;
   }
 }
@@ -40,30 +40,52 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
-    background-image: radial-gradient(circle at 50% 50%, rgba(0, 209, 255, 0.05) 0%, transparent 50%);
+    @apply bg-[#0B0F19] text-foreground;
+    background-image: 
+      radial-gradient(circle at 0% 0%, rgba(122, 92, 255, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(0, 209, 255, 0.15) 0%, transparent 40%);
     background-attachment: fixed;
   }
 }
 
 @layer utilities {
   .cyber-grid {
-    background-size: 50px 50px;
+    background-size: 40px 40px;
     background-image: 
-      linear-gradient(to right, rgba(0, 209, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(0, 209, 255, 0.03) 1px, transparent 1px);
+      linear-gradient(to right, rgba(0, 209, 255, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(0, 209, 255, 0.05) 1px, transparent 1px);
   }
 
   .glassmorphic-card {
-    @apply bg-card/60 backdrop-blur-xl border border-white/5 shadow-2xl;
+    @apply bg-card/40 backdrop-blur-3xl border border-white/10 shadow-[0_0_40px_rgba(0,0,0,0.5)];
   }
 
   .glow-box {
-    box-shadow: 0 0 30px rgba(0, 209, 255, 0.15);
+    box-shadow: 0 0 25px rgba(0, 209, 255, 0.2);
   }
 
   .glow-text {
-    text-shadow: 0 0 10px rgba(0, 209, 255, 0.5);
+    text-shadow: 0 0 10px rgba(0, 209, 255, 0.6);
+  }
+
+  .neon-border {
+    @apply relative overflow-hidden;
+  }
+
+  .neon-border::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(
+      transparent,
+      rgba(0, 209, 255, 0.3),
+      transparent 30%
+    );
+    animation: rotate 6s linear infinite;
+    pointer-events: none;
   }
 
   .shimmer-card {
@@ -75,19 +97,19 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, transparent 45%, rgba(255,255,255,0.05) 50%, transparent 55%);
+    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%);
     background-size: 200% 200%;
-    animation: shimmer 8s infinite linear;
+    animation: shimmer 10s infinite linear;
     pointer-events: none;
+  }
+
+  @keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   @keyframes shimmer {
     0% { background-position: -200% -200%; }
     100% { background-position: 200% 200%; }
-  }
-
-  .neon-border {
-    @apply relative border-primary/20;
-    box-shadow: 0 0 15px rgba(0, 209, 255, 0.1);
   }
 }
