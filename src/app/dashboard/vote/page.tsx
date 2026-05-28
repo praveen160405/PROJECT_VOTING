@@ -1,4 +1,3 @@
-
 "use client"
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
@@ -16,7 +15,8 @@ import {
   UserCheck,
   Activity,
   Zap,
-  Network
+  Network,
+  ChevronRight
 } from 'lucide-react';
 import { collection, serverTimestamp, doc } from "firebase/firestore";
 
@@ -54,35 +54,36 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
     <motion.div whileHover={{ y: -5 }} className="h-full">
       <Card 
         onClick={() => !disabled && onVote(candidate)}
-        className="group relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all rounded-xl border-white/10 bg-[#0B0F19] shadow-2xl data-[disabled=true]:opacity-40 data-[disabled=true]:cursor-not-allowed border-t-2 border-t-primary/20"
+        className="group relative flex h-full cursor-pointer flex-col overflow-hidden transition-all rounded-xl border-white/10 bg-[#0B0F19] shadow-2xl data-[disabled=true]:opacity-40 data-[disabled=true]:cursor-not-allowed border-t-2 border-t-primary/20"
         data-disabled={disabled}
       >
-        <div className="relative w-full p-6 flex flex-col items-center gap-4 bg-white/[0.02]">
-          {/* Symbol Box */}
-          <div className="w-20 h-20 border-2 border-primary/40 flex items-center justify-center mb-1 bg-primary/5">
-            <span className="text-2xl font-black text-primary tracking-tighter">{candidate.name}</span>
+        <div className="relative w-full p-8 flex flex-col items-center gap-6 bg-white/[0.02]">
+          {/* Boxed Insignia */}
+          <div className="w-24 h-24 border-2 border-primary/40 flex items-center justify-center bg-primary/5 shadow-inner">
+            <span className="text-3xl font-black text-primary tracking-tighter glow-text">{candidate.name}</span>
           </div>
           
-          <div className="text-center space-y-1">
-            <p className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em]">Official Ballot Symbol</p>
-            <h3 className="text-lg font-black text-white uppercase tracking-tight">{candidate.name}</h3>
+          <div className="text-center space-y-2">
+            <p className="text-[8px] font-black text-primary/60 uppercase tracking-[0.3em]">Official Ballot Symbol</p>
+            <h3 className="text-xl font-black text-white uppercase tracking-tight italic">{candidate.name}</h3>
           </div>
 
           {isVoted && (
-               <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm flex items-center justify-center z-10">
-                  <CheckCircle2 className="h-10 w-10 text-primary glow-text" />
+               <div className="absolute inset-0 bg-primary/10 backdrop-blur-[2px] flex items-center justify-center z-10">
+                  <CheckCircle2 className="h-12 w-12 text-primary glow-text" />
                </div>
           )}
         </div>
         
         <div className="w-full h-px bg-white/5" />
         
-        <CardContent className="p-5 w-full flex flex-col items-center justify-between flex-1 gap-4">
-          <p className="text-[9px] font-bold text-white/70 uppercase text-center leading-relaxed tracking-wider">
+        <CardContent className="p-6 w-full flex flex-col items-center flex-1 gap-6">
+          <p className="text-[10px] font-black text-white/50 uppercase text-center leading-relaxed tracking-widest max-w-[140px]">
             {candidate.party}
           </p>
+          
           <Button 
-            className="w-full h-10 rounded-lg font-black uppercase tracking-[0.2em] bg-primary text-background hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 mt-auto"
+            className="w-full h-12 mt-auto rounded-lg font-black uppercase tracking-[0.2em] bg-primary text-background hover:bg-primary/90 transition-all shadow-xl shadow-primary/20 group-hover:scale-[1.02]"
           >
             {isVoted ? "CHANGE VOTE" : "CAST VOTE"}
           </Button>
@@ -136,6 +137,7 @@ export default function VotePage() {
   }, [userVotes]);
 
   const isElectionLive = useMemo(() => {
+    // In prototype mode, we allow voting even if no election is manually created
     if (!areElectionsLoading && (!activeElections || activeElections.length === 0)) return true;
     return activeElections && activeElections.length > 0;
   }, [activeElections, areElectionsLoading]);
@@ -170,14 +172,6 @@ export default function VotePage() {
 
   const handleInitiateVote = (candidate: Candidate) => {
     if (!user) { router.push('/login'); return; }
-    if (!isElectionLive) { 
-      toast({ 
-        variant: "destructive", 
-        title: "PROTOCOL WINDOW CLOSED", 
-        description: "No active election detected on the ledger." 
-      }); 
-      return; 
-    }
     setSelectedCandidate(candidate);
     setIsConfirming(true);
   };
@@ -187,7 +181,7 @@ export default function VotePage() {
       toast({
         variant: "destructive",
         title: "PROFILE INCOMPLETE",
-        description: "No biometric reference found in your registry. Please update your settings."
+        description: "No biometric reference found. Please update your settings."
       });
       return;
     }
@@ -230,15 +224,17 @@ export default function VotePage() {
           setIsBiometricSigning(false);
           toast({ title: "SIGNATURE COMMITTED", description: "Ledger sync successful." });
         } else {
-          toast({ variant: "destructive", title: "SIGNATURE MISMATCH", description: "Neural signature does not match registry." });
+          toast({ variant: "destructive", title: "SIGNATURE MISMATCH", description: "Neural signature mismatch." });
         }
       } catch (error: any) {
-        toast({ variant: "destructive", title: "PROTOCOL ERROR", description: "Neural sync node timeout." });
+        toast({ variant: "destructive", title: "PROTOCOL ERROR", description: "Neural node timeout." });
       } finally {
         setIsVerifyingSign(false);
       }
     }
   }
+
+  const isCheckingVote = isUserLoading || isLoadingVotes || areElectionsLoading;
 
   if (isMounted && votedCandidateId) {
     return (
@@ -265,8 +261,6 @@ export default function VotePage() {
     )
   }
 
-  const isCheckingVote = isUserLoading || isLoadingVotes || areElectionsLoading;
-
   return (
     <div className="flex flex-col gap-10">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8">
@@ -275,15 +269,15 @@ export default function VotePage() {
           <p className="text-muted-foreground font-black uppercase text-[10px] tracking-[0.5em] mt-3">Decentralized Secure Ballot Submission</p>
         </div>
 
-        <Card className="glassmorphic-card rounded-xl p-4 flex items-center gap-6 shadow-xl border-white/10">
+        <Card className="glassmorphic-card rounded-xl p-5 flex items-center gap-8 shadow-xl border-white/10">
            <div className="flex items-center gap-4">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-destructive">Internal Duress Flag</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-destructive/80">Internal Duress Flag</Label>
               <Switch checked={isPanicMode} onCheckedChange={setIsPanicMode} className="data-[state=checked]:bg-destructive" />
            </div>
-           <div className="w-px h-8 bg-white/10" />
+           <div className="w-px h-10 bg-white/10" />
            <div className="flex items-center gap-4">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-secondary">Decoy Receipt</Label>
-              <Switch checked={isDecoyMode} onCheckedChange={setIsDecoyMode} className="data-[state=checked]:bg-secondary" />
+              <Label className="text-[10px] font-black uppercase tracking-widest text-accent/80">Decoy Receipt</Label>
+              <Switch checked={isDecoyMode} onCheckedChange={setIsDecoyMode} className="data-[state=checked]:bg-accent" />
            </div>
         </Card>
       </div>
@@ -302,21 +296,21 @@ export default function VotePage() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
         {candidates.map((c) => (
-          <CandidateCard key={c.id} candidate={c} onVote={handleInitiateVote} isVoted={userVotes?.some(v => v.candidateId === c.id) || false} disabled={isCheckingVote || !isElectionLive} />
+          <CandidateCard key={c.id} candidate={c} onVote={handleInitiateVote} isVoted={userVotes?.some(v => v.candidateId === c.id) || false} disabled={isCheckingVote} />
         ))}
       </div>
 
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
-        <AlertDialogContent className="rounded-xl glassmorphic-card border-primary/20 p-8">
+        <AlertDialogContent className="rounded-xl glassmorphic-card border-primary/20 p-10 max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-black uppercase text-xl tracking-tight">CONFIRM FINAL SELECTION</AlertDialogTitle>
-            <AlertDialogDescription className="text-sm font-medium text-muted-foreground leading-relaxed mt-4">
-              You are selecting <span className="text-primary font-black uppercase">{selectedCandidate?.name}</span>. You will be asked to perform a Biometric Signature soon to finalize.
+            <AlertDialogTitle className="font-black uppercase text-2xl tracking-tight italic glow-text">CONFIRM FINAL SELECTION</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm font-bold text-muted-foreground leading-relaxed mt-4 uppercase tracking-wider">
+              You are selecting <span className="text-primary font-black">{selectedCandidate?.name}</span>. <br/>Proceed to Biometric Signature?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="mt-8 gap-4">
+          <AlertDialogFooter className="mt-10 gap-4">
             <AlertDialogCancel className="rounded-lg uppercase font-black tracking-widest text-[10px] h-12 border-white/10">CANCEL</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="rounded-lg bg-primary text-background uppercase font-black tracking-widest text-[10px] h-12 shadow-xl shadow-primary/20">SIGN & COMMIT</AlertDialogAction>
           </AlertDialogFooter>
@@ -324,16 +318,16 @@ export default function VotePage() {
       </AlertDialog>
 
       <Dialog open={isBiometricSigning} onOpenChange={(o) => !isVerifyingSign && setIsBiometricSigning(o)}>
-        <DialogContent className="rounded-xl glassmorphic-card p-10 border-primary/20">
-          <DialogHeader className="text-center mb-6">
-            <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-               <Fingerprint className="h-7 w-7 text-primary glow-text" />
+        <DialogContent className="rounded-2xl glassmorphic-card p-10 border-primary/20 max-w-lg">
+          <DialogHeader className="text-center mb-8">
+            <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4 border border-primary/20">
+               <Fingerprint className="h-8 w-8 text-primary glow-text" />
             </div>
             <DialogTitle className="font-black uppercase italic text-3xl tracking-tighter glow-text">Neural Sign</DialogTitle>
             <DialogDescription className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 pt-2">Biometric Consensus Active</DialogDescription>
           </DialogHeader>
-          <div className="space-y-8">
-            <div className="aspect-video bg-black rounded-xl overflow-hidden relative border-2 border-primary/20 shadow-2xl">
+          <div className="space-y-10">
+            <div className="aspect-video bg-black rounded-xl overflow-hidden relative border-2 border-primary/20 shadow-2xl shimmer-card">
                <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale brightness-75" />
                {isVerifyingSign && (
                   <div className="absolute inset-0 bg-background/90 backdrop-blur-md flex flex-col items-center justify-center gap-6 z-20">
@@ -343,7 +337,7 @@ export default function VotePage() {
                )}
             </div>
             <canvas ref={canvasRef} className="hidden" />
-            <Button className="w-full h-16 rounded-xl font-black uppercase tracking-[0.3em] bg-primary text-background shadow-2xl shadow-primary/20" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
+            <Button className="w-full h-16 rounded-xl font-black uppercase tracking-[0.3em] bg-primary text-background shadow-2xl shadow-primary/20 hover:scale-[1.02] transition-transform" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
               {isVerifyingSign ? "COMMITTING..." : "EXECUTE SIGNATURE"}
             </Button>
           </div>
