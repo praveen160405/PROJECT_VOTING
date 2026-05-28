@@ -18,7 +18,6 @@ export default function HomePage() {
 
   return (
     <main className="relative flex min-h-screen w-full flex-col items-center justify-center p-4 md:p-8 cyber-grid overflow-hidden">
-      {/* Background Glows */}
       <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-primary/20 blur-[150px] rounded-full -translate-x-1/2 -translate-y-1/2" />
       <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-secondary/20 blur-[150px] rounded-full translate-x-1/2 translate-y-1/2" />
 
