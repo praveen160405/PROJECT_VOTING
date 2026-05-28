@@ -11,8 +11,10 @@ import {
   Pie, 
   PieChart, 
   Cell, 
-  Line, 
-  LineChart 
+  Area, 
+  AreaChart,
+  ResponsiveContainer,
+  Tooltip
 } from "recharts";
 import { 
   Card, 
@@ -48,7 +50,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 const chartConfig: ChartConfig = {
   turnout: {
-    label: "Voter Turnout %",
+    label: "Voter Turnout",
     color: "hsl(var(--primary))",
   },
   value: {
@@ -57,15 +59,15 @@ const chartConfig: ChartConfig = {
   },
   votes: {
     label: "Votes Cast",
-    color: "hsl(var(--chart-3))",
+    color: "hsl(var(--primary))",
   },
 };
 
 const COLORS = [
-  "hsl(var(--chart-1))",
-  "hsl(var(--chart-2))",
-  "hsl(var(--chart-3))",
-  "hsl(var(--chart-4))",
+  "hsl(var(--primary))",
+  "hsl(var(--accent))",
+  "hsl(var(--primary) / 0.6)",
+  "hsl(var(--accent) / 0.6)",
 ];
 
 export default function InsightsPage() {
@@ -124,98 +126,93 @@ export default function InsightsPage() {
     return (
       <div className="flex flex-col gap-8 p-2 md:p-0">
         <div className="space-y-4">
-          <Skeleton className="h-10 w-1/3" />
-          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-10 w-1/3 bg-white/5" />
+          <Skeleton className="h-4 w-2/3 bg-white/5" />
         </div>
         <div className="grid gap-6 md:grid-cols-3">
-          <Skeleton className="h-[400px] md:col-span-2" />
-          <Skeleton className="h-[400px]" />
-        </div>
-        <div className="grid gap-6 md:grid-cols-3">
-          <Skeleton className="h-[400px] md:col-span-2" />
-          <Skeleton className="h-[400px]" />
+          <Skeleton className="h-[400px] md:col-span-2 bg-white/5" />
+          <Skeleton className="h-[400px] bg-white/5" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="flex flex-col gap-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Participation Insights</h1>
-          <p className="text-muted-foreground">Comprehensive analytics of decentralized voter behavior and protocol health.</p>
+          <h1 className="text-4xl font-black uppercase italic tracking-tighter glow-text">Participation <span className="text-primary">Insights</span></h1>
+          <p className="text-muted-foreground font-black uppercase text-[10px] tracking-[0.4em] mt-2">Decentralized behavior & Ledger health metrics</p>
         </div>
-        <div className="flex items-center gap-2">
-           <Badge variant="secondary" className="bg-green-500/10 text-green-500 border-green-500/20">
-            <RefreshCcw className="mr-2 h-3 w-3 animate-spin" /> Protocol Sync Active
+        <div className="flex items-center gap-3">
+           <Badge variant="outline" className="h-9 px-4 rounded-none bg-primary/5 text-primary border-primary/20 font-black uppercase text-[9px] tracking-widest">
+            <RefreshCcw className="mr-2 h-3 w-3 animate-spin" /> Node Sync Active
           </Badge>
-          <Badge variant="outline" className="gap-2">
-            <Globe className="h-3 w-3" /> Global Ledger
+          <Badge variant="outline" className="h-9 px-4 rounded-none border-white/10 text-muted-foreground font-black uppercase text-[9px] tracking-widest">
+            <Globe className="mr-2 h-3 w-3" /> Global Ledger
           </Badge>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2">
-          <CardHeader>
+      <div className="grid gap-8 md:grid-cols-3">
+        <Card className="md:col-span-2 glassmorphic-card rounded-xl border-white/5 shimmer-card">
+          <CardHeader className="p-8">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-primary" />
-                  Regional Turnout Comparison
+                <CardTitle className="text-xl font-black uppercase italic tracking-tight flex items-center gap-3">
+                  <BarChart3 className="h-6 w-6 text-primary" />
+                  Regional Turnout
                 </CardTitle>
-                <CardDescription>Live turnout percentage across geographic nodes.</CardDescription>
+                <CardDescription className="text-[10px] font-bold uppercase tracking-widest pt-1">Node turnout percentage by geographic sector.</CardDescription>
               </div>
-              <Badge variant="outline" className="text-[10px] uppercase font-bold tracking-tighter">Verified</Badge>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-8 pb-8">
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
               <BarChart data={stats?.regionalData || []}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                <XAxis dataKey="region" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="turnout" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.05} />
+                <XAxis dataKey="region" stroke="hsl(var(--muted-foreground))" fontSize={10} tickLine={false} axisLine={false} className="font-black uppercase tracking-tighter" />
+                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} tickLine={false} axisLine={false} className="font-bold" />
+                <ChartTooltip content={<ChartTooltipContent className="rounded-none border-primary/20" />} />
+                <Bar dataKey="turnout" fill="hsl(var(--primary))" radius={[0, 0, 0, 0]} />
               </BarChart>
             </ChartContainer>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PieChartIcon className="h-5 w-5 text-accent" />
-              Age Distribution
+        <Card className="glassmorphic-card rounded-xl border-white/5 shimmer-card">
+          <CardHeader className="p-8">
+            <CardTitle className="text-xl font-black uppercase italic tracking-tight flex items-center gap-3">
+              <PieChartIcon className="h-6 w-6 text-accent" />
+              Age Cohorts
             </CardTitle>
-            <CardDescription>Demographic breakdown of the electorate.</CardDescription>
+            <CardDescription className="text-[10px] font-bold uppercase tracking-widest pt-1">Demographic distribution across the mesh.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-8 pb-8 flex flex-col items-center">
             <ChartContainer config={chartConfig} className="h-[250px] w-full">
               <PieChart>
                 <Pie
                   data={stats?.ageData || []}
                   cx="50%"
                   cy="50%"
-                  innerRadius={60}
-                  outerRadius={80}
-                  paddingAngle={5}
+                  innerRadius={70}
+                  outerRadius={90}
+                  paddingAngle={8}
                   dataKey="value"
+                  stroke="none"
                 >
                   {stats?.ageData?.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} className="outline-none focus:outline-none" />
                   ))}
                 </Pie>
-                <ChartTooltip content={<ChartTooltipContent />} />
+                <ChartTooltip content={<ChartTooltipContent className="rounded-none border-accent/20" />} />
               </PieChart>
             </ChartContainer>
-            <div className="mt-4 grid grid-cols-2 gap-2">
+            <div className="mt-8 grid grid-cols-2 gap-6 w-full">
               {stats?.ageData?.map((item, i) => (
-                <div key={item.group} className="flex items-center gap-2 text-xs">
-                  <div className="h-2 w-2 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
-                  <span className="text-muted-foreground">{item.group}:</span>
-                  <span className="font-bold">{item.value}%</span>
+                <div key={item.group} className="flex items-center gap-3">
+                  <div className="h-1.5 w-1.5 rounded-none shadow-sm" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{item.group}</span>
                 </div>
               ))}
             </div>
@@ -223,60 +220,63 @@ export default function InsightsPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-chart-3" />
-              Voting Activity Trends
+      <div className="grid gap-8 md:grid-cols-3">
+        <Card className="md:col-span-2 glassmorphic-card rounded-xl border-white/5 shimmer-card overflow-hidden">
+          <CardHeader className="p-8">
+            <CardTitle className="text-xl font-black uppercase italic tracking-tight flex items-center gap-3">
+              <TrendingUp className="h-6 w-6 text-primary" />
+              Activity Trends
             </CardTitle>
-            <CardDescription>Hourly aggregation of cryptographic ballot submissions.</CardDescription>
+            <CardDescription className="text-[10px] font-bold uppercase tracking-widest pt-1">Temporal aggregation of cryptographic submissions.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-0">
             <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <LineChart data={stats?.trendData || []}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.1} />
-                <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} tickLine={false} axisLine={false} />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line 
+              <AreaChart data={stats?.trendData || []} margin={{ left: -20, right: 0, top: 20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorVotes" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.03} />
+                <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" fontSize={9} tickLine={false} axisLine={false} className="font-black uppercase tracking-widest" />
+                <YAxis hide={true} />
+                <ChartTooltip content={<ChartTooltipContent className="rounded-none border-primary/20" />} />
+                <Area 
                   type="monotone" 
                   dataKey="votes" 
-                  stroke="hsl(var(--chart-3))" 
-                  strokeWidth={3} 
-                  dot={{ fill: "hsl(var(--chart-3))", r: 4 }} 
-                  activeDot={{ r: 6, strokeWidth: 0 }}
+                  stroke="hsl(var(--primary))" 
+                  strokeWidth={4} 
+                  fillOpacity={1} 
+                  fill="url(#colorVotes)" 
                 />
-              </LineChart>
+              </AreaChart>
             </ChartContainer>
           </CardContent>
         </Card>
 
-        <div className="flex flex-col gap-6">
-          <Card className="border-primary/20 bg-primary/5">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-primary" />
-                AI Security Insights
+        <div className="flex flex-col gap-8">
+          <Card className="glassmorphic-card rounded-xl border-primary/20 bg-primary/5 shimmer-card border-l-4">
+            <CardHeader className="p-8 pb-4">
+              <CardTitle className="text-xs font-black uppercase tracking-[0.4em] text-primary flex items-center gap-3">
+                <ShieldAlert className="h-4 w-4" /> Security Pulse
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Alert className="bg-background/50 border-primary/20">
-                  <Zap className="h-4 w-4 text-primary" />
-                  <AlertTitle className="text-xs font-bold">Unusual Pattern Detected</AlertTitle>
-                  <AlertDescription className="text-[10px]">
-                    Analysis confirmed {stats?.total || 0} unique biometric signatures synced to ledger.
-                  </AlertDescription>
-                </Alert>
-                <Alert className="bg-background/50 border-green-500/20">
-                  <Clock className="h-4 w-4 text-green-500" />
-                  <AlertTitle className="text-xs font-bold">Consensus Healthy</AlertTitle>
-                  <AlertDescription className="text-[10px]">
-                    Ledger synchronization average: 1.2s. Last vote wins protocol enforced.
-                  </AlertDescription>
-                </Alert>
-              </div>
+            <CardContent className="p-8 pt-0 space-y-6">
+              <Alert className="bg-background/40 border-primary/10 rounded-none">
+                <Zap className="h-4 w-4 text-primary" />
+                <AlertTitle className="text-[10px] font-black uppercase tracking-widest">Consensus Healthy</AlertTitle>
+                <AlertDescription className="text-[9px] uppercase font-bold text-muted-foreground leading-relaxed mt-1">
+                  Analysis confirmed {stats?.total || 0} unique biometric signatures synced.
+                </AlertDescription>
+              </Alert>
+              <Alert className="bg-background/40 border-accent/10 rounded-none">
+                <Clock className="h-4 w-4 text-accent" />
+                <AlertTitle className="text-[10px] font-black uppercase tracking-widest">Sync Latency</AlertTitle>
+                <AlertDescription className="text-[9px] uppercase font-bold text-muted-foreground leading-relaxed mt-1">
+                  Average ledger synchronization: 1.2s. Decentralized nodes stable.
+                </AlertDescription>
+              </Alert>
             </CardContent>
           </Card>
         </div>
@@ -285,10 +285,10 @@ export default function InsightsPage() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center p-6 border rounded-lg bg-muted/30"
+        className="text-center p-12 glassmorphic-card rounded-xl border-white/5 border-dashed"
       >
-        <p className="text-sm text-muted-foreground max-w-2xl mx-auto">
-          This dashboard provides a transparent window into the OOTU protocol. All metrics are aggregated from anonymized blockchain ledger data, ensuring that while participation is public, individual choices remain private and secure.
+        <p className="text-[10px] font-black uppercase tracking-[0.6em] text-muted-foreground/40 max-w-2xl mx-auto leading-relaxed">
+          Aggregated biometric telemetry derived from decentralized ledger consensus. All data is anonymized per OOTU protocol standards.
         </p>
       </motion.div>
     </div>
