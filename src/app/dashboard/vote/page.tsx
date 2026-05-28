@@ -51,38 +51,38 @@ import { PROVERBS } from "@/lib/proverbs";
 
 function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean, disabled: boolean }) {
   return (
-    <motion.div whileHover={{ y: -5 }}>
+    <motion.div whileHover={{ y: -5 }} className="h-full">
       <Card 
         onClick={() => !disabled && onVote(candidate)}
-        className="group relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all rounded-none border-white/5 bg-[#0B0F19] shadow-2xl data-[disabled=true]:opacity-40 data-[disabled=true]:cursor-not-allowed"
+        className="group relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all rounded-xl border-white/10 bg-[#0B0F19] shadow-2xl data-[disabled=true]:opacity-40 data-[disabled=true]:cursor-not-allowed border-t-2 border-t-primary/20"
         data-disabled={disabled}
       >
-        <div className="relative w-full p-8 flex flex-col items-center gap-4 bg-white/[0.02]">
+        <div className="relative w-full p-6 flex flex-col items-center gap-4 bg-white/[0.02]">
           {/* Symbol Box */}
-          <div className="w-24 h-24 border-2 border-primary/40 flex items-center justify-center mb-2">
-            <span className="text-3xl font-black text-primary tracking-tighter">{candidate.name}</span>
+          <div className="w-20 h-20 border-2 border-primary/40 flex items-center justify-center mb-1 bg-primary/5">
+            <span className="text-2xl font-black text-primary tracking-tighter">{candidate.name}</span>
           </div>
           
           <div className="text-center space-y-1">
             <p className="text-[8px] font-black text-muted-foreground uppercase tracking-[0.2em]">Official Ballot Symbol</p>
-            <h3 className="text-xl font-black text-white uppercase tracking-tight">{candidate.name}</h3>
+            <h3 className="text-lg font-black text-white uppercase tracking-tight">{candidate.name}</h3>
           </div>
 
           {isVoted && (
                <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm flex items-center justify-center z-10">
-                  <CheckCircle2 className="h-12 w-12 text-primary glow-text" />
+                  <CheckCircle2 className="h-10 w-10 text-primary glow-text" />
                </div>
           )}
         </div>
         
         <div className="w-full h-px bg-white/5" />
         
-        <CardContent className="p-6 w-full flex flex-col items-center justify-between flex-grow gap-6">
+        <CardContent className="p-5 w-full flex flex-col items-center justify-between flex-1 gap-4">
           <p className="text-[9px] font-bold text-white/70 uppercase text-center leading-relaxed tracking-wider">
             {candidate.party}
           </p>
           <Button 
-            className="w-full h-12 rounded-none font-black uppercase tracking-[0.2em] bg-primary/20 text-primary hover:bg-primary hover:text-background transition-all"
+            className="w-full h-10 rounded-lg font-black uppercase tracking-[0.2em] bg-primary text-background hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 mt-auto"
           >
             {isVoted ? "CHANGE VOTE" : "CAST VOTE"}
           </Button>
@@ -136,7 +136,6 @@ export default function VotePage() {
   }, [userVotes]);
 
   const isElectionLive = useMemo(() => {
-    // For prototype purposes, if no elections exist, we assume a "Default Protocol" is active
     if (!areElectionsLoading && (!activeElections || activeElections.length === 0)) return true;
     return activeElections && activeElections.length > 0;
   }, [activeElections, areElectionsLoading]);
@@ -244,21 +243,21 @@ export default function VotePage() {
   if (isMounted && votedCandidateId) {
     return (
       <div className="flex items-center justify-center min-h-[70vh]">
-        <Card className="max-w-xl w-full text-center glassmorphic-card rounded-none shadow-2xl border-t-4 border-t-primary overflow-hidden">
-          <CardHeader className="p-12">
+        <Card className="max-w-xl w-full text-center glassmorphic-card rounded-2xl shadow-2xl border-t-4 border-t-primary overflow-hidden">
+          <CardHeader className="p-10">
             <UserCheck className="mx-auto h-16 w-16 text-primary mb-8 glow-text" />
             <CardTitle className="text-4xl font-black uppercase italic tracking-tighter glow-text">Signature Committed</CardTitle>
             <CardDescription className="font-black uppercase text-[10px] tracking-[0.4em] pt-6 text-primary/60">Digital Audit Receipt Generated</CardDescription>
           </CardHeader>
-          <CardContent className="px-12 pb-12 space-y-10">
-            <div className="p-8 bg-primary/5 rounded-none border border-primary/20 italic font-medium leading-relaxed text-lg">
+          <CardContent className="px-10 pb-12 space-y-10">
+            <div className="p-8 bg-primary/5 rounded-xl border border-primary/20 italic font-medium leading-relaxed text-lg">
               "{currentProverb}"
             </div>
-            <div className="p-6 bg-black/40 font-mono text-[11px] break-all border border-white/5 rounded-none tracking-widest text-primary/80">
+            <div className="p-6 bg-black/40 font-mono text-[11px] break-all border border-white/5 rounded-lg tracking-widest text-primary/80">
               {txHash}
             </div>
             <Link href="/dashboard/results" className="block">
-                <Button className="w-full h-16 rounded-none font-black uppercase tracking-[0.3em] bg-primary text-background shadow-2xl shadow-primary/20">VIEW GLOBAL LEDGER</Button>
+                <Button className="w-full h-16 rounded-xl font-black uppercase tracking-[0.3em] bg-primary text-background shadow-2xl shadow-primary/20">VIEW GLOBAL LEDGER</Button>
             </Link>
           </CardContent>
         </Card>
@@ -276,7 +275,7 @@ export default function VotePage() {
           <p className="text-muted-foreground font-black uppercase text-[10px] tracking-[0.5em] mt-3">Decentralized Secure Ballot Submission</p>
         </div>
 
-        <Card className="glassmorphic-card rounded-none p-6 flex items-center gap-8 shadow-xl border-white/5">
+        <Card className="glassmorphic-card rounded-xl p-4 flex items-center gap-6 shadow-xl border-white/10">
            <div className="flex items-center gap-4">
               <Label className="text-[10px] font-black uppercase tracking-widest text-destructive">Internal Duress Flag</Label>
               <Switch checked={isPanicMode} onCheckedChange={setIsPanicMode} className="data-[state=checked]:bg-destructive" />
@@ -290,7 +289,7 @@ export default function VotePage() {
       </div>
       
       {isMounted && hasAlreadyVoted && (
-        <Alert className="bg-primary/5 border-primary/30 rounded-none border-l-4 border-l-primary shadow-2xl backdrop-blur-md relative overflow-hidden group">
+        <Alert className="bg-primary/5 border-primary/30 rounded-xl border-l-4 border-l-primary shadow-2xl backdrop-blur-md relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10">
              <RefreshCcw className="h-12 w-12 text-primary" />
           </div>
@@ -310,7 +309,7 @@ export default function VotePage() {
       </div>
 
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
-        <AlertDialogContent className="rounded-none glassmorphic-card border-primary/20 p-8">
+        <AlertDialogContent className="rounded-xl glassmorphic-card border-primary/20 p-8">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-black uppercase text-xl tracking-tight">CONFIRM FINAL SELECTION</AlertDialogTitle>
             <AlertDialogDescription className="text-sm font-medium text-muted-foreground leading-relaxed mt-4">
@@ -318,23 +317,23 @@ export default function VotePage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-8 gap-4">
-            <AlertDialogCancel className="rounded-none uppercase font-black tracking-widest text-[10px] h-12 border-white/10">CANCEL</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="rounded-none bg-primary text-background uppercase font-black tracking-widest text-[10px] h-12 shadow-xl shadow-primary/20">SIGN & COMMIT</AlertDialogAction>
+            <AlertDialogCancel className="rounded-lg uppercase font-black tracking-widest text-[10px] h-12 border-white/10">CANCEL</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="rounded-lg bg-primary text-background uppercase font-black tracking-widest text-[10px] h-12 shadow-xl shadow-primary/20">SIGN & COMMIT</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <Dialog open={isBiometricSigning} onOpenChange={(o) => !isVerifyingSign && setIsBiometricSigning(o)}>
-        <DialogContent className="rounded-none glassmorphic-card p-12 border-primary/20">
-          <DialogHeader className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 rounded-none bg-primary/10 flex items-center justify-center mb-4">
-               <Fingerprint className="h-8 w-8 text-primary glow-text" />
+        <DialogContent className="rounded-xl glassmorphic-card p-10 border-primary/20">
+          <DialogHeader className="text-center mb-6">
+            <div className="mx-auto w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+               <Fingerprint className="h-7 w-7 text-primary glow-text" />
             </div>
             <DialogTitle className="font-black uppercase italic text-3xl tracking-tighter glow-text">Neural Sign</DialogTitle>
             <DialogDescription className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60 pt-2">Biometric Consensus Active</DialogDescription>
           </DialogHeader>
           <div className="space-y-8">
-            <div className="aspect-video bg-black rounded-none overflow-hidden relative border-2 border-primary/20 shadow-2xl">
+            <div className="aspect-video bg-black rounded-xl overflow-hidden relative border-2 border-primary/20 shadow-2xl">
                <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale brightness-75" />
                {isVerifyingSign && (
                   <div className="absolute inset-0 bg-background/90 backdrop-blur-md flex flex-col items-center justify-center gap-6 z-20">
@@ -344,7 +343,7 @@ export default function VotePage() {
                )}
             </div>
             <canvas ref={canvasRef} className="hidden" />
-            <Button className="w-full h-18 rounded-none font-black uppercase tracking-[0.3em] bg-primary text-background shadow-2xl shadow-primary/20" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
+            <Button className="w-full h-16 rounded-xl font-black uppercase tracking-[0.3em] bg-primary text-background shadow-2xl shadow-primary/20" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
               {isVerifyingSign ? "COMMITTING..." : "EXECUTE SIGNATURE"}
             </Button>
           </div>
@@ -353,4 +352,3 @@ export default function VotePage() {
     </div>
   );
 }
-
