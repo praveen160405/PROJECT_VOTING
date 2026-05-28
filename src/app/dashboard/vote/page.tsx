@@ -1,4 +1,3 @@
-
 "use client"
 import { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
@@ -65,17 +64,18 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
   return (
     <Card 
       onClick={() => !disabled && onVote(candidate)}
-      className="group/card relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60"
+      className="group/card relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-2xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60 rounded-none border-primary/10 shimmer-card"
       data-disabled={disabled ? true : undefined}
     >
+      <div className="scanning-line opacity-0 group-hover/card:opacity-100" />
       <div className="relative w-full aspect-square bg-primary/5 flex items-center justify-center border-b p-6">
         <div className="flex flex-col items-center gap-4">
-            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary border-2 border-primary/20 group-hover/card:scale-110 transition-transform duration-300">
+            <div className="w-24 h-24 rounded-none bg-primary/10 flex items-center justify-center text-primary border-2 border-primary/20 group-hover/card:scale-110 transition-transform duration-300 shadow-lg shadow-primary/5">
                 <span className="text-3xl font-black tracking-tighter">{candidate.name}</span>
             </div>
             <div className="text-center">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Official Ballot Symbol</p>
-                <h3 className="text-xl font-bold text-foreground">{candidate.name}</h3>
+                <h3 className="text-xl font-black text-foreground tracking-tighter">{candidate.name}</h3>
             </div>
         </div>
         {isVoted && (
@@ -86,11 +86,11 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
       </div>
       <CardContent className="p-4 w-full bg-card">
         <div className="mb-4">
-             <p className="text-xs font-medium text-muted-foreground leading-relaxed h-8 line-clamp-2">{candidate.party}</p>
+             <p className="text-xs font-bold text-muted-foreground leading-relaxed h-8 line-clamp-2 uppercase tracking-tight">{candidate.party}</p>
         </div>
         <Button 
           variant={isVoted ? "secondary" : "default"} 
-          className="w-full gap-2" 
+          className="w-full gap-2 rounded-none font-black uppercase tracking-widest shadow-lg shadow-primary/10" 
           disabled={disabled}
         >
           {isVoted ? <CheckCircle2 className="h-4 w-4" /> : null}
@@ -265,36 +265,36 @@ export default function VotePage() {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           className="w-full max-w-md"
         >
-          <Card className="text-center shadow-2xl border-primary/20 overflow-hidden">
+          <Card className="text-center shadow-2xl border-primary/20 overflow-hidden rounded-none glow-box">
             <div className="h-1.5 w-full bg-primary" />
             <CardHeader>
-              <div className="mx-auto bg-primary/10 w-16 h-16 rounded-full flex items-center justify-center mb-4">
+              <div className="mx-auto bg-primary/10 w-16 h-16 rounded-none border border-primary/20 flex items-center justify-center mb-4">
                 <CheckCircle2 className="h-10 w-10 text-primary" />
               </div>
-              <CardTitle className="text-3xl font-bold tracking-tight">Vote Confirmed</CardTitle>
-              <CardDescription className="pt-2">
+              <CardTitle className="text-3xl font-black tracking-tighter uppercase">Vote Confirmed</CardTitle>
+              <CardDescription className="pt-2 font-medium">
                 Your choice for <strong>{votedCandidate?.name}</strong> is etched into the OOTU protocol.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="p-4 bg-muted/50 rounded-lg border border-dashed relative">
+              <div className="p-4 bg-muted/50 rounded-none border border-dashed relative">
                 <Quote className="absolute -top-3 -left-1 h-6 w-6 text-primary/20" />
                 <p className="text-sm italic text-muted-foreground leading-relaxed">
                   "{currentProverb}"
                 </p>
               </div>
               <div className="text-left space-y-1">
-                 <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Digital Audit Receipt</p>
-                 <p className="text-[10px] font-mono text-muted-foreground p-3 bg-muted rounded border overflow-hidden text-ellipsis whitespace-nowrap">
+                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Digital Audit Receipt</p>
+                 <p className="text-[10px] font-mono text-muted-foreground p-3 bg-muted rounded-none border overflow-hidden text-ellipsis whitespace-nowrap">
                   {txHash}
                  </p>
               </div>
               <div className="space-y-2">
                  <Link href="/dashboard/results" className="block">
-                    <Button className="w-full">Go to Results</Button>
+                    <Button className="w-full h-12 rounded-none font-black uppercase tracking-widest shadow-xl shadow-primary/20">Go to Results</Button>
                  </Link>
                  {isDecoyMode && (
-                   <p className="text-[9px] text-muted-foreground font-bold uppercase">
+                   <p className="text-[9px] text-muted-foreground font-black uppercase tracking-tighter text-center">
                      Decoy Protocol Active: This session left no real ledger trace.
                    </p>
                  )}
@@ -314,7 +314,7 @@ export default function VotePage() {
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">OOTU Voting Booth</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground font-medium">
             {!isMounted ? "Initialising..." : 
              isCheckingVote ? "Verifying Eligibility..." : 
              !isElectionLive ? "No Active Election" :
@@ -322,24 +322,24 @@ export default function VotePage() {
           </p>
         </div>
 
-        <Card className="w-full md:w-auto bg-primary/5 border-primary/20 border-dashed">
+        <Card className="w-full md:w-auto bg-primary/5 border-primary/20 border-dashed rounded-none shimmer-card">
           <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-sm font-bold flex items-center gap-2">
+            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
               <ShieldAlert className="h-4 w-4 text-primary" /> Anti-Coercion Suite
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0 space-y-3">
              <div className="flex items-center justify-between gap-8">
                 <div className="space-y-0.5">
-                   <Label htmlFor="panic-mode" className="text-xs font-bold">Panic Mode</Label>
-                   <p className="text-[9px] text-muted-foreground leading-none">Internal duress flag active.</p>
+                   <Label htmlFor="panic-mode" className="text-xs font-black uppercase tracking-tight">Panic Mode</Label>
+                   <p className="text-[9px] text-muted-foreground leading-none font-medium">Internal duress flag active.</p>
                 </div>
                 <Switch id="panic-mode" checked={isPanicMode} onCheckedChange={setIsPanicMode} />
              </div>
              <div className="flex items-center justify-between gap-8">
                 <div className="space-y-0.5">
-                   <Label htmlFor="decoy-mode" className="text-xs font-bold">Decoy Receipt</Label>
-                   <p className="text-[9px] text-muted-foreground leading-none">Simulate vote for observer.</p>
+                   <Label htmlFor="decoy-mode" className="text-xs font-black uppercase tracking-tight">Decoy Receipt</Label>
+                   <p className="text-[9px] text-muted-foreground leading-none font-medium">Simulate vote for observer.</p>
                 </div>
                 <Switch id="decoy-mode" checked={isDecoyMode} onCheckedChange={setIsDecoyMode} />
              </div>
@@ -348,20 +348,20 @@ export default function VotePage() {
       </div>
       
       {isMounted && hasAlreadyVoted && (
-        <Alert className="bg-primary/5 border-primary/20">
+        <Alert className="bg-primary/5 border-primary/20 rounded-none border-l-4 border-l-primary shadow-lg shadow-primary/5">
           <RefreshCcw className="h-4 w-4 text-primary" />
-          <AlertTitle className="text-xs font-bold uppercase tracking-widest">Revote Capability Active</AlertTitle>
-          <AlertDescription className="text-xs">
+          <AlertTitle className="text-xs font-black uppercase tracking-widest">Revote Capability Active</AlertTitle>
+          <AlertDescription className="text-xs font-medium">
             You have already cast a vote. OOTU allows you to change your vote as many times as you need—only the <strong>last biometric signature</strong> is counted in the final tally.
           </AlertDescription>
         </Alert>
       )}
 
       {isMounted && (isPanicMode || isDecoyMode) && (
-        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-600">
+        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-600 rounded-none border-l-4 border-l-red-500">
           <Ghost className="h-4 w-4" />
-          <AlertTitle className="text-xs font-bold uppercase tracking-widest">Cloaking Engaged</AlertTitle>
-          <AlertDescription className="text-xs font-bold italic">
+          <AlertTitle className="text-xs font-black uppercase tracking-widest">Cloaking Engaged</AlertTitle>
+          <AlertDescription className="text-xs font-black italic uppercase tracking-tight">
             {isDecoyMode ? "This session will generate a valid-looking receipt but will NOT affect the final count." : "This vote will be flagged internally as coerced for legal audit."}
           </AlertDescription>
         </Alert>
@@ -386,20 +386,20 @@ export default function VotePage() {
       </div>
 
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-none border-2 border-primary/20 glow-box">
           <AlertDialogHeader>
-            <AlertDialogTitle>
+            <AlertDialogTitle className="font-black uppercase tracking-tight">
               {isDecoyMode ? "Initiate Decoy Protocol?" : "Confirm Final Selection"}
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="font-medium">
               {isDecoyMode 
                 ? `You are about to simulate a vote for ${selectedCandidate?.name}. A digital receipt will be generated for your observer, but the OOTU ledger will remain unchanged.`
                 : `You are selecting ${selectedCandidate?.name}. You will be asked to perform a Biometric Signature scan to finalize.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Review Choice</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="bg-primary">
+            <AlertDialogCancel className="rounded-none font-bold uppercase tracking-widest">Review Choice</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="bg-primary rounded-none font-black uppercase tracking-widest shadow-lg shadow-primary/20">
               {isDecoyMode ? "Generate Decoy" : "Proceed to Signing"}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -407,37 +407,38 @@ export default function VotePage() {
       </AlertDialog>
 
       <Dialog open={isBiometricSigning} onOpenChange={(open) => !isVerifyingSign && setIsBiometricSigning(open)}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-none border-2 border-primary/40 glow-box">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 font-black uppercase tracking-tighter">
               <Fingerprint className="h-5 w-5 text-primary" />
               {isDecoyMode ? "Decoy Authentication" : "Biometric Identity Sync"}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="font-medium">
               Confirming ballot for {selectedCandidate?.name}.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
-            <div className="relative aspect-video rounded-lg overflow-hidden bg-black border-2 border-primary/20">
+            <div className="relative aspect-video rounded-none overflow-hidden bg-black border-2 border-primary/20">
+               <div className="scanning-line" />
                <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className={`w-48 h-48 border-2 ${isPanicMode ? 'border-red-500' : 'border-primary/40'} rounded-full border-dashed animate-[spin_10s_linear_infinite]`} />
+                  <div className={`w-48 h-48 border-2 ${isPanicMode ? 'border-red-500' : 'border-primary/40'} rounded-none border-dashed animate-[spin_10s_linear_infinite]`} />
                </div>
                {isVerifyingSign && (
                   <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4 text-center p-4 z-20">
                     <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                    <p className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">
+                    <p className="text-xs font-black uppercase tracking-widest text-primary animate-pulse">
                       {isDecoyMode ? "Simulating Forensic Audit..." : "Neural Identity Sync Active"}
                     </p>
                   </div>
                )}
             </div>
             <canvas ref={canvasRef} className="hidden" />
-            <Button className="w-full h-12" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
+            <Button className="w-full h-14 rounded-none font-black uppercase tracking-widest shadow-xl shadow-primary/20" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
               {isVerifyingSign ? "Verifying..." : isDecoyMode ? "Generate Fake Receipt" : "Sign & Cast Vote"}
             </Button>
             <div className="flex items-center justify-center gap-2 text-[8px] text-muted-foreground font-black uppercase tracking-widest">
-               <ShieldCheck className="h-2 w-2" /> OOTU Anti-Coercion Protocol Active
+               <ShieldCheck className="h-2 w-2 text-primary" /> OOTU Anti-Coercion Protocol Active
             </div>
           </div>
         </DialogContent>

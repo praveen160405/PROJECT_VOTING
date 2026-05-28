@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -38,24 +37,25 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { candidates as initialCandidates } from "@/lib/data";
 import { analyzeProtocolSecurity, type SecurityAnalysisOutput } from '@/ai/flows/analyze-security-flow';
+import { motion } from "framer-motion";
 
 function ThreatRow({ threat, onBlock }: { threat: Threat, onBlock: (ip: string) => void }) {
   return (
-    <TableRow className="border-red-500/10 hover:bg-red-500/5">
+    <TableRow className="border-red-500/10 hover:bg-red-500/5 group">
       <TableCell className="font-mono text-xs">{threat.ipAddress}</TableCell>
       <TableCell>
-        <Badge variant="destructive" className="bg-red-500/20 text-red-500 border-red-500/30">
+        <Badge variant="destructive" className="bg-red-500/20 text-red-500 border-red-500/30 rounded-none font-black uppercase text-[10px]">
           {threat.type}
         </Badge>
       </TableCell>
-      <TableCell className="max-w-[150px] truncate font-mono text-[10px] text-muted-foreground">
+      <TableCell className="max-w-[150px] truncate font-mono text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
         {threat.payload}
       </TableCell>
-      <TableCell className="text-xs">
+      <TableCell className="text-xs font-medium">
         {threat.timestamp?.toDate ? format(threat.timestamp.toDate(), 'PPp') : 'Just now'}
       </TableCell>
       <TableCell className="text-right">
-        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10" onClick={() => onBlock(threat.ipAddress)}>
+        <Button size="icon" variant="ghost" className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-none" onClick={() => onBlock(threat.ipAddress)}>
           <Ban className="h-4 w-4" />
         </Button>
       </TableCell>
@@ -244,36 +244,36 @@ export default function AdminPage() {
   };
 
   if (isUserLoading || isProfileLoading) {
-    return <div className="p-8 space-y-4"><Skeleton className="h-12 w-1/2" /><Skeleton className="h-64 w-full" /></div>;
+    return <div className="p-8 space-y-4"><Skeleton className="h-12 w-1/2 rounded-none" /><Skeleton className="h-64 w-full rounded-none" /></div>;
   }
 
   if (!userProfile?.isAdmin) {
-    return <Alert variant="destructive" className="m-8"><ShieldAlert className="h-4 w-4" /><AlertTitle>Access Denied</AlertTitle></Alert>;
+    return <Alert variant="destructive" className="m-8 rounded-none border-l-4"><ShieldAlert className="h-4 w-4" /><AlertTitle>Access Denied</AlertTitle></Alert>;
   }
 
   if (!isAdminVerified) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-        <Card className="w-full max-w-md border-primary/20 shadow-xl">
+        <Card className="w-full max-w-md border-primary/20 shadow-2xl rounded-none glow-box">
           <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-none border border-primary/20 flex items-center justify-center mb-2">
               <Lock className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle>Security Verification</CardTitle>
-            <CardDescription>
+            <CardTitle className="font-black uppercase tracking-tight">Security Verification</CardTitle>
+            <CardDescription className="font-medium">
               Secondary authentication is required to access global election controls.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="master-key">Protocol Master Key</Label>
+              <Label htmlFor="master-key" className="text-[10px] font-black uppercase tracking-widest text-primary">Protocol Master Key</Label>
               <div className="relative">
                 <Key className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
                   id="master-key" 
                   type="password" 
                   placeholder="••••••••" 
-                  className="pl-9"
+                  className="pl-9 rounded-none bg-primary/5 border-primary/20"
                   value={verificationInput}
                   onChange={(e) => setVerificationInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleVerifyAccess()}
@@ -282,7 +282,7 @@ export default function AdminPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" onClick={handleVerifyAccess}>
+            <Button className="w-full rounded-none h-12 font-black uppercase tracking-widest shadow-xl shadow-primary/20" onClick={handleVerifyAccess}>
               Unlock Command Center
             </Button>
           </CardFooter>
@@ -296,162 +296,161 @@ export default function AdminPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Global Security Command</h1>
-          <p className="text-muted-foreground">Monitoring Sybil attacks, fraud patterns, and decentralized anomalies.</p>
+          <p className="text-muted-foreground font-medium">Monitoring Sybil attacks, fraud patterns, and decentralized anomalies.</p>
         </div>
         <div className="flex gap-2">
-           <Badge variant="outline" className="gap-2 px-3 py-1 bg-green-500/5 text-green-600 border-green-500/20">
+           <Badge variant="outline" className="gap-2 px-3 py-1 bg-green-500/5 text-green-600 border-green-500/20 rounded-none font-black uppercase tracking-tighter shadow-sm">
             <ShieldCheck className="h-4 w-4" /> Consensus Reached
           </Badge>
-          <Badge variant="outline" className="gap-2 px-3 py-1 bg-primary/5 text-primary border-primary/20">
+          <Badge variant="outline" className="gap-2 px-3 py-1 bg-primary/5 text-primary border-primary/20 rounded-none font-black uppercase tracking-tighter shadow-sm neon-border">
             <RefreshCcw className="h-4 w-4 animate-spin" /> Live Sync Active
           </Badge>
         </div>
       </div>
 
       <Tabs defaultValue="security" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 lg:w-[400px] mb-8">
-          <TabsTrigger value="security">Security Intelligence</TabsTrigger>
-          <TabsTrigger value="election">Election Management</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 lg:w-[400px] mb-8 bg-muted/50 rounded-none border-b-2 border-primary/20">
+          <TabsTrigger value="security" className="rounded-none font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Security Intelligence</TabsTrigger>
+          <TabsTrigger value="election" className="rounded-none font-black uppercase tracking-widest data-[state=active]:bg-primary data-[state=active]:text-white">Election Management</TabsTrigger>
         </TabsList>
 
         <TabsContent value="security" className="space-y-8">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <Card className="bg-primary/5 border-primary/10">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div><p className="text-xs font-medium text-muted-foreground uppercase">Active Nodes</p><p className="text-2xl font-bold text-primary">128</p></div>
-                <Zap className="h-8 w-8 text-primary/30" />
-              </CardContent>
-            </Card>
-            <Card className="bg-orange-500/5 border-orange-500/10">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div><p className="text-xs font-medium text-muted-foreground uppercase">Recent Threats</p><p className="text-2xl font-bold text-orange-600">{threats?.length || 0}</p></div>
-                <AlertTriangle className="h-8 w-8 text-orange-500/30" />
-              </CardContent>
-            </Card>
-            <Card className="bg-red-500/5 border-red-500/10">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div><p className="text-xs font-medium text-muted-foreground uppercase">Banned IPs</p><p className="text-2xl font-bold text-red-600">{blockedIps?.length || 0}</p></div>
-                <Ban className="h-8 w-8 text-red-500/30" />
-              </CardContent>
-            </Card>
-            <Card className="bg-green-500/5 border-green-500/10">
-              <CardContent className="p-6 flex items-center justify-between">
-                <div><p className="text-xs font-medium text-muted-foreground uppercase">Voter Turnout</p><p className="text-2xl font-bold text-green-600">{liveStats.turnout}</p></div>
-                <Users className="h-8 w-8 text-green-500/30" />
-              </CardContent>
-            </Card>
+            {[
+              { label: "Active Nodes", val: "128", color: "bg-primary/5 border-primary/20 text-primary", icon: Zap },
+              { label: "Recent Threats", val: threats?.length || 0, color: "bg-orange-500/5 border-orange-500/20 text-orange-600", icon: AlertTriangle },
+              { label: "Banned IPs", val: blockedIps?.length || 0, color: "bg-red-500/5 border-red-500/20 text-red-600", icon: Ban },
+              { label: "Voter Turnout", val: liveStats.turnout, color: "bg-green-500/5 border-green-500/20 text-green-600", icon: Users }
+            ].map((stat, i) => (
+              <Card key={i} className={`${stat.color} rounded-none border-l-4 shimmer-card shadow-lg`}>
+                <CardContent className="p-6 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{stat.label}</p>
+                    <p className="text-2xl font-black mt-1 tracking-tighter">{stat.val}</p>
+                  </div>
+                  <stat.icon className="h-8 w-8 opacity-30" />
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2 space-y-6">
-              <Card className="border-primary/20 bg-background/50">
-                <CardHeader className="flex flex-row items-center justify-between">
+              <Card className="border-primary/20 bg-background/50 rounded-none shadow-xl glow-box">
+                <CardHeader className="flex flex-row items-center justify-between border-b pb-6">
                   <div>
-                    <CardTitle className="text-primary flex items-center gap-2">
+                    <CardTitle className="text-primary flex items-center gap-2 font-black uppercase tracking-tight">
                       <Scan className="h-5 w-5" /> AI Forensic Suite
                     </CardTitle>
-                    <CardDescription>Advanced Sybil, Fraud, and Anomaly Analysis.</CardDescription>
+                    <CardDescription className="font-medium">Advanced Sybil, Fraud, and Anomaly Analysis.</CardDescription>
                   </div>
-                  <Button variant="outline" size="sm" onClick={handleRunSecurityAnalysis} disabled={isAnalyzingSecurity}>
+                  <Button variant="outline" size="sm" className="rounded-none border-primary/20 hover:bg-primary hover:text-white font-black uppercase tracking-widest h-10 px-4" onClick={handleRunSecurityAnalysis} disabled={isAnalyzingSecurity}>
                     {isAnalyzingSecurity ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <ShieldCheck className="h-4 w-4 mr-2" />}
                     Execute Global Audit
                   </Button>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   <div className="mb-6 grid grid-cols-3 gap-4">
-                    <div className="p-3 bg-muted/30 rounded border flex items-center gap-3">
-                      <Ban className="h-4 w-4 text-red-500" />
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Sybil Monitor</p>
-                        <p className="text-xs font-bold">Active</p>
+                    {[
+                      { l: "Sybil Monitor", icon: Ban, c: "text-red-500" },
+                      { l: "Coercion Shield", icon: Ghost, c: "text-primary" },
+                      { l: "Anomaly Watch", icon: Eye, c: "text-orange-500" }
+                    ].map((m, i) => (
+                      <div key={i} className="p-3 bg-muted/30 rounded-none border flex items-center gap-3 shimmer-card">
+                        <m.icon className={`h-4 w-4 ${m.c}`} />
+                        <div>
+                          <p className="text-[9px] uppercase font-black text-muted-foreground tracking-widest">{m.l}</p>
+                          <p className="text-[10px] font-black uppercase">Active</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="p-3 bg-muted/30 rounded border flex items-center gap-3">
-                      <Ghost className="h-4 w-4 text-primary" />
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Coercion Shield</p>
-                        <p className="text-xs font-bold">Active</p>
-                      </div>
-                    </div>
-                    <div className="p-3 bg-muted/30 rounded border flex items-center gap-3">
-                      <Eye className="h-4 w-4 text-orange-500" />
-                      <div>
-                        <p className="text-[10px] uppercase font-bold text-muted-foreground">Anomaly Watch</p>
-                        <p className="text-xs font-bold">Active</p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
 
                   {securityAnalysis ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-4">
-                        <div className="p-3 bg-muted/30 rounded border">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Sybil Attack Risk</p>
-                          <Badge variant={securityAnalysis.sybilRisk === 'Low' ? 'secondary' : 'destructive'} className="mt-1">
+                        <div className="p-3 bg-muted/30 rounded-none border border-l-4 border-l-primary">
+                          <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Sybil Attack Risk</p>
+                          <Badge variant={securityAnalysis.sybilRisk === 'Low' ? 'secondary' : 'destructive'} className="mt-2 rounded-none font-black uppercase tracking-tighter">
                             {securityAnalysis.sybilRisk}
                           </Badge>
                         </div>
-                        <div className="p-3 bg-muted/30 rounded border">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Fraud Detection Status</p>
-                          <p className={`text-sm font-bold mt-1 ${securityAnalysis.fraudDetected ? 'text-red-500' : 'text-green-500'}`}>
+                        <div className="p-3 bg-muted/30 rounded-none border border-l-4 border-l-primary">
+                          <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Fraud Detection Status</p>
+                          <p className={`text-sm font-black mt-1 uppercase tracking-tighter ${securityAnalysis.fraudDetected ? 'text-red-500' : 'text-green-500'}`}>
                             {securityAnalysis.fraudDetected ? 'Alert: Anomalies Found' : 'Clear: No Fraud Patterns'}
                           </p>
                         </div>
                       </div>
                       <div className="space-y-4">
-                         <div className="p-3 bg-muted/30 rounded border">
-                          <p className="text-[10px] uppercase font-bold text-muted-foreground">Anomaly Monitor</p>
-                          <ul className="text-xs mt-2 space-y-1 list-disc pl-4 text-muted-foreground">
-                            {securityAnalysis.anomalies.map((a, i) => <li key={i}>{a}</li>)}
+                         <div className="p-3 bg-muted/30 rounded-none border border-l-4 border-l-primary">
+                          <p className="text-[10px] uppercase font-black text-muted-foreground tracking-widest">Anomaly Monitor</p>
+                          <ul className="text-[11px] mt-2 space-y-2 list-none font-medium text-muted-foreground">
+                            {securityAnalysis.anomalies.map((a, i) => (
+                              <li key={i} className="flex items-center gap-2">
+                                <div className="w-1 h-1 bg-primary rounded-none" /> {a}
+                              </li>
+                            ))}
                           </ul>
                         </div>
                       </div>
-                      <div className="md:col-span-2 p-3 bg-primary/5 rounded border-l-4 border-primary">
-                        <p className="text-[10px] uppercase font-bold text-primary">Technical Recommendations</p>
-                        <p className="text-xs mt-1 text-muted-foreground leading-relaxed">{securityAnalysis.securityRecommendations}</p>
-                        {securityAnalysis.isSafeMode && <p className="text-[9px] font-bold text-primary uppercase mt-2">Protocol Safe-Mode Active: Local Consensus Verified</p>}
+                      <div className="md:col-span-2 p-4 bg-primary/5 rounded-none border border-primary/20 border-l-8 border-l-primary shadow-inner">
+                        <p className="text-[10px] font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                          <Zap className="h-3 w-3" /> Technical Recommendations
+                        </p>
+                        <p className="text-xs mt-2 text-muted-foreground leading-relaxed font-medium italic">"{securityAnalysis.securityRecommendations}"</p>
+                        {securityAnalysis.isSafeMode && (
+                          <div className="flex items-center gap-2 mt-3 p-2 bg-primary/10 border border-primary/20">
+                            <RefreshCcw className="h-3 w-3 text-primary animate-spin" />
+                            <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Protocol Safe-Mode: Local Consensus Verified</p>
+                          </div>
+                        )}
                       </div>
-                    </div>
+                    </motion.div>
                   ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground italic">
-                      <ShieldAlert className="h-8 w-8 opacity-20 mb-2" />
-                      <p className="text-sm">Run AI Forensic Suite to perform a comprehensive security audit.</p>
+                    <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground border border-dashed rounded-none bg-muted/5">
+                      <ShieldAlert className="h-10 w-10 opacity-10 mb-3" />
+                      <p className="text-sm font-bold uppercase tracking-widest">Run AI Forensic Suite to perform a comprehensive security audit.</p>
                     </div>
                   )}
                 </CardContent>
               </Card>
 
-              <Card className="border-red-500/20">
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div><CardTitle className="text-red-600 flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Threat Intelligence Log</CardTitle></div>
+              <Card className="border-red-500/20 rounded-none shadow-xl">
+                <CardHeader className="flex flex-row items-center justify-between border-b bg-red-500/5">
+                  <div><CardTitle className="text-red-600 flex items-center gap-2 font-black uppercase tracking-tight"><AlertTriangle className="h-5 w-5" /> Threat Intelligence Log</CardTitle></div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-0">
                   <Table>
                     <TableHeader>
-                      <TableRow><TableHead>IP Origin</TableHead><TableHead>Vector</TableHead><TableHead>Payload</TableHead><TableHead>Timestamp</TableHead><TableHead className="text-right">Action</TableHead></TableRow>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="text-[10px] font-black uppercase tracking-widest">IP Origin</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Vector</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Payload</TableHead>
+                        <TableHead className="text-[10px] font-black uppercase tracking-widest">Timestamp</TableHead>
+                        <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Action</TableHead>
+                      </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {areThreatsLoading && <TableRow><TableCell colSpan={5}><Skeleton className="h-10 w-full" /></TableCell></TableRow>}
+                      {areThreatsLoading && <TableRow><TableCell colSpan={5}><Skeleton className="h-10 w-full rounded-none" /></TableCell></TableRow>}
                       {threats?.map(t => <ThreatRow key={t.id} threat={t} onBlock={handleBlockIp} />)}
-                      {!threats?.length && !areThreatsLoading && <TableRow><TableCell colSpan={5} className="text-center italic text-muted-foreground py-8">Zero active threats detected.</TableCell></TableRow>}
+                      {!threats?.length && !areThreatsLoading && <TableRow><TableCell colSpan={5} className="text-center italic text-muted-foreground py-12 font-bold uppercase tracking-widest">Zero active threats detected.</TableCell></TableRow>}
                     </TableBody>
                   </Table>
                 </CardContent>
               </Card>
             </div>
 
-            <Card>
-              <CardHeader><CardTitle>Blacklisted Origins</CardTitle></CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {blockedIps?.map(ip => (
-                    <div key={ip.id} className="flex items-center justify-between p-3 bg-muted/30 rounded border text-xs font-mono">
-                      <span>{ip.ip}</span>
-                      <Button size="icon" variant="ghost" className="h-6 w-6" onClick={() => handleUnblockIp(ip.ip)}><Unlock className="h-3 w-3" /></Button>
-                    </div>
-                  ))}
-                  {!blockedIps?.length && <p className="text-center text-xs text-muted-foreground italic py-4">Zero blacklists active.</p>}
-                </div>
+            <Card className="rounded-none border-primary/10 shadow-xl overflow-hidden">
+              <CardHeader className="bg-muted/50 border-b"><CardTitle className="text-sm font-black uppercase tracking-widest">Blacklisted Origins</CardTitle></CardHeader>
+              <CardContent className="p-4 space-y-4">
+                {blockedIps?.map(ip => (
+                  <div key={ip.id} className="flex items-center justify-between p-3 bg-red-500/5 rounded-none border border-red-500/10 text-xs font-mono group hover:bg-red-500/10 transition-colors">
+                    <span className="font-black text-red-600 tracking-tighter">{ip.ip}</span>
+                    <Button size="icon" variant="ghost" className="h-6 w-6 text-red-600 hover:bg-red-500 hover:text-white rounded-none" onClick={() => handleUnblockIp(ip.ip)}><Unlock className="h-3 w-3" /></Button>
+                  </div>
+                ))}
+                {!blockedIps?.length && <p className="text-center text-[10px] text-muted-foreground font-black uppercase tracking-widest py-8 italic">Zero blacklists active.</p>}
               </CardContent>
             </Card>
           </div>
@@ -459,57 +458,59 @@ export default function AdminPage() {
 
         <TabsContent value="election" className="space-y-8">
           <div className="grid gap-6 lg:grid-cols-3">
-            <Card className="lg:col-span-1">
-              <CardHeader><CardTitle>Activate New Protocol</CardTitle><CardDescription>Initialize a new election on the decentralized ledger.</CardDescription></CardHeader>
-              <CardContent className="space-y-4">
+            <Card className="lg:col-span-1 rounded-none border-primary/20 shadow-xl shimmer-card">
+              <CardHeader className="border-b bg-muted/50"><CardTitle className="text-lg font-black uppercase tracking-tight">Activate New Protocol</CardTitle><CardDescription className="font-medium">Initialize a new election on the decentralized ledger.</CardDescription></CardHeader>
+              <CardContent className="space-y-6 pt-6">
                 <div className="space-y-2">
-                  <Label htmlFor="election-name">Election Identity</Label>
-                  <Input id="election-name" placeholder="E.g., General Assembly 2024" value={newElectionName} onChange={(e) => setNewElectionName(e.target.value)} />
+                  <Label htmlFor="election-name" className="text-[10px] font-black uppercase tracking-widest text-primary">Election Identity</Label>
+                  <Input id="election-name" placeholder="E.g., General Assembly 2024" className="rounded-none bg-primary/5 border-primary/20 font-bold" value={newElectionName} onChange={(e) => setNewElectionName(e.target.value)} />
                 </div>
-                <div className="p-4 bg-primary/5 rounded border border-dashed text-xs text-muted-foreground space-y-2">
-                   <p className="font-bold text-primary uppercase">Protocol Constraints:</p>
-                   <ul className="list-disc pl-4 space-y-1">
-                     <li>SHA-256 Hashing Active</li>
-                     <li>Immutable for 24 hours</li>
-                     <li>Auto-Sync to 128 nodes</li>
+                <div className="p-4 bg-primary/5 rounded-none border border-dashed border-primary/30 space-y-3 relative glow-box">
+                   <p className="font-black text-primary uppercase text-[10px] tracking-[0.2em] flex items-center gap-2">
+                      <ShieldCheck className="h-3 w-3" /> Protocol Constraints
+                   </p>
+                   <ul className="list-none space-y-2 text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
+                     <li className="flex items-center gap-2"><div className="w-1 h-1 bg-primary rounded-none" /> SHA-256 Hashing Active</li>
+                     <li className="flex items-center gap-2"><div className="w-1 h-1 bg-primary rounded-none" /> Immutable for 24 hours</li>
+                     <li className="flex items-center gap-2"><div className="w-1 h-1 bg-primary rounded-none" /> Auto-Sync to 128 nodes</li>
                    </ul>
                 </div>
-                <Button className="w-full gap-2" onClick={handleCreateElection} disabled={!newElectionName || isStartingElection}>
+                <Button className="w-full h-12 gap-2 rounded-none font-black uppercase tracking-widest shadow-xl shadow-primary/20" onClick={handleCreateElection} disabled={!newElectionName || isStartingElection}>
                    {isStartingElection ? <Zap className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                    {isStartingElection ? "Broadcasting..." : "Activate Election"}
                 </Button>
               </CardContent>
             </Card>
 
-            <Card className="lg:col-span-2">
-              <CardHeader><CardTitle>Live Protocol Windows</CardTitle></CardHeader>
-              <CardContent>
+            <Card className="lg:col-span-2 rounded-none border-primary/20 shadow-xl overflow-hidden">
+              <CardHeader className="border-b bg-muted/50"><CardTitle className="text-lg font-black uppercase tracking-tight">Live Protocol Windows</CardTitle></CardHeader>
+              <CardContent className="p-0">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Election Name</TableHead>
-                      <TableHead>Start Window</TableHead>
-                      <TableHead>End Window</TableHead>
-                      <TableHead className="text-right">Action</TableHead>
+                    <TableRow className="bg-muted/50">
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest">Election Name</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest">Start Window</TableHead>
+                      <TableHead className="text-[10px] font-black uppercase tracking-widest">End Window</TableHead>
+                      <TableHead className="text-right text-[10px] font-black uppercase tracking-widest">Action</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {areElectionsLoading && <TableRow><TableCell colSpan={4}><Skeleton className="h-10 w-full" /></TableCell></TableRow>}
+                    {areElectionsLoading && <TableRow><TableCell colSpan={4}><Skeleton className="h-10 w-full rounded-none" /></TableCell></TableRow>}
                     {elections?.map(e => (
-                      <TableRow key={e.id}>
-                        <TableCell className="font-bold">
+                      <TableRow key={e.id} className="group hover:bg-primary/5">
+                        <TableCell className="font-black tracking-tight">
                           <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            <div className="w-2 h-2 rounded-none bg-green-500 animate-pulse" />
                             {e.name}
                           </div>
                         </TableCell>
-                        <TableCell className="text-xs">{format(new Date(e.startDate), 'PPp')}</TableCell>
-                        <TableCell className="text-xs">{format(new Date(e.endDate), 'PPp')}</TableCell>
+                        <TableCell className="text-xs font-medium">{format(new Date(e.startDate), 'PPp')}</TableCell>
+                        <TableCell className="text-xs font-medium">{format(new Date(e.endDate), 'PPp')}</TableCell>
                         <TableCell className="text-right">
                           <Button 
                             size="sm" 
                             variant="destructive" 
-                            className="h-8 gap-2 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white"
+                            className="h-8 gap-2 rounded-none bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white font-black uppercase tracking-widest text-[10px] shadow-sm"
                             onClick={() => handleStopElection(e.id, e.name)}
                           >
                             <StopCircle className="h-4 w-4" />
@@ -518,7 +519,7 @@ export default function AdminPage() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {!elections?.length && !areElectionsLoading && <TableRow><TableCell colSpan={4} className="text-center italic text-muted-foreground py-8">No active election windows.</TableCell></TableRow>}
+                    {!elections?.length && !areElectionsLoading && <TableRow><TableCell colSpan={4} className="text-center italic text-muted-foreground py-16 font-black uppercase tracking-widest">No active election windows.</TableCell></TableRow>}
                   </TableBody>
                 </Table>
               </CardContent>
