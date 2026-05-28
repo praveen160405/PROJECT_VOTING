@@ -82,7 +82,7 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
             {candidate.party}
           </p>
           <Button 
-            className="w-full h-12 rounded-none font-black uppercase tracking-[0.2em] bg-primary text-background hover:bg-primary/90"
+            className="w-full h-12 rounded-none font-black uppercase tracking-[0.2em] bg-primary/20 text-primary hover:bg-primary hover:text-background transition-all"
           >
             {isVoted ? "CHANGE VOTE" : "CAST VOTE"}
           </Button>
@@ -136,8 +136,10 @@ export default function VotePage() {
   }, [userVotes]);
 
   const isElectionLive = useMemo(() => {
+    // For prototype purposes, if no elections exist, we assume a "Default Protocol" is active
+    if (!areElectionsLoading && (!activeElections || activeElections.length === 0)) return true;
     return activeElections && activeElections.length > 0;
-  }, [activeElections]);
+  }, [activeElections, areElectionsLoading]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -182,7 +184,16 @@ export default function VotePage() {
   };
 
   const executeBiometricSignature = async () => {
-    if (!videoRef.current || !canvasRef.current || !profile?.faceImageHash || !selectedCandidate) return;
+    if (!profile?.faceImageHash) {
+      toast({
+        variant: "destructive",
+        title: "PROFILE INCOMPLETE",
+        description: "No biometric reference found in your registry. Please update your settings."
+      });
+      return;
+    }
+    
+    if (!videoRef.current || !canvasRef.current || !selectedCandidate) return;
 
     setIsVerifyingSign(true);
     const canvas = canvasRef.current;
@@ -267,7 +278,7 @@ export default function VotePage() {
 
         <Card className="glassmorphic-card rounded-none p-6 flex items-center gap-8 shadow-xl border-white/5">
            <div className="flex items-center gap-4">
-              <Label className="text-[10px] font-black uppercase tracking-widest text-destructive">Panic Mode</Label>
+              <Label className="text-[10px] font-black uppercase tracking-widest text-destructive">Internal Duress Flag</Label>
               <Switch checked={isPanicMode} onCheckedChange={setIsPanicMode} className="data-[state=checked]:bg-destructive" />
            </div>
            <div className="w-px h-8 bg-white/10" />
@@ -301,9 +312,9 @@ export default function VotePage() {
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
         <AlertDialogContent className="rounded-none glassmorphic-card border-primary/20 p-8">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-black uppercase italic text-2xl tracking-tighter">LOCK SELECTION?</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs uppercase font-bold text-muted-foreground tracking-widest leading-relaxed mt-4">
-              Proceeding to neural identity signature for <span className="text-primary">{selectedCandidate?.name}</span>. This action will commit an audit receipt to the mesh.
+            <AlertDialogTitle className="font-black uppercase text-xl tracking-tight">CONFIRM FINAL SELECTION</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm font-medium text-muted-foreground leading-relaxed mt-4">
+              You are selecting <span className="text-primary font-black uppercase">{selectedCandidate?.name}</span>. You will be asked to perform a Biometric Signature soon to finalize.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-8 gap-4">
@@ -342,3 +353,4 @@ export default function VotePage() {
     </div>
   );
 }
+
