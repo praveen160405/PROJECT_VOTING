@@ -10,9 +10,9 @@
     --card-foreground: 210 20% 98%;
     --popover: 222 47% 7%;
     --popover-foreground: 210 20% 98%;
-    --primary: 191 100% 50%;
+    --primary: 217.2 91.2% 59.8%;
     --primary-foreground: 222 47% 7%;
-    --secondary: 251 100% 68%;
+    --secondary: 222 47% 15%;
     --secondary-foreground: 210 20% 98%;
     --muted: 222 47% 15%;
     --muted-foreground: 215 20.2% 65.1%;
@@ -22,16 +22,16 @@
     --destructive-foreground: 210 20% 98%;
     --border: 222 47% 15%;
     --input: 222 47% 15%;
-    --ring: 191 100% 50%;
-    --radius: 1rem;
+    --ring: 217.2 91.2% 59.8%;
+    --radius: 0.75rem;
     --sidebar-background: 222 47% 5%;
     --sidebar-foreground: 210 20% 98%;
-    --sidebar-primary: 191 100% 50%;
+    --sidebar-primary: 217.2 91.2% 59.8%;
     --sidebar-primary-foreground: 222 47% 7%;
     --sidebar-accent: 222 47% 10%;
     --sidebar-accent-foreground: 210 20% 98%;
     --sidebar-border: 222 47% 10%;
-    --sidebar-ring: 191 100% 50%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -42,8 +42,8 @@
   body {
     @apply bg-[#0B0F19] text-foreground;
     background-image: 
-      radial-gradient(circle at 0% 0%, rgba(122, 92, 255, 0.15) 0%, transparent 40%),
-      radial-gradient(circle at 100% 100%, rgba(0, 209, 255, 0.15) 0%, transparent 40%);
+      radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
+      radial-gradient(circle at 100% 100%, rgba(59, 130, 246, 0.1) 0%, transparent 40%);
     background-attachment: fixed;
   }
 }
@@ -52,8 +52,8 @@
   .cyber-grid {
     background-size: 40px 40px;
     background-image: 
-      linear-gradient(to right, rgba(0, 209, 255, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(0, 209, 255, 0.05) 1px, transparent 1px);
+      linear-gradient(to right, rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
   }
 
   .glassmorphic-card {
@@ -61,31 +61,15 @@
   }
 
   .glow-box {
-    box-shadow: 0 0 25px rgba(0, 209, 255, 0.2);
+    box-shadow: 0 0 25px rgba(59, 130, 246, 0.2);
   }
 
   .glow-text {
-    text-shadow: 0 0 10px rgba(0, 209, 255, 0.6);
+    text-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
   }
 
   .neon-border {
     @apply relative overflow-hidden;
-  }
-
-  .neon-border::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: conic-gradient(
-      transparent,
-      rgba(0, 209, 255, 0.3),
-      transparent 30%
-    );
-    animation: rotate 6s linear infinite;
-    pointer-events: none;
   }
 
   .shimmer-card {
@@ -97,19 +81,23 @@
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.08) 50%, transparent 60%);
+    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.05) 50%, transparent 60%);
     background-size: 200% 200%;
     animation: shimmer 10s infinite linear;
     pointer-events: none;
   }
 
-  @keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-
   @keyframes shimmer {
     0% { background-position: -200% -200%; }
     100% { background-position: 200% 200%; }
+  }
+
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 }
