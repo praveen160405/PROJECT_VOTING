@@ -84,20 +84,42 @@
   .auth-background {
     background-color: hsl(var(--background));
     background-image:
-      radial-gradient(hsl(var(--primary) / 0.05) 1px, transparent 1px),
+      radial-gradient(hsl(var(--primary) / 0.1) 1px, transparent 1px),
       radial-gradient(hsl(var(--primary) / 0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
-    background-position: 0 0, 20px 20px;
+    background-size: 30px 30px;
+    background-position: 0 0, 15px 15px;
   }
 
   .dark .auth-background {
     background-image:
-      radial-gradient(hsl(var(--primary) / 0.1) 1px, transparent 1px),
-      radial-gradient(hsl(var(--primary) / 0.1) 1px, transparent 1px);
+      radial-gradient(hsl(var(--primary) / 0.15) 1px, transparent 1px),
+      radial-gradient(hsl(var(--primary) / 0.08) 1px, transparent 1px);
   }
   
   .glassmorphic-card {
-    @apply bg-card/60 backdrop-blur-xl border border-border/20;
+    @apply bg-card/70 backdrop-blur-2xl border border-primary/20;
+    box-shadow: 0 0 40px -10px hsl(var(--primary) / 0.15);
+  }
+
+  .glow-box {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glow-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, hsl(var(--primary)), transparent);
+    animation: shimmer 3s infinite linear;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
   }
 }
 
@@ -109,7 +131,6 @@
     color: black !important;
   }
 
-  /* Reset layout containers for print */
   [data-sidebar-wrapper], 
   main, 
   div[class*="SidebarInset"],
@@ -124,7 +145,6 @@
     background: white !important;
   }
 
-  /* Hide navigation elements */
   nav, 
   aside, 
   header, 
@@ -134,7 +154,6 @@
     display: none !important;
   }
 
-  /* Ensure cards and text are readable */
   .border, .Card {
     border: 1px solid #e2e8f0 !important;
     box-shadow: none !important;

@@ -283,40 +283,39 @@ export default function LoginPage() {
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="w-full max-md"
+        className="w-full max-w-md"
       >
         <AnimatePresence mode="wait">
           {isBlocked ? (
              <motion.div key="blocked" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-               <Card className="border-red-500/20 bg-red-500/5 shadow-2xl">
+               <Card className="border-red-500/20 bg-red-500/5 shadow-2xl rounded-none">
                  <CardHeader className="text-center">
                     <div className="mx-auto w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4 text-red-500">
                       <ShieldAlert className="h-10 w-10" />
                     </div>
-                    <CardTitle className="text-red-500">Identity Restricted</CardTitle>
+                    <CardTitle className="text-red-500 uppercase tracking-tighter">Identity Restricted</CardTitle>
                     <CardDescription>
                       Security violations detected. Access from this origin has been terminated by the OOTU Shield.
                     </CardDescription>
                  </CardHeader>
                  <CardFooter>
                     <Link href="/" className="w-full">
-                      <Button variant="outline" className="w-full">Return Home</Button>
+                      <Button variant="outline" className="w-full rounded-none">Return Home</Button>
                     </Link>
                  </CardFooter>
                </Card>
              </motion.div>
           ) : step === 'credentials' ? (
             <motion.div key="credentials" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}>
-              <Card className="glassmorphic-card shadow-2xl overflow-hidden">
-                <div className="h-1.5 w-full bg-primary" />
-                <CardHeader className="items-center text-center p-6 pb-2">
-                  <Logo className="mb-4" />
-                  <CardTitle className="text-3xl font-bold tracking-tight">Protocol Login</CardTitle>
-                  <CardDescription className="text-muted-foreground pt-2">
-                    Identity audit required for ledger access.
+              <Card className="glassmorphic-card glow-box rounded-none shadow-2xl overflow-hidden">
+                <CardHeader className="items-center text-center p-8 pb-2">
+                  <Logo className="mb-4 scale-125" />
+                  <CardTitle className="text-3xl font-black uppercase tracking-tighter">Protocol Login</CardTitle>
+                  <CardDescription className="text-muted-foreground pt-2 font-medium">
+                    Neural identity audit required for ledger access.
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-8">
                   <Form {...form}>
                     <form onSubmit={form.handleSubmit(handleCredentialSubmit)} className="space-y-6">
                       <div className="hidden" aria-hidden="true">
@@ -338,11 +337,11 @@ export default function LoginPage() {
                         name="voterId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Voter ID</FormLabel>
+                            <FormLabel className="uppercase text-[10px] font-bold tracking-widest text-primary">Voter ID</FormLabel>
                             <div className="relative">
-                              <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                              <Fingerprint className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/50" />
                               <FormControl>
-                                <Input placeholder="ABC1234567" {...field} className="pl-10 uppercase" maxLength={10} disabled={lockoutTimer > 0} />
+                                <Input placeholder="ABC1234567" {...field} className="pl-10 uppercase rounded-none border-primary/20 bg-primary/5" maxLength={10} disabled={lockoutTimer > 0} />
                               </FormControl>
                             </div>
                             <FormMessage />
@@ -354,11 +353,11 @@ export default function LoginPage() {
                         name="password"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Password</FormLabel>
+                            <FormLabel className="uppercase text-[10px] font-bold tracking-widest text-primary">Password</FormLabel>
                             <div className="relative">
-                              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/50" />
                               <FormControl>
-                                <Input type="password" placeholder="••••••••" {...field} className="pl-10" disabled={lockoutTimer > 0} />
+                                <Input type="password" placeholder="••••••••" {...field} className="pl-10 rounded-none border-primary/20 bg-primary/5" disabled={lockoutTimer > 0} />
                               </FormControl>
                             </div>
                             <FormMessage />
@@ -368,13 +367,13 @@ export default function LoginPage() {
 
                       <Button 
                         type="submit" 
-                        className="w-full h-11" 
+                        className="w-full h-12 rounded-none font-bold uppercase tracking-widest shadow-lg shadow-primary/20" 
                         disabled={form.formState.isSubmitting || lockoutTimer > 0 || isAnalyzingBehavior}
                       >
                         {isAnalyzingBehavior ? (
                            <>
                              <Activity className="mr-2 h-4 w-4 animate-pulse" />
-                             Behavioral Audit...
+                             Neural Audit...
                            </>
                         ) : form.formState.isSubmitting ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -383,7 +382,7 @@ export default function LoginPage() {
                         ) : (
                           <ShieldCheck className="mr-2 h-4 w-4" />
                         )}
-                        {lockoutTimer > 0 ? `Protocol Locked (${lockoutTimer}s)` : !isAnalyzingBehavior && !form.formState.isSubmitting && "Authenticate"}
+                        {lockoutTimer > 0 ? `Protocol Locked (${lockoutTimer}s)` : !isAnalyzingBehavior && !form.formState.isSubmitting && "Access Portal"}
                       </Button>
                       
                       {failedAttempts > 0 && lockoutTimer === 0 && (
@@ -394,56 +393,55 @@ export default function LoginPage() {
                     </form>
                   </Form>
                 </CardContent>
-                <CardFooter className="p-6 pt-0 flex flex-col gap-4 text-center">
-                  <p className="text-sm text-muted-foreground">
-                    New Voter? <Link href="/register" className="text-primary font-bold hover:underline">Register Identity</Link>
+                <CardFooter className="p-8 pt-0 flex flex-col gap-4 text-center">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest">
+                    New Voter? <Link href="/register" className="text-primary font-black hover:underline">Register Identity</Link>
                   </p>
                 </CardFooter>
               </Card>
             </motion.div>
           ) : (
             <motion.div key="biometric" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-              <Card className="glassmorphic-card shadow-2xl overflow-hidden border-primary/20">
-                <div className="h-1.5 w-full bg-accent" />
-                <CardHeader className="items-center text-center p-6">
-                  <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center mb-2">
-                    <Fingerprint className="h-6 w-6 text-accent" />
+              <Card className="glassmorphic-card glow-box rounded-none shadow-2xl overflow-hidden border-primary/40">
+                <CardHeader className="items-center text-center p-8">
+                  <div className="w-16 h-16 rounded-none border-2 border-primary/20 bg-primary/5 flex items-center justify-center mb-4">
+                    <Fingerprint className="h-8 w-8 text-primary" />
                   </div>
-                  <CardTitle className="text-2xl font-bold">Biometric Audit</CardTitle>
-                  <CardDescription>
-                    Syncing identity nodes for {profile?.firstName}...
+                  <CardTitle className="text-2xl font-black uppercase tracking-tighter">Biometric Sync</CardTitle>
+                  <CardDescription className="font-medium">
+                    Matching identity nodes for {profile?.firstName}...
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="p-8 pt-0 space-y-6">
                   {isSafeModeActive && (
-                    <Alert className="bg-primary/10 border-primary/20">
+                    <Alert className="bg-primary/10 border-primary/20 rounded-none">
                       <Info className="h-4 w-4 text-primary" />
-                      <AlertTitle className="text-xs font-bold uppercase">Protocol Safe-Mode Active</AlertTitle>
-                      <AlertDescription className="text-[10px]">
-                        Global AI nodes are at peak capacity. Switching to Local Consensus Audit for identity verification.
+                      <AlertTitle className="text-xs font-black uppercase tracking-widest">Protocol Safe-Mode</AlertTitle>
+                      <AlertDescription className="text-[10px] font-medium">
+                        Global neural nodes busy. Switching to Local Consensus Audit for verification.
                       </AlertDescription>
                     </Alert>
                   )}
-                  <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-black border-2 border-accent/20">
+                  <div className="relative w-full aspect-video rounded-none overflow-hidden bg-black border-2 border-primary/20">
                     <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                       <div className="w-48 h-48 border-2 border-accent/40 rounded-full border-dashed animate-[spin_10s_linear_infinite]" />
+                       <div className="w-48 h-48 border-2 border-primary/40 rounded-none border-dashed animate-[spin_10s_linear_infinite]" />
                     </div>
                     {isVerifyingBiometric && (
                       <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4 text-center p-4">
                         <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                        <p className="text-xs font-bold uppercase tracking-widest text-primary animate-pulse">Neural Sync Active</p>
+                        <p className="text-xs font-black uppercase tracking-widest text-primary animate-pulse">Neural Identity Sync</p>
                       </div>
                     )}
                   </div>
                   <canvas ref={canvasRef} className="hidden" />
-                  <Button className="w-full h-12 bg-accent hover:bg-accent/90" onClick={handleBiometricVerification} disabled={isVerifyingBiometric}>
+                  <Button className="w-full h-14 rounded-none bg-primary hover:bg-primary/90 font-black uppercase tracking-widest shadow-xl shadow-primary/20" onClick={handleBiometricVerification} disabled={isVerifyingBiometric}>
                     {isVerifyingBiometric ? "Auditing Mesh..." : "Start Biometric Sync"}
                   </Button>
                 </CardContent>
-                <CardFooter className="bg-muted/30 p-4 border-t flex flex-col gap-2">
-                  <Button variant="ghost" size="sm" className="w-full text-xs" onClick={() => setStep('credentials')} disabled={isVerifyingBiometric}>
-                    Abort Sync
+                <CardFooter className="bg-primary/5 p-4 border-t border-primary/10 flex flex-col gap-2">
+                  <Button variant="ghost" size="sm" className="w-full text-[10px] font-bold uppercase tracking-widest" onClick={() => setStep('credentials')} disabled={isVerifyingBiometric}>
+                    Abort Identity Sync
                   </Button>
                 </CardFooter>
               </Card>

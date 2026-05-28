@@ -245,36 +245,36 @@ export default function RegisterPage() {
         className="w-full max-w-2xl"
       >
         {isBlocked ? (
-           <Card className="border-red-500/20 bg-red-500/5 shadow-2xl">
+           <Card className="border-red-500/20 bg-red-500/5 shadow-2xl rounded-none">
               <CardHeader className="text-center">
                 <div className="mx-auto w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mb-4">
                   <ShieldAlert className="h-10 w-10 text-red-500" />
                 </div>
-                <CardTitle className="text-red-500">Origin Restricted</CardTitle>
+                <CardTitle className="text-red-500 uppercase tracking-tighter">Origin Restricted</CardTitle>
                 <CardDescription>
                   Forensic audit flagged this origin for automated security violations.
                 </CardDescription>
               </CardHeader>
               <CardFooter>
                 <Link href="/" className="w-full">
-                  <Button variant="outline" className="w-full">Return Home</Button>
+                  <Button variant="outline" className="w-full rounded-none">Return Home</Button>
                 </Link>
               </CardFooter>
            </Card>
         ) : (
-        <Card className="glassmorphic-card shadow-2xl">
-          <CardHeader className="items-center text-center p-6">
+        <Card className="glassmorphic-card glow-box rounded-none shadow-2xl">
+          <CardHeader className="items-center text-center p-8">
             <Link href="/" className="mb-4">
-              <Logo />
+              <Logo className="scale-125" />
             </Link>
-            <CardTitle className="text-3xl font-bold tracking-tight">
-              Create a Voter Account
+            <CardTitle className="text-3xl font-black uppercase tracking-tighter">
+              Identity Registration
             </CardTitle>
-            <CardDescription className="text-muted-foreground pt-2">
-              Identity verification is powered by biometrics and encryption.
+            <CardDescription className="text-muted-foreground pt-2 font-medium">
+              Create a cryptographic voter ID powered by biometrics.
             </CardDescription>
           </CardHeader>
-          <CardContent className="p-6">
+          <CardContent className="p-8 pt-0">
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 <div className="hidden" aria-hidden="true">
@@ -297,13 +297,13 @@ export default function RegisterPage() {
                       name="fullName"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                            <User className="h-3 w-3 text-primary" />
-                            Full Name
-                          </FormLabel>
-                          <FormControl>
-                            <Input placeholder="John Doe" {...field} />
-                          </FormControl>
+                          <FormLabel className="uppercase text-[10px] font-black tracking-widest text-primary">Full Name</FormLabel>
+                          <div className="relative">
+                            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/50" />
+                            <FormControl>
+                              <Input placeholder="John Doe" {...field} className="pl-10 rounded-none border-primary/20 bg-primary/5" />
+                            </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -313,29 +313,13 @@ export default function RegisterPage() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                             <Mail className="h-3 w-3 text-primary" />
-                             Identity Email
-                          </FormLabel>
-                          <FormControl>
-                            <Input type="email" placeholder="john@example.com" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={control}
-                      name="aadharNumber"
-                      render={({ field }) => (
-                        <FormItem className="md:col-span-2">
-                          <FormLabel className="flex items-center gap-2">
-                             <Fingerprint className="h-3 w-3 text-primary" />
-                             Aadhar Number
-                          </FormLabel>
-                          <FormControl>
-                            <Input placeholder="123456789012" {...field} maxLength={12} />
-                          </FormControl>
+                          <FormLabel className="uppercase text-[10px] font-black tracking-widest text-primary">Email</FormLabel>
+                          <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary/50" />
+                            <FormControl>
+                              <Input type="email" placeholder="john@example.com" {...field} className="pl-10 rounded-none border-primary/20 bg-primary/5" />
+                            </FormControl>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -343,8 +327,8 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <Label>Live Biometric Mapping</Label>
-                   <div className="w-full aspect-video rounded-md border bg-black overflow-hidden relative">
+                  <Label className="uppercase text-[10px] font-black tracking-widest text-primary">Biometric Identity Mapping</Label>
+                   <div className="w-full aspect-video rounded-none border-2 border-primary/20 bg-black overflow-hidden relative">
                     <AnimatePresence mode="wait">
                       {capturedImage ? (
                         <motion.div 
@@ -356,10 +340,10 @@ export default function RegisterPage() {
                           <img 
                             src={capturedImage} 
                             alt="Captured Biometric" 
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-cover grayscale"
                           />
-                          <div className="absolute inset-0 bg-primary/10 flex items-center justify-center">
-                            <CheckCircle2 className="h-12 w-12 text-white" />
+                          <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                            <CheckCircle2 className="h-16 w-16 text-white" />
                           </div>
                         </motion.div>
                       ) : (
@@ -378,7 +362,7 @@ export default function RegisterPage() {
                     {!hasCameraPermission && !capturedImage && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center bg-muted">
                         <Camera className="h-12 w-12 text-muted-foreground mb-4"/>
-                        <p className="text-muted-foreground">Camera access required.</p>
+                        <p className="text-xs uppercase font-bold tracking-widest">Camera required.</p>
                       </div>
                     )}
                   </div>
@@ -388,22 +372,22 @@ export default function RegisterPage() {
                       <Button 
                         type="button" 
                         variant="secondary" 
-                        className="w-full gap-2"
+                        className="w-full h-12 rounded-none gap-2 font-bold uppercase tracking-widest"
                         onClick={capturePhoto}
                         disabled={!hasCameraPermission}
                       >
                         <Camera className="h-4 w-4" />
-                        Capture Biometric ID
+                        Map Identity
                       </Button>
                     ) : (
                       <Button 
                         type="button" 
                         variant="outline" 
-                        className="w-full gap-2"
+                        className="w-full h-12 rounded-none gap-2 font-bold uppercase tracking-widest"
                         onClick={retakePhoto}
                       >
                         <RefreshCcw className="h-4 w-4" />
-                        Retake Photo
+                        Retake Mapping
                       </Button>
                     )}
                   </div>
@@ -415,9 +399,9 @@ export default function RegisterPage() {
                       name="voterId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Voter ID</FormLabel>
+                          <FormLabel className="uppercase text-[10px] font-black tracking-widest text-primary">Voter ID</FormLabel>
                           <FormControl>
-                            <Input placeholder="ABC1234567" {...field} maxLength={10} className="uppercase" />
+                            <Input placeholder="ABC1234567" {...field} maxLength={10} className="uppercase rounded-none border-primary/20 bg-primary/5" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -428,12 +412,9 @@ export default function RegisterPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="flex items-center gap-2">
-                             <Lock className="h-3 w-3 text-primary" />
-                             Secure Password
-                          </FormLabel>
+                          <FormLabel className="uppercase text-[10px] font-black tracking-widest text-primary">Password</FormLabel>
                           <FormControl>
-                            <Input type="password" placeholder="••••••••" {...field} />
+                            <Input type="password" placeholder="••••••••" {...field} className="rounded-none border-primary/20 bg-primary/5" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -441,23 +422,23 @@ export default function RegisterPage() {
                     />
                 </div>
 
-                <Button type="submit" className="w-full h-11" disabled={formState.isSubmitting}>
+                <Button type="submit" className="w-full h-14 rounded-none font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20" disabled={formState.isSubmitting}>
                    {formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Register Securely
+                  Register Secure Identity
                 </Button>
               </form>
             </Form>
           </CardContent>
-          <CardFooter className="p-6 pt-0 text-center flex flex-col gap-4">
-             <p className="w-full text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <Link href="/login" className="font-medium text-primary hover:underline">
+          <CardFooter className="p-8 pt-0 text-center flex flex-col gap-4">
+             <p className="w-full text-xs font-medium text-muted-foreground uppercase tracking-widest">
+                Already registered?{" "}
+                <Link href="/login" className="font-black text-primary hover:underline">
                   Sign in
                 </Link>
               </p>
-              <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                <ShieldCheck className="h-3 w-3 text-green-500" />
-                Data is encrypted on the OOTU protocol.
+              <div className="flex items-center justify-center gap-2 text-[8px] text-primary font-black uppercase tracking-[0.2em]">
+                <ShieldCheck className="h-3 w-3" />
+                VVSG 2.0 Cryptographic Standard
               </div>
           </CardFooter>
         </Card>
