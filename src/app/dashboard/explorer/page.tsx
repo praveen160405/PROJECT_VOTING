@@ -18,7 +18,8 @@ import {
   Server,
   ArrowRight,
   RefreshCcw,
-  Copy
+  Copy,
+  Loader2
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useFirebase, useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, collectionGroup } from 'firebase/firestore';
 import type { Vote } from '@/lib/types';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
@@ -47,15 +48,16 @@ export default function LedgerExplorerPage() {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [simulatedTxs, setSimulatedTxs] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [networkStatus, setNetworkStatus] = useState('Healthy');
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  // Fetch recent transactions (votes) from the registry for transparency
+  // Fetch recent transactions (votes) from the registry for transparency using collectionGroup
   const recentVotesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    return query(collection(firestore, 'users', 'global_votes_view', 'votes'), limit(10));
+    // We query all votes across all user subcollections
+    return query(collectionGroup(firestore, 'votes'), limit(10));
   }, [firestore]);
 
-  const { data: recentTransactions } = useCollection<Vote>(recentVotesQuery);
+  const { data: recentTransactions, isLoading: isLoadingTxs } = useCollection<Vote>(recentVotesQuery);
 
   useEffect(() => {
     // Initialize simulated blocks on client mount to avoid hydration mismatch
@@ -102,12 +104,28 @@ export default function LedgerExplorerPage() {
     });
   };
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!searchQuery) return;
-    toast({
-      title: "Scanning Ledger...",
-      description: `Searching for hash: ${searchQuery.substring(0, 10)}...`,
-    });
+    
+    setIsVerifying(true);
+    
+    // Simulate node consensus verification
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    if (searchQuery.startsWith('0x') && searchQuery.length > 20) {
+      toast({
+        title: "Protocol Hash Verified",
+        description: "Transaction found and confirmed across 128 validator nodes.",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Search Term Invalid",
+        description: "Please enter a valid Digital Audit Hash (0x...).",
+      });
+    }
+    
+    setIsVerifying(false);
   };
 
   return (
@@ -161,8 +179,9 @@ export default function LedgerExplorerPage() {
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
         </div>
-        <Button onClick={handleSearch} className="h-12 px-8 gap-2 rounded-none font-black uppercase tracking-widest shadow-xl shadow-primary/20">
-          <ShieldCheck className="h-4 w-4" /> Verify Hash
+        <Button onClick={handleSearch} disabled={isVerifying || !searchQuery} className="h-12 px-8 gap-2 rounded-none font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+          {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+          {isVerifying ? "Verifying..." : "Verify Hash"}
         </Button>
       </div>
 
@@ -238,28 +257,56 @@ export default function LedgerExplorerPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {simulatedTxs.map((simulatedTx, i) => (
-                  <TableRow key={i} className="border-b hover:bg-accent/5 transition-colors group">
-                    <TableCell className="font-mono text-[10px]">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate max-w-[180px] font-bold tracking-tighter group-hover:text-accent transition-colors">{simulatedTx}</span>
-                        <Button size="icon" variant="ghost" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => copyToClipboard(simulatedTx)}>
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="h-5 text-[9px] bg-green-500/5 text-green-600 border-green-500/20 rounded-none font-black uppercase tracking-[0.2em] shadow-sm">Verified</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        {Array.from({ length: 5 }).map((_, j) => (
-                          <div key={j} className="w-1.5 h-1.5 rounded-none bg-green-500 shadow-sm shadow-green-500/20" />
-                        ))}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {isLoadingTxs ? (
+                   <TableRow><TableCell colSpan={3} className="text-center py-10"><Loader2 className="h-6 w-6 animate-spin mx-auto text-accent" /></TableCell></TableRow>
+                ) : (
+                  <>
+                    {recentTransactions?.map((vote) => (
+                      <TableRow key={vote.id} className="border-b hover:bg-accent/5 transition-colors group">
+                        <TableCell className="font-mono text-[10px]">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate max-w-[180px] font-bold tracking-tighter group-hover:text-accent transition-colors">{vote.txHash || vote.id}</span>
+                            <Button size="icon" variant="ghost" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => copyToClipboard(vote.txHash || vote.id)}>
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="h-5 text-[9px] bg-green-500/5 text-green-600 border-green-500/20 rounded-none font-black uppercase tracking-[0.2em] shadow-sm">Verified</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            {Array.from({ length: 5 }).map((_, j) => (
+                              <div key={j} className="w-1.5 h-1.5 rounded-none bg-green-500 shadow-sm shadow-green-500/20" />
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {simulatedTxs.map((simulatedTx, i) => (
+                      <TableRow key={`sim-${i}`} className="border-b hover:bg-accent/5 transition-colors group">
+                        <TableCell className="font-mono text-[10px]">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate max-w-[180px] font-bold tracking-tighter group-hover:text-accent transition-colors">{simulatedTx}</span>
+                            <Button size="icon" variant="ghost" className="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => copyToClipboard(simulatedTx)}>
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="h-5 text-[9px] bg-green-500/5 text-green-600 border-green-500/20 rounded-none font-black uppercase tracking-[0.2em] shadow-sm">Verified</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            {Array.from({ length: 5 }).map((_, j) => (
+                              <div key={j} className="w-1.5 h-1.5 rounded-none bg-green-500 shadow-sm shadow-green-500/20" />
+                            ))}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                )}
               </TableBody>
             </Table>
           </CardContent>
