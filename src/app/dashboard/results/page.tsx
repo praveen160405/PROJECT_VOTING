@@ -125,7 +125,6 @@ export default function ResultsPage() {
                 </CardTitle>
                 <CardDescription className="font-medium">Verified tallies from the OOTU decentralized nodes (Last Vote Wins Protocol).</CardDescription>
               </div>
-              <div className="scanning-line opacity-10" />
             </div>
           </CardHeader>
           <CardContent className="pt-8">

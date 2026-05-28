@@ -168,7 +168,6 @@ export default function LedgerExplorerPage() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 relative">
-        <div className="scanning-line opacity-20 pointer-events-none" />
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 

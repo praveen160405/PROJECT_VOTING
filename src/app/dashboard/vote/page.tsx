@@ -67,7 +67,6 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
       className="group/card relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-2xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60 rounded-none border-primary/10 shimmer-card"
       data-disabled={disabled ? true : undefined}
     >
-      <div className="scanning-line opacity-0 group-hover/card:opacity-100" />
       <div className="relative w-full aspect-square bg-primary/5 flex items-center justify-center border-b p-6">
         <div className="flex flex-col items-center gap-4">
             <div className="w-24 h-24 rounded-none bg-primary/10 flex items-center justify-center text-primary border-2 border-primary/20 group-hover/card:scale-110 transition-transform duration-300 shadow-lg shadow-primary/5">
@@ -419,7 +418,6 @@ export default function VotePage() {
           </DialogHeader>
           <div className="space-y-6">
             <div className="relative aspect-video rounded-none overflow-hidden bg-black border-2 border-primary/20">
-               <div className="scanning-line" />
                <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                   <div className={`w-48 h-48 border-2 ${isPanicMode ? 'border-red-500' : 'border-primary/40'} rounded-none border-dashed animate-[spin_10s_linear_infinite]`} />

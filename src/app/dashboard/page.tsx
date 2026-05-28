@@ -132,7 +132,6 @@ export default function DashboardPage() {
         <div className="md:col-span-2 grid gap-6 md:grid-cols-2">
            {features.map((feature) => (
             <Card key={feature.title} className={`flex flex-col relative overflow-hidden group border-primary/10 shadow-md hover:shadow-2xl transition-all rounded-none ${feature.bg} neon-border`}>
-              <div className="scanning-line opacity-0 group-hover:opacity-100 transition-opacity" />
               <CardHeader className="flex flex-row items-center gap-4">
                 <div className="rounded-none bg-white dark:bg-background p-3 text-primary shadow-sm group-hover:scale-110 transition-transform border border-primary/20">
                   <feature.icon className="h-6 w-6" />
