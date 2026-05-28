@@ -20,7 +20,8 @@ import {
   RefreshCcw,
   ShieldOff,
   Crosshair,
-  UserCheck
+  UserCheck,
+  Activity
 } from 'lucide-react';
 import { collection, serverTimestamp, doc } from "firebase/firestore";
 
@@ -146,6 +147,10 @@ export default function VotePage() {
   }, [firestore, user]);
 
   const { data: userVotes, isLoading: isLoadingVotes } = useCollection<Vote>(userVotesCollection);
+
+  const hasAlreadyVoted = useMemo(() => {
+    return !!userVotes && userVotes.length > 0;
+  }, [userVotes]);
 
   const isElectionLive = useMemo(() => {
     return activeElections && activeElections.length > 0;
