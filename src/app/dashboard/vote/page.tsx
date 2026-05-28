@@ -119,6 +119,10 @@ export default function VotePage() {
 
   const { data: userVotes, isLoading: isLoadingVotes } = useCollection<Vote>(userVotesCollection);
 
+  /**
+   * Check if the voter has already participated in the current election window.
+   * This is used to enable the Anti-Coercion Revote alert.
+   */
   const hasAlreadyVoted = useMemo(() => {
     return !!userVotes && userVotes.length > 0;
   }, [userVotes]);
