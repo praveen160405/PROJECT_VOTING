@@ -24,7 +24,7 @@ export default function HomePage() {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6 w-full"
         >
-          <div className="p-12 glassmorphic-card rounded-none border-l-4 border-l-primary relative group shadow-2xl">
+          <div className="p-12 glassmorphic-card rounded-2xl border-l-4 border-l-primary relative group shadow-2xl">
             <Quote className="h-10 w-10 text-primary/20 mb-6 mx-auto" />
             <p className="text-2xl md:text-4xl italic font-medium text-foreground leading-tight tracking-tight">
               "{proverb.text}"
@@ -42,7 +42,7 @@ export default function HomePage() {
           transition={{ delay: 0.2 }}
           className="w-full max-w-md"
         >
-          <Card className="glassmorphic-card rounded-none border-t-4 border-t-primary shadow-2xl overflow-hidden shimmer-card">
+          <Card className="glassmorphic-card rounded-2xl border-t-4 border-t-primary shadow-2xl overflow-hidden shimmer-card">
             <CardHeader className="items-center p-10">
               <Logo className="scale-[1.5]" />
               <CardDescription className="text-xs font-bold text-muted-foreground pt-6 uppercase tracking-widest">
@@ -51,13 +51,13 @@ export default function HomePage() {
             </CardHeader>
             <CardContent className="grid gap-4 px-10 pb-10">
               <Link href="/login" className="w-full">
-                 <Button className="w-full h-16 text-sm font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-background rounded-none">
+                 <Button className="w-full h-16 text-sm font-black uppercase tracking-widest bg-primary hover:bg-primary/90 text-background rounded-xl">
                   <LogIn className="h-5 w-5 mr-2" />
                   Enter Station
                 </Button>
               </Link>
               <Link href="/register" className="w-full">
-                <Button variant="outline" className="w-full h-14 text-xs font-bold uppercase tracking-widest rounded-none border-primary/20 text-primary">
+                <Button variant="outline" className="w-full h-14 text-xs font-bold uppercase tracking-widest rounded-xl border-primary/20 text-primary">
                   <UserPlus className="h-4 w-4 mr-2" />
                   Onboard Identity
                 </Button>

@@ -51,12 +51,12 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
     <motion.div whileHover={{ y: -5 }}>
       <Card 
         onClick={() => !disabled && onVote(candidate)}
-        className="group relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all rounded-none border-white/10 glassmorphic-card shimmer-card data-[disabled=true]:opacity-40 data-[disabled=true]:cursor-not-allowed"
+        className="group relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all rounded-2xl border-white/10 glassmorphic-card shimmer-card data-[disabled=true]:opacity-40 data-[disabled=true]:cursor-not-allowed"
         data-disabled={disabled}
       >
         <div className="relative w-full aspect-square bg-white/5 flex items-center justify-center border-b border-white/5">
           <div className="flex flex-col items-center gap-4">
-              <div className="w-20 h-20 rounded-none bg-primary/5 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
+              <div className="w-20 h-20 rounded-xl bg-primary/5 flex items-center justify-center text-primary border border-primary/20 shadow-inner">
                   <span className="text-3xl font-black italic">{candidate.name}</span>
               </div>
               <h3 className="text-xl font-bold uppercase italic">{candidate.name}</h3>
@@ -69,7 +69,7 @@ function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Ca
         </div>
         <CardContent className="p-6 w-full">
           <p className="text-[10px] font-bold text-muted-foreground uppercase text-center mb-6 tracking-widest">{candidate.party}</p>
-          <Button className="w-full h-12 rounded-none font-black uppercase tracking-widest bg-primary text-background hover:bg-primary/90">
+          <Button className="w-full h-12 rounded-xl font-black uppercase tracking-widest bg-primary text-background hover:bg-primary/90">
             {isVoted ? "Override" : "Cast Ballot"}
           </Button>
         </CardContent>
@@ -212,7 +212,7 @@ export default function VotePage() {
   if (isMounted && votedCandidateId) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Card className="max-w-lg w-full text-center glassmorphic-card rounded-none shadow-2xl border-t-4 border-t-primary">
+        <Card className="max-w-lg w-full text-center glassmorphic-card rounded-2xl shadow-2xl border-t-4 border-t-primary">
           <CardHeader className="p-12">
             <UserCheck className="mx-auto h-12 w-12 text-primary mb-6" />
             <CardTitle className="text-3xl font-black uppercase italic">Signature Committed</CardTitle>
@@ -220,9 +220,9 @@ export default function VotePage() {
           </CardHeader>
           <CardContent className="px-12 pb-12 space-y-8">
             <p className="text-lg italic text-foreground/80 leading-relaxed">"{currentProverb}"</p>
-            <div className="p-4 bg-black/20 font-mono text-[10px] break-all border border-white/5">{txHash}</div>
+            <div className="p-4 bg-black/20 font-mono text-[10px] break-all border border-white/5 rounded-xl">{txHash}</div>
             <Link href="/dashboard/results" className="block">
-                <Button className="w-full h-14 rounded-none font-black uppercase tracking-widest bg-primary text-background">View Ledger</Button>
+                <Button className="w-full h-14 rounded-xl font-black uppercase tracking-widest bg-primary text-background">View Ledger</Button>
             </Link>
           </CardContent>
         </Card>
@@ -240,7 +240,7 @@ export default function VotePage() {
           <p className="text-muted-foreground font-bold uppercase text-[10px] tracking-widest mt-2">Decentralized Secure Ballot Submission</p>
         </div>
 
-        <Card className="glassmorphic-card rounded-none p-4 flex gap-6">
+        <Card className="glassmorphic-card rounded-2xl p-4 flex gap-6">
            <div className="flex items-center gap-3">
               <Label className="text-[10px] font-bold uppercase">Panic Mode</Label>
               <Switch checked={isPanicMode} onCheckedChange={setIsPanicMode} className="data-[state=checked]:bg-destructive" />
@@ -254,7 +254,7 @@ export default function VotePage() {
       </div>
       
       {isMounted && hasAlreadyVoted && (
-        <Alert className="bg-primary/5 border-primary/20 rounded-none border-l-4 border-l-primary shadow-2xl backdrop-blur-md">
+        <Alert className="bg-primary/5 border-primary/20 rounded-xl border-l-4 border-l-primary shadow-2xl backdrop-blur-md">
           <RefreshCcw className="h-4 w-4 text-primary animate-spin-slow" />
           <AlertTitle className="text-[10px] font-bold uppercase tracking-widest">Revote Granted</AlertTitle>
           <AlertDescription className="text-[10px] uppercase">Only your final signature will commit to the ledger.</AlertDescription>
@@ -268,26 +268,26 @@ export default function VotePage() {
       </div>
 
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
-        <AlertDialogContent className="rounded-none glassmorphic-card">
+        <AlertDialogContent className="rounded-2xl glassmorphic-card">
           <AlertDialogHeader>
             <AlertDialogTitle className="font-black uppercase italic">Lock Selection?</AlertDialogTitle>
             <AlertDialogDescription className="text-xs uppercase font-bold text-muted-foreground">Proceeding to neural identity signature for {selectedCandidate?.name}.</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-none uppercase font-bold text-[10px]">Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="rounded-none bg-primary text-background uppercase font-bold text-[10px]">Sign & Commit</AlertDialogAction>
+            <AlertDialogCancel className="rounded-xl uppercase font-bold text-[10px]">Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="rounded-xl bg-primary text-background uppercase font-bold text-[10px]">Sign & Commit</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <Dialog open={isBiometricSigning} onOpenChange={(o) => !isVerifyingSign && setIsBiometricSigning(o)}>
-        <DialogContent className="rounded-none glassmorphic-card p-10">
+        <DialogContent className="rounded-2xl glassmorphic-card p-10">
           <DialogHeader className="text-center mb-6">
             <DialogTitle className="font-black uppercase italic text-2xl">Neural Sign</DialogTitle>
             <DialogDescription className="text-[10px] font-bold uppercase">Biometric Consensus window active.</DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
-            <div className="aspect-video bg-black rounded-none overflow-hidden relative border border-white/10">
+            <div className="aspect-video bg-black rounded-xl overflow-hidden relative border border-white/10">
                <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale" />
                {isVerifyingSign && (
                   <div className="absolute inset-0 bg-background/90 backdrop-blur-md flex flex-col items-center justify-center gap-4 z-20">
@@ -297,7 +297,7 @@ export default function VotePage() {
                )}
             </div>
             <canvas ref={canvasRef} className="hidden" />
-            <Button className="w-full h-14 rounded-none font-black uppercase tracking-widest bg-primary text-background" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
+            <Button className="w-full h-14 rounded-xl font-black uppercase tracking-widest bg-primary text-background" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
               Execute Signature
             </Button>
           </div>

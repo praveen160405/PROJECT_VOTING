@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
 import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
+import { Label } from "@/components/ui/label";
 
 const registerSchema = z.object({
   fullName: z.string().min(1, "Name required"),
@@ -72,7 +73,7 @@ export default function RegisterPage() {
   return (
     <main className="flex min-h-screen items-center justify-center p-4 cyber-grid">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-2xl">
-        <Card className="glassmorphic-card rounded-none border-t-4 border-t-primary shadow-2xl glow-box">
+        <Card className="glassmorphic-card rounded-2xl border-t-4 border-t-primary shadow-2xl glow-box">
           <CardHeader className="text-center p-8">
             <Logo className="mx-auto mb-4" />
             <CardTitle className="text-2xl font-black uppercase italic">Onboard Node</CardTitle>
@@ -84,34 +85,34 @@ export default function RegisterPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField control={form.control} name="fullName" render={({ field }) => (
                     <FormItem><FormLabel className="text-[9px] uppercase font-bold">Full Name</FormLabel>
-                    <FormControl><Input {...field} className="rounded-none h-12" /></FormControl></FormItem>
+                    <FormControl><Input {...field} className="rounded-xl h-12" /></FormControl></FormItem>
                   )} />
                   <FormField control={form.control} name="email" render={({ field }) => (
                     <FormItem><FormLabel className="text-[9px] uppercase font-bold">Email</FormLabel>
-                    <FormControl><Input type="email" {...field} className="rounded-none h-12" /></FormControl></FormItem>
+                    <FormControl><Input type="email" {...field} className="rounded-xl h-12" /></FormControl></FormItem>
                   )} />
                 </div>
                 <div className="space-y-2">
                    <Label className="text-[9px] uppercase font-bold">Biometric Registration</Label>
-                   <div className="aspect-video bg-black rounded-none border border-white/10 overflow-hidden relative">
+                   <div className="aspect-video bg-black rounded-xl border border-white/10 overflow-hidden relative">
                       {capture ? <img src={capture} className="w-full h-full object-cover grayscale" /> : <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />}
                    </div>
                    <canvas ref={canvasRef} className="hidden" />
-                   <Button type="button" variant="outline" className="w-full rounded-none h-12 uppercase font-bold text-[10px]" onClick={capture ? () => setCapture(null) : handleCapture}>
+                   <Button type="button" variant="outline" className="w-full rounded-xl h-12 uppercase font-bold text-[10px]" onClick={capture ? () => setCapture(null) : handleCapture}>
                       {capture ? "Retake Mapping" : "Map Face"}
                    </Button>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField control={form.control} name="voterId" render={({ field }) => (
                     <FormItem><FormLabel className="text-[9px] uppercase font-bold">Voter ID</FormLabel>
-                    <FormControl><Input {...field} className="rounded-none h-12 uppercase" /></FormControl></FormItem>
+                    <FormControl><Input {...field} className="rounded-xl h-12 uppercase" /></FormControl></FormItem>
                   )} />
                   <FormField control={form.control} name="aadharNumber" render={({ field }) => (
                     <FormItem><FormLabel className="text-[9px] uppercase font-bold">Aadhar</FormLabel>
-                    <FormControl><Input {...field} className="rounded-none h-12" /></FormControl></FormItem>
+                    <FormControl><Input {...field} className="rounded-xl h-12" /></FormControl></FormItem>
                   )} />
                 </div>
-                <Button type="submit" className="w-full h-14 rounded-none font-black uppercase tracking-widest bg-primary text-background">Register Identity</Button>
+                <Button type="submit" className="w-full h-14 rounded-xl font-black uppercase tracking-widest bg-primary text-background">Register Identity</Button>
               </form>
             </Form>
           </CardContent>
