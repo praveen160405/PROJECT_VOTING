@@ -19,7 +19,6 @@ import { Logo } from "@/components/logo";
 import { Form, FormField, FormItem, FormControl, FormMessage, FormLabel } from "@/components/ui/form";
 import { useAuth, useFirestore } from "@/firebase";
 import { verifyBiometric } from "@/ai/flows/verify-biometric-flow";
-import { analyzeBehavioralAuth } from "@/ai/flows/behavioral-auth-flow";
 
 const loginSchema = z.object({
   voterId: z.string().trim().length(10, "Voter ID must be 10 characters."),

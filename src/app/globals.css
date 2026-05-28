@@ -62,6 +62,10 @@
     box-shadow: 0 0 30px rgba(0, 209, 255, 0.15);
   }
 
+  .glow-text {
+    text-shadow: 0 0 10px rgba(0, 209, 255, 0.5);
+  }
+
   .shimmer-card {
     position: relative;
     overflow: hidden;
@@ -80,5 +84,10 @@
   @keyframes shimmer {
     0% { background-position: -200% -200%; }
     100% { background-position: 200% 200%; }
+  }
+
+  .neon-border {
+    @apply relative border-primary/20;
+    box-shadow: 0 0 15px rgba(0, 209, 255, 0.1);
   }
 }

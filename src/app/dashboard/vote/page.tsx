@@ -6,14 +6,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   CheckCircle2, 
   Loader2, 
-  Quote, 
   Camera, 
   Fingerprint, 
   ShieldCheck,
   ShieldAlert,
   Ghost,
   RefreshCcw,
-  Crosshair,
   UserCheck,
   Activity
 } from 'lucide-react';
@@ -256,7 +254,7 @@ export default function VotePage() {
       </div>
       
       {isMounted && hasAlreadyVoted && (
-        <Alert className="bg-primary/5 border-primary/20 rounded-none border-l-4 border-l-primary">
+        <Alert className="bg-primary/5 border-primary/20 rounded-none border-l-4 border-l-primary shadow-2xl backdrop-blur-md">
           <RefreshCcw className="h-4 w-4 text-primary animate-spin-slow" />
           <AlertTitle className="text-[10px] font-bold uppercase tracking-widest">Revote Granted</AlertTitle>
           <AlertDescription className="text-[10px] uppercase">Only your final signature will commit to the ledger.</AlertDescription>

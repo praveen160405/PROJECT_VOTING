@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import { UserPlus, LogIn, Quote, ShieldCheck, Activity } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardDescription, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardDescription } from "@/components/ui/card";
 import { Logo } from "@/components/logo";
 import { getRandomProverb } from "@/lib/proverbs";
 

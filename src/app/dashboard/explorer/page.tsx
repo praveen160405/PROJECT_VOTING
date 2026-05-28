@@ -49,17 +49,18 @@ export default function LedgerExplorerPage() {
   const [simulatedTxs, setSimulatedTxs] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Fetch recent transactions (votes) from the registry for transparency using collectionGroup
   const recentVotesQuery = useMemoFirebase(() => {
     if (!firestore) return null;
-    // We query all votes across all user subcollections
     return query(collectionGroup(firestore, 'votes'), limit(10));
   }, [firestore]);
 
   const { data: recentTransactions, isLoading: isLoadingTxs } = useCollection<Vote>(recentVotesQuery);
 
   useEffect(() => {
+    setIsMounted(true);
     // Initialize simulated blocks on client mount to avoid hydration mismatch
     const initialBlocks: Block[] = Array.from({ length: 5 }, (_, i) => ({
       height: 125430 - i,
@@ -132,8 +133,8 @@ export default function LedgerExplorerPage() {
     <div className="flex flex-col gap-8 max-w-7xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Blockchain Transparency Explorer</h1>
-          <p className="text-muted-foreground font-medium">Monitoring decentralized vote batches and block confirmations on the OOTU protocol.</p>
+          <h1 className="text-3xl font-bold tracking-tight glow-text">Blockchain Transparency Explorer</h1>
+          <p className="text-muted-foreground font-black uppercase tracking-[0.2em] text-[10px] mt-2">Monitoring decentralized vote batches and block confirmations on the OOTU protocol.</p>
         </div>
         <div className="flex items-center gap-2">
            <Badge variant="outline" className="gap-2 px-3 py-1 bg-green-500/5 text-green-600 border-green-500/20 rounded-none font-black uppercase tracking-tighter shadow-sm">
@@ -152,14 +153,14 @@ export default function LedgerExplorerPage() {
           { l: "Active Validators", val: "128", icon: Server, color: "bg-orange-500/5 border-orange-500/20", sub: "Consensus: 100%", subIcon: Globe },
           { l: "Protocol Status", val: "Hardened", icon: Zap, color: "bg-yellow-500/5 border-yellow-500/20", sub: "Latency: 1.2s", subIcon: Activity }
         ].map((stat, i) => (
-          <Card key={i} className={`${stat.color} rounded-none border-l-4 shimmer-card shadow-lg`}>
+          <Card key={i} className={`${stat.color} rounded-none border-l-4 shimmer-card shadow-lg border-primary/20`}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em]">{stat.l}</p>
                 <stat.icon className="h-4 w-4 opacity-30" />
               </div>
-              <p className="text-2xl font-black tracking-tighter">{stat.val}</p>
-              <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1 font-bold uppercase">
+              <p className="text-2xl font-black tracking-tighter glow-text italic">{stat.val}</p>
+              <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1 font-bold uppercase tracking-widest">
                 {stat.subIcon && <stat.subIcon className="h-3 w-3" />} {stat.sub}
               </p>
             </CardContent>
@@ -172,26 +173,26 @@ export default function LedgerExplorerPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Search by Transaction Hash (TXID) or Block Height..." 
-            className="pl-9 h-12 border-primary/20 rounded-none bg-primary/5 font-bold"
+            className="pl-9 h-12 border-primary/20 rounded-none bg-primary/5 font-black uppercase tracking-widest"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
         </div>
-        <Button onClick={handleSearch} disabled={isVerifying || !searchQuery} className="h-12 px-8 gap-2 rounded-none font-black uppercase tracking-widest shadow-xl shadow-primary/20">
+        <Button onClick={handleSearch} disabled={isVerifying || !searchQuery} className="h-12 px-8 gap-2 rounded-none font-black uppercase tracking-widest shadow-xl shadow-primary/20 bg-primary text-background">
           {isVerifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
           {isVerifying ? "Verifying..." : "Verify Hash"}
         </Button>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-primary/20 shadow-xl rounded-none glow-box overflow-hidden">
+        <Card className="glassmorphic-card border-primary/20 shadow-xl rounded-none glow-box overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between border-b pb-6 bg-muted/30">
             <div>
-              <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tight">
+              <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tight italic glow-text">
                 <Box className="h-5 w-5 text-primary" /> Recent Blocks
               </CardTitle>
-              <CardDescription className="font-medium">Sequential confirmation batches on the ledger.</CardDescription>
+              <CardDescription className="font-bold uppercase tracking-widest text-[9px]">Sequential confirmation batches on the ledger.</CardDescription>
             </div>
             <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest border border-primary/20 rounded-none">View All</Button>
           </CardHeader>
@@ -207,7 +208,7 @@ export default function LedgerExplorerPage() {
               </TableHeader>
               <TableBody>
                 <AnimatePresence mode="popLayout">
-                  {blocks.map((block) => (
+                  {isMounted && blocks.map((block) => (
                     <motion.tr 
                       key={block.height}
                       initial={{ opacity: 0, x: -10 }}
@@ -236,13 +237,13 @@ export default function LedgerExplorerPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-accent/20 shadow-xl rounded-none shimmer-card overflow-hidden">
+        <Card className="glassmorphic-card border-accent/20 shadow-xl rounded-none shimmer-card overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between border-b pb-6 bg-muted/30">
             <div>
-              <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tight">
+              <CardTitle className="text-lg flex items-center gap-2 font-black uppercase tracking-tight italic glow-text text-accent">
                 <LinkIcon className="h-5 w-5 text-accent" /> Recent Transactions
               </CardTitle>
-              <CardDescription className="font-medium">Verified biometric identity signatures (Anonymized).</CardDescription>
+              <CardDescription className="font-bold uppercase tracking-widest text-[9px]">Verified biometric identity signatures (Anonymized).</CardDescription>
             </div>
             <Button variant="ghost" size="sm" className="h-8 text-[10px] font-black uppercase tracking-widest border border-accent/20 rounded-none">Live Feed</Button>
           </CardHeader>
@@ -282,7 +283,7 @@ export default function LedgerExplorerPage() {
                         </TableCell>
                       </TableRow>
                     ))}
-                    {simulatedTxs.map((simulatedTx, i) => (
+                    {isMounted && simulatedTxs.map((simulatedTx, i) => (
                       <TableRow key={`sim-${i}`} className="border-b hover:bg-accent/5 transition-colors group">
                         <TableCell className="font-mono text-[10px]">
                           <div className="flex items-center gap-2">
@@ -312,81 +313,13 @@ export default function LedgerExplorerPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="md:col-span-2 rounded-none border-primary/20 shadow-xl glow-box">
-          <CardHeader className="border-b bg-muted/30">
-            <CardTitle className="text-sm font-black uppercase tracking-[0.3em] flex items-center gap-2 text-primary">
-              <ShieldCheck className="h-4 w-4" /> Validator Approval Mesh
-            </CardTitle>
-            <CardDescription className="font-medium">Decentralized nodes currently participating in the consensus window.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <div className="grid grid-cols-8 md:grid-cols-16 gap-2">
-              {Array.from({ length: 64 }).map((_, i) => (
-                <motion.div 
-                  key={i}
-                  initial={{ scale: 0.8, opacity: 0.5 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: i * 0.01, repeat: Infinity, repeatType: 'reverse', duration: 2 + Math.random() }}
-                  className="aspect-square bg-green-500/10 border border-green-500/20 rounded-none flex items-center justify-center shadow-sm"
-                  title={`Validator Node ${i + 1}: Healthy`}
-                >
-                  <div className="w-2 h-2 rounded-none bg-green-500 shadow-lg shadow-green-500/50" />
-                </motion.div>
-              ))}
-            </div>
-            <div className="mt-8 flex items-center justify-between p-4 bg-muted/30 rounded-none border-2 border-dashed border-primary/20 text-[10px] font-black uppercase tracking-widest shadow-inner">
-              <div className="flex items-center gap-6">
-                 <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-none bg-green-500" /> Online</div>
-                 <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-none bg-yellow-500" /> Syncing</div>
-                 <div className="flex items-center gap-2"><div className="w-2 h-2 rounded-none bg-red-500" /> Offline</div>
-              </div>
-              <p className="font-mono text-primary flex items-center gap-2"><RefreshCcw className="h-3 w-3 animate-spin" /> OOTU_MESH_V4.1</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-primary/5 border-primary/20 rounded-none shadow-2xl shimmer-card">
-          <CardHeader className="border-b bg-muted/50">
-            <CardTitle className="text-sm font-black uppercase tracking-widest">Ledger Health Report</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-8 pt-6">
-            <div className="space-y-3">
-              <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em]">
-                <span className="text-muted-foreground">Consensus Consistency</span>
-                <span className="text-green-600">100.0%</span>
-              </div>
-              <div className="h-2 w-full bg-muted rounded-none overflow-hidden border border-primary/10">
-                <motion.div initial={{ width: 0 }} animate={{ width: '100%' }} className="h-full bg-green-500 shadow-lg shadow-green-500/20" />
-              </div>
-            </div>
-            <div className="space-y-3">
-              <div className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em]">
-                <span className="text-muted-foreground">Network Availability</span>
-                <span className="text-primary">99.9%</span>
-              </div>
-              <div className="h-2 w-full bg-muted rounded-none overflow-hidden border border-primary/10">
-                <motion.div initial={{ width: 0 }} animate={{ width: '99.9%' }} className="h-full bg-primary shadow-lg shadow-primary/20" />
-              </div>
-            </div>
-            <div className="p-6 bg-background/50 border-2 border-dashed border-primary/20 rounded-none space-y-4 text-center glow-box">
-              <div className="flex items-center justify-center gap-2 text-[10px] font-black uppercase text-primary tracking-[0.3em]">
-                <RefreshCcw className="h-3 w-3 animate-spin" /> Next Sync Cycle
-              </div>
-              <p className="text-2xl font-mono text-primary font-black py-4 bg-muted/30 rounded-none tracking-[0.2em] shadow-inner">00:00:12</p>
-              <Button variant="outline" size="sm" className="w-full text-[10px] h-10 font-black uppercase tracking-widest rounded-none border-primary/30 hover:bg-primary hover:text-white">Refresh Nodes</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="flex flex-col items-center justify-center p-16 text-center border-t-2 border-dashed border-primary/10"
       >
-        <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed font-medium">
-          The Transparency Explorer is a core pillar of the OOTU protocol. It provides a real-time digital audit trail for the electorate, proving that the ledger is mathematically consistent without revealing who voted for whom. All transactions are hashed using SHA-256 and confirmed by a distributed validator mesh.
+        <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed font-bold uppercase tracking-widest text-[10px]">
+          The Transparency Explorer is a core pillar of the OOTU protocol. It provides a real-time digital audit trail for the electorate, proving that the ledger is mathematically consistent without revealing who voted for whom.
         </p>
         <div className="mt-10 flex items-center gap-8 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all">
            <Logo className="scale-125" />
