@@ -18,7 +18,9 @@ import {
   Ghost,
   EyeOff,
   RefreshCcw,
-  ShieldOff
+  ShieldOff,
+  Crosshair,
+  UserCheck
 } from 'lucide-react';
 import { collection, serverTimestamp, doc } from "firebase/firestore";
 
@@ -62,41 +64,47 @@ const PROVERBS = [
 
 function CandidateCard({ candidate, onVote, isVoted, disabled }: { candidate: Candidate, onVote: (c: Candidate) => void, isVoted: boolean, disabled: boolean }) {
   return (
-    <Card 
-      onClick={() => !disabled && onVote(candidate)}
-      className="group/card relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all duration-300 ease-in-out hover:shadow-primary/20 hover:shadow-2xl hover:-translate-y-2 data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60 rounded-none border-primary/10 shimmer-card"
-      data-disabled={disabled ? true : undefined}
-    >
-      <div className="relative w-full aspect-square bg-primary/5 flex items-center justify-center border-b p-6">
-        <div className="flex flex-col items-center gap-4">
-            <div className="w-24 h-24 rounded-none bg-primary/10 flex items-center justify-center text-primary border-2 border-primary/20 group-hover/card:scale-110 transition-transform duration-300 shadow-lg shadow-primary/5">
-                <span className="text-3xl font-black tracking-tighter">{candidate.name}</span>
-            </div>
-            <div className="text-center">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Official Ballot Symbol</p>
-                <h3 className="text-xl font-black text-foreground tracking-tighter">{candidate.name}</h3>
-            </div>
+    <motion.div whileHover={{ y: -10 }} transition={{ type: "spring", stiffness: 300 }}>
+      <Card 
+        onClick={() => !disabled && onVote(candidate)}
+        className="group/card relative flex h-full cursor-pointer flex-col items-center overflow-hidden transition-all duration-500 ease-in-out hover:shadow-primary/30 hover:shadow-[0_0_40px_-10px_rgba(0,209,255,0.4)] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-40 rounded-none border-white/10 glassmorphic-card shimmer-card"
+        data-disabled={disabled ? true : undefined}
+      >
+        <div className="relative w-full aspect-square bg-white/5 flex items-center justify-center border-b border-white/5 p-8">
+          <div className="flex flex-col items-center gap-6">
+              <div className="w-28 h-28 rounded-none bg-primary/5 flex items-center justify-center text-primary border border-primary/20 group-hover/card:border-primary/50 group-hover/card:scale-110 transition-all duration-500 shadow-inner overflow-hidden relative">
+                  <span className="text-4xl font-black tracking-tighter glow-text italic z-10">{candidate.name}</span>
+                  <div className="absolute inset-0 bg-primary/5 group-hover/card:bg-primary/10 transition-colors" />
+              </div>
+              <div className="text-center">
+                  <p className="text-[9px] font-black uppercase tracking-[0.4em] text-primary/60 mb-1">STATION_ID_{candidate.id.toUpperCase()}</p>
+                  <h3 className="text-2xl font-black text-foreground tracking-tighter uppercase italic">{candidate.name}</h3>
+              </div>
+          </div>
+          {isVoted && (
+               <div className="absolute inset-0 bg-primary/20 backdrop-blur-[4px] flex items-center justify-center z-10 border-2 border-primary">
+                  <div className="flex flex-col items-center gap-2">
+                    <CheckCircle2 className="h-16 w-16 text-primary shadow-2xl" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-primary glow-text">SIGNED</span>
+                  </div>
+               </div>
+          )}
         </div>
-        {isVoted && (
-             <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px] flex items-center justify-center z-10">
-                <CheckCircle2 className="h-12 w-12 text-primary" />
-             </div>
-        )}
-      </div>
-      <CardContent className="p-4 w-full bg-card">
-        <div className="mb-4">
-             <p className="text-xs font-bold text-muted-foreground leading-relaxed h-8 line-clamp-2 uppercase tracking-tight">{candidate.party}</p>
-        </div>
-        <Button 
-          variant={isVoted ? "secondary" : "default"} 
-          className="w-full gap-2 rounded-none font-black uppercase tracking-widest shadow-lg shadow-primary/10" 
-          disabled={disabled}
-        >
-          {isVoted ? <CheckCircle2 className="h-4 w-4" /> : null}
-          {isVoted ? "Re-sign Ballot" : "Cast Vote"}
-        </Button>
-      </CardContent>
-    </Card>
+        <CardContent className="p-6 w-full space-y-6">
+          <div className="h-12 flex items-center justify-center text-center">
+               <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest leading-tight">{candidate.party}</p>
+          </div>
+          <Button 
+            variant={isVoted ? "secondary" : "default"} 
+            className="w-full h-14 gap-3 rounded-none font-black uppercase tracking-[0.3em] shadow-lg shadow-primary/10 bg-primary text-background hover:bg-primary/90 transition-all border-none" 
+            disabled={disabled}
+          >
+            {isVoted ? <RefreshCcw className="h-4 w-4 animate-spin-slow" /> : <Crosshair className="h-4 w-4" />}
+            {isVoted ? "OVERRIDE" : "CAST BALLOT"}
+          </Button>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
 
@@ -110,7 +118,6 @@ export default function VotePage() {
   const [isMounted, setIsMounted] = useState(false);
   const [currentProverb, setCurrentProverb] = useState<string>("");
 
-  // Anti-Coercion States
   const [isPanicMode, setIsPanicMode] = useState(false);
   const [isDecoyMode, setIsDecoyMode] = useState(false);
 
@@ -139,11 +146,6 @@ export default function VotePage() {
   }, [firestore, user]);
 
   const { data: userVotes, isLoading: isLoadingVotes } = useCollection<Vote>(userVotesCollection);
-
-  const hasAlreadyVoted = useMemo(() => {
-    if (userVotes && userVotes.length > 0) return true;
-    return false;
-  }, [userVotes]);
 
   const isElectionLive = useMemo(() => {
     return activeElections && activeElections.length > 0;
@@ -258,44 +260,48 @@ export default function VotePage() {
   if (isMounted && votedCandidateId) {
     const votedCandidate = candidates.find(c => c.id === votedCandidateId);
     return (
-      <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
+      <div className="flex items-center justify-center h-[calc(100vh-12rem)] cyber-grid">
         <motion.div
-          initial={{ opacity: 0, y: 20, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="w-full max-w-md"
+          initial={{ opacity: 0, scale: 0.9, y: 30 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="w-full max-w-lg"
         >
-          <Card className="text-center shadow-2xl border-primary/20 overflow-hidden rounded-none glow-box">
-            <div className="h-1.5 w-full bg-primary" />
-            <CardHeader>
-              <div className="mx-auto bg-primary/10 w-16 h-16 rounded-none border border-primary/20 flex items-center justify-center mb-4">
-                <CheckCircle2 className="h-10 w-10 text-primary" />
+          <Card className="text-center shadow-[0_0_50px_rgba(0,209,255,0.2)] border-white/10 overflow-hidden rounded-none glassmorphic-card relative">
+            <div className="h-2 w-full bg-primary" />
+            <div className="absolute top-0 right-0 p-6 opacity-5">
+               <ShieldCheck className="w-32 h-32" />
+            </div>
+            <CardHeader className="p-12">
+              <div className="mx-auto bg-primary/10 w-24 h-24 rounded-none border border-primary/30 flex items-center justify-center mb-8 shadow-inner">
+                <UserCheck className="h-12 w-12 text-primary glow-text" />
               </div>
-              <CardTitle className="text-3xl font-black tracking-tighter uppercase">Vote Confirmed</CardTitle>
-              <CardDescription className="pt-2 font-medium">
-                Your choice for <strong>{votedCandidate?.name}</strong> is etched into the OOTU protocol.
+              <CardTitle className="text-4xl font-black tracking-tighter uppercase italic glow-text">TRANSACTION COMMITTED</CardTitle>
+              <CardDescription className="pt-4 font-bold uppercase tracking-widest text-[11px] text-muted-foreground">
+                Your cryptographic signature for <span className="text-primary">{votedCandidate?.name}</span> has been etched into the OOTU mesh.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="p-4 bg-muted/50 rounded-none border border-dashed relative">
-                <Quote className="absolute -top-3 -left-1 h-6 w-6 text-primary/20" />
-                <p className="text-sm italic text-muted-foreground leading-relaxed">
+            <CardContent className="p-12 pt-0 space-y-10">
+              <div className="p-6 bg-white/5 rounded-none border border-white/10 relative">
+                <Quote className="h-8 w-8 text-primary/10 mb-2" />
+                <p className="text-lg italic font-medium text-foreground/80 leading-relaxed pl-6">
                   "{currentProverb}"
                 </p>
               </div>
-              <div className="text-left space-y-1">
-                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Digital Audit Receipt</p>
-                 <p className="text-[10px] font-mono text-muted-foreground p-3 bg-muted rounded-none border overflow-hidden text-ellipsis whitespace-nowrap">
+              <div className="text-left space-y-3">
+                 <p className="text-[10px] font-black uppercase tracking-[0.4em] text-primary/60">Ledger Audit Key (TXID)</p>
+                 <p className="text-[11px] font-mono text-muted-foreground p-5 bg-black/40 rounded-none border border-white/10 break-all leading-relaxed shadow-inner">
                   {txHash}
                  </p>
               </div>
-              <div className="space-y-2">
+              <div className="grid gap-4">
                  <Link href="/dashboard/results" className="block">
-                    <Button className="w-full h-12 rounded-none font-black uppercase tracking-widest shadow-xl shadow-primary/20">Go to Results</Button>
+                    <Button className="w-full h-16 rounded-none font-black uppercase tracking-[0.3em] shadow-2xl bg-primary text-background hover:bg-primary/90">GO TO LIVE RESULTS</Button>
                  </Link>
                  {isDecoyMode && (
-                   <p className="text-[9px] text-muted-foreground font-black uppercase tracking-tighter text-center">
-                     Decoy Protocol Active: This session left no real ledger trace.
-                   </p>
+                   <div className="p-3 bg-secondary/10 border border-secondary/20 flex items-center justify-center gap-3">
+                      <Ghost className="h-4 w-4 text-secondary" />
+                      <p className="text-[9px] text-secondary font-black uppercase tracking-[0.2em]">DECOY_MODE ACTIVE: SESSION VOID</p>
+                   </div>
                  )}
               </div>
             </CardContent>
@@ -309,134 +315,143 @@ export default function VotePage() {
   const pageDisabled = !isMounted || isCheckingVote || !isElectionLive;
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+    <div className="flex flex-col gap-10 p-2 md:p-0">
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-10">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">OOTU Voting Booth</h1>
-          <p className="text-muted-foreground font-medium">
-            {!isMounted ? "Initialising..." : 
-             isCheckingVote ? "Verifying Eligibility..." : 
-             !isElectionLive ? "No Active Election" :
-             "Secure, anonymous, and anti-coercive ballot submission."}
+          <h1 className="text-5xl font-black tracking-tighter glow-text uppercase italic">Mission <span className="text-primary">Control</span></h1>
+          <p className="text-muted-foreground font-black uppercase tracking-[0.3em] text-[10px] mt-2">
+            {!isMounted ? "INITIALIZING INTERFACE..." : 
+             isCheckingVote ? "VERIFYING BIOMETRIC ELIGIBILITY..." : 
+             !isElectionLive ? "PROTOCOL WINDOW: CLOSED" :
+             "Decentralized secure voting booth active."}
           </p>
         </div>
 
-        <Card className="w-full md:w-auto bg-primary/5 border-primary/20 border-dashed rounded-none shimmer-card">
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-sm font-black uppercase tracking-widest flex items-center gap-2">
-              <ShieldAlert className="h-4 w-4 text-primary" /> Anti-Coercion Suite
+        <Card className="w-full lg:w-auto glassmorphic-card border-white/10 rounded-none shimmer-card shadow-2xl">
+          <CardHeader className="p-6 pb-2">
+            <CardTitle className="text-[10px] font-black uppercase tracking-[0.4em] flex items-center gap-3 text-secondary">
+              <ShieldAlert className="h-5 w-5" /> ANTI-COERCION SUITE
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 pt-0 space-y-3">
-             <div className="flex items-center justify-between gap-8">
+          <CardContent className="p-6 pt-0 flex flex-col sm:flex-row gap-8">
+             <div className="flex items-center gap-4">
                 <div className="space-y-0.5">
-                   <Label htmlFor="panic-mode" className="text-xs font-black uppercase tracking-tight">Panic Mode</Label>
-                   <p className="text-[9px] text-muted-foreground leading-none font-medium">Internal duress flag active.</p>
+                   <Label htmlFor="panic-mode" className="text-[10px] font-black uppercase tracking-widest text-foreground">PANIC MODE</Label>
+                   <p className="text-[8px] text-muted-foreground/60 leading-none font-bold uppercase">DURESS FLAG</p>
                 </div>
-                <Switch id="panic-mode" checked={isPanicMode} onCheckedChange={setIsPanicMode} />
+                <Switch id="panic-mode" checked={isPanicMode} onCheckedChange={setIsPanicMode} className="data-[state=checked]:bg-destructive" />
              </div>
-             <div className="flex items-center justify-between gap-8">
+             <div className="h-px sm:h-auto sm:w-px bg-white/5" />
+             <div className="flex items-center gap-4">
                 <div className="space-y-0.5">
-                   <Label htmlFor="decoy-mode" className="text-xs font-black uppercase tracking-tight">Decoy Receipt</Label>
-                   <p className="text-[9px] text-muted-foreground leading-none font-medium">Simulate vote for observer.</p>
+                   <Label htmlFor="decoy-mode" className="text-[10px] font-black uppercase tracking-widest text-foreground">DECOY RECEIPT</Label>
+                   <p className="text-[8px] text-muted-foreground/60 leading-none font-bold uppercase">SIMULATE VOTE</p>
                 </div>
-                <Switch id="decoy-mode" checked={isDecoyMode} onCheckedChange={setIsDecoyMode} />
+                <Switch id="decoy-mode" checked={isDecoyMode} onCheckedChange={setIsDecoyMode} className="data-[state=checked]:bg-secondary" />
              </div>
           </CardContent>
         </Card>
       </div>
       
       {isMounted && hasAlreadyVoted && (
-        <Alert className="bg-primary/5 border-primary/20 rounded-none border-l-4 border-l-primary shadow-lg shadow-primary/5">
-          <RefreshCcw className="h-4 w-4 text-primary" />
-          <AlertTitle className="text-xs font-black uppercase tracking-widest">Revote Capability Active</AlertTitle>
-          <AlertDescription className="text-xs font-medium">
-            You have already cast a vote. OOTU allows you to change your vote as many times as you need—only the <strong>last biometric signature</strong> is counted in the final tally.
+        <Alert className="bg-primary/5 border-primary/30 rounded-none border-l-4 border-l-primary shadow-2xl backdrop-blur-md">
+          <RefreshCcw className="h-5 w-5 text-primary animate-pulse" />
+          <AlertTitle className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">REVOTE CAPABILITY GRANTED</AlertTitle>
+          <AlertDescription className="text-[10px] font-bold text-foreground/70 uppercase tracking-widest mt-1">
+            Previous biometric signature detected. OOTU allows unlimited overrides—only your <strong>final signature</strong> will commit to the ledger.
           </AlertDescription>
         </Alert>
       )}
 
       {isMounted && (isPanicMode || isDecoyMode) && (
-        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-600 rounded-none border-l-4 border-l-red-500">
-          <Ghost className="h-4 w-4" />
-          <AlertTitle className="text-xs font-black uppercase tracking-widest">Cloaking Engaged</AlertTitle>
-          <AlertDescription className="text-xs font-black italic uppercase tracking-tight">
-            {isDecoyMode ? "This session will generate a valid-looking receipt but will NOT affect the final count." : "This vote will be flagged internally as coerced for legal audit."}
+        <Alert className="bg-destructive/5 border-destructive/30 text-destructive rounded-none border-l-4 border-l-destructive shadow-2xl backdrop-blur-md">
+          <Ghost className="h-5 w-5" />
+          <AlertTitle className="text-[11px] font-black uppercase tracking-[0.2em]">CLOAKING ACTIVE</AlertTitle>
+          <AlertDescription className="text-[10px] font-black italic uppercase tracking-widest mt-1">
+            {isDecoyMode ? "Generating high-fidelity simulated receipt. Final count will not be affected." : "Vote will be cryptographically flagged for duress audit."}
           </AlertDescription>
         </Alert>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
         {candidates.map((candidate) => (
-          <motion.div
+          <CandidateCard
             key={candidate.id}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-          >
-            <CandidateCard
-              candidate={candidate}
-              onVote={handleInitiateVote}
-              isVoted={userVotes?.some(v => v.candidateId === candidate.id) || false}
-              disabled={pageDisabled}
-            />
-          </motion.div>
+            candidate={candidate}
+            onVote={handleInitiateVote}
+            isVoted={userVotes?.some(v => v.candidateId === candidate.id) || false}
+            disabled={pageDisabled}
+          />
         ))}
       </div>
 
       <AlertDialog open={isConfirming} onOpenChange={setIsConfirming}>
-        <AlertDialogContent className="rounded-none border-2 border-primary/20 glow-box">
+        <AlertDialogContent className="rounded-none border-white/10 glassmorphic-card shadow-2xl p-10 max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-black uppercase tracking-tight">
-              {isDecoyMode ? "Initiate Decoy Protocol?" : "Confirm Final Selection"}
+            <div className="w-16 h-16 bg-primary/10 flex items-center justify-center border border-primary/20 mb-6 mx-auto">
+               <Crosshair className="h-8 w-8 text-primary" />
+            </div>
+            <AlertDialogTitle className="font-black uppercase tracking-tighter text-3xl text-center glow-text">
+              {isDecoyMode ? "DECOY ENGAGED?" : "LOCK SELECTION"}
             </AlertDialogTitle>
-            <AlertDialogDescription className="font-medium">
+            <AlertDialogDescription className="font-bold text-center uppercase tracking-widest text-[10px] text-muted-foreground pt-4 leading-relaxed">
               {isDecoyMode 
-                ? `You are about to simulate a vote for ${selectedCandidate?.name}. A digital receipt will be generated for your observer, but the OOTU ledger will remain unchanged.`
-                : `You are selecting ${selectedCandidate?.name}. You will be asked to perform a Biometric Signature scan to finalize.`}
+                ? `SIMULATING VOTE FOR ${selectedCandidate?.name}. A VALID AUDIT KEY WILL BE GENERATED FOR THE OBSERVER, VOIDING ACTUAL LEDGER IMPACT.`
+                : `INITIATING NEURAL SIGNATURE FOR ${selectedCandidate?.name}. PROCEED TO BIOMETRIC AUTHENTICATION HUB.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-none font-bold uppercase tracking-widest">Review Choice</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="bg-primary rounded-none font-black uppercase tracking-widest shadow-lg shadow-primary/20">
-              {isDecoyMode ? "Generate Decoy" : "Proceed to Signing"}
+          <AlertDialogFooter className="pt-8 gap-4 flex flex-col sm:flex-row">
+            <AlertDialogCancel className="rounded-none font-black uppercase tracking-[0.2em] h-14 bg-white/5 border-white/10 hover:bg-white/10 text-[10px]">BACK_TO_GRID</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setIsConfirming(false); setIsBiometricSigning(true); }} className="bg-primary rounded-none font-black uppercase tracking-[0.2em] h-14 shadow-2xl text-[10px] text-background hover:bg-primary/90 flex-grow">
+              {isDecoyMode ? "EXECUTE_DECOY" : "PROCEED_TO_SIGN"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
       <Dialog open={isBiometricSigning} onOpenChange={(open) => !isVerifyingSign && setIsBiometricSigning(open)}>
-        <DialogContent className="sm:max-w-md rounded-none border-2 border-primary/40 glow-box">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 font-black uppercase tracking-tighter">
-              <Fingerprint className="h-5 w-5 text-primary" />
-              {isDecoyMode ? "Decoy Authentication" : "Biometric Identity Sync"}
+        <DialogContent className="sm:max-w-xl rounded-none border-white/10 glassmorphic-card shadow-[0_0_60px_rgba(0,209,255,0.2)] p-12 overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+             <Fingerprint className="w-48 h-48" />
+          </div>
+          <DialogHeader className="mb-10 text-center">
+            <DialogTitle className="flex flex-col items-center gap-6 font-black uppercase tracking-tighter text-4xl glow-text italic">
+              <Fingerprint className="h-16 w-16 text-primary shadow-2xl" />
+              {isDecoyMode ? "DECOY_SIGN" : "NEURAL_SIGN"}
             </DialogTitle>
-            <DialogDescription className="font-medium">
-              Confirming ballot for {selectedCandidate?.name}.
+            <DialogDescription className="font-bold uppercase text-[10px] tracking-[0.3em] text-muted-foreground pt-4">
+              COMMITTING BALLOT UNIT FOR <span className="text-primary">{selectedCandidate?.name}</span>
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-6">
-            <div className="relative aspect-video rounded-none overflow-hidden bg-black border-2 border-primary/20">
-               <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+          <div className="space-y-10 relative z-10">
+            <div className="relative aspect-video rounded-none overflow-hidden bg-black border border-white/10 shadow-2xl">
+               <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover grayscale opacity-60" />
                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className={`w-48 h-48 border-2 ${isPanicMode ? 'border-red-500' : 'border-primary/40'} rounded-none border-dashed animate-[spin_10s_linear_infinite]`} />
+                  <div className={`w-56 h-56 border-2 ${isPanicMode ? 'border-destructive' : 'border-primary/40'} rounded-none border-dashed animate-[spin_20s_linear_infinite]`} />
+                  <div className="absolute w-40 h-40 border border-primary/10 rounded-none animate-pulse" />
                </div>
                {isVerifyingSign && (
-                  <div className="absolute inset-0 bg-background/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4 text-center p-4 z-20">
-                    <Loader2 className="h-10 w-10 text-primary animate-spin" />
-                    <p className="text-xs font-black uppercase tracking-widest text-primary animate-pulse">
-                      {isDecoyMode ? "Simulating Forensic Audit..." : "Neural Identity Sync Active"}
-                    </p>
+                  <div className="absolute inset-0 bg-background/90 backdrop-blur-xl flex flex-col items-center justify-center gap-8 text-center p-8 z-20">
+                    <div className="relative">
+                      <Loader2 className="h-20 w-20 text-primary animate-spin" />
+                      <Activity className="absolute inset-0 m-auto h-6 w-6 text-primary" />
+                    </div>
+                    <div className="space-y-2">
+                       <p className="text-[11px] font-black uppercase tracking-[0.5em] text-primary animate-pulse">
+                         {isDecoyMode ? "SIMULATING_FORENSIC_SYNC" : "NEURAL_IDENTITY_COMMITTING"}
+                       </p>
+                       <p className="text-[8px] font-black text-muted-foreground uppercase tracking-widest">ENCRYPTING UNIT VIA SHA-256...</p>
+                    </div>
                   </div>
                )}
             </div>
             <canvas ref={canvasRef} className="hidden" />
-            <Button className="w-full h-14 rounded-none font-black uppercase tracking-widest shadow-xl shadow-primary/20" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
-              {isVerifyingSign ? "Verifying..." : isDecoyMode ? "Generate Fake Receipt" : "Sign & Cast Vote"}
+            <Button className="w-full h-20 rounded-none font-black uppercase tracking-[0.4em] text-sm shadow-[0_0_30px_rgba(0,209,255,0.3)] bg-primary text-background hover:bg-primary/90" onClick={executeBiometricSignature} disabled={isVerifyingSign}>
+              {isVerifyingSign ? "VALIDATING..." : isDecoyMode ? "GENERATE_VOID_UNIT" : "SIGN_AND_COMMIT"}
             </Button>
-            <div className="flex items-center justify-center gap-2 text-[8px] text-muted-foreground font-black uppercase tracking-widest">
-               <ShieldCheck className="h-2 w-2 text-primary" /> OOTU Anti-Coercion Protocol Active
+            <div className="flex items-center justify-between px-2 text-[8px] text-muted-foreground/60 font-black uppercase tracking-[0.3em]">
+               <div className="flex items-center gap-2"><ShieldCheck className="h-3 w-3 text-primary" /> OOTU_MESH_V2.1</div>
+               <div className="flex items-center gap-2"><Globe className="h-3 w-3 text-primary" /> GLOBAL_CONSENSUS: 100%</div>
             </div>
           </div>
         </DialogContent>
